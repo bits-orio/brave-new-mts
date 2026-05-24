@@ -14,10 +14,10 @@ experience the same way.
   permission groups, no cheat mode (so the save is never flagged as cheated).
 - **You place blueprints, robots build.** Each team's spawn is seeded with a
   self-running starter base — power (solar + accumulators + substations) and a
-  Krastorio 2 roboport stocked with construction and logistic robots — plus
-  logistic chests pre-filled with starter items so the bots always have stock
-  to bootstrap from. You expand by drawing blueprints; the network does the
-  rest.
+  [K2 Roboports](https://mods.factorio.com/mod/K2-Roboports) roboport stocked
+  with construction and logistic robots — plus logistic chests pre-filled with
+  starter items so the bots always have stock to bootstrap from. You expand by
+  drawing blueprints; the network does the rest.
 - **Every team surface.** A starter base is placed on each team surface the
   team reaches, including additional planets under Space Age. Aquilo gets a
   variant with extra solar.
@@ -25,7 +25,8 @@ experience the same way.
 ## Requirements
 
 - `multi-team-support` (required)
-- `Krastorio2` (required)
+- [`K2-Roboports`](https://mods.factorio.com/mod/K2-Roboports) (required — the
+  standalone roboport, not the full Krastorio 2 overhaul)
 - `space-age` (optional — enables per-planet starter bases)
 
 ## Status
