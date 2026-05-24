@@ -11,6 +11,8 @@
 --      reaches, so construction robots can build from real stock
 --      (events/player_surface.lua + scripts/starter_base.lua).
 
+local permissions         = require("scripts.permissions")
+
 local ev_player_lifecycle = require("events.player_lifecycle")
 local ev_player_surface   = require("events.player_surface")
 
@@ -25,6 +27,7 @@ script.on_init(function()
     log("[brave-new-mts] on_init fired")
     -- surface name -> true once a starter base has been placed there.
     storage.bases_placed = {}
+    permissions.apply()
     init_events()
 end)
 
@@ -37,5 +40,6 @@ end)
 script.on_configuration_changed(function()
     log("[brave-new-mts] on_configuration_changed fired")
     storage.bases_placed = storage.bases_placed or {}
+    permissions.apply()
     init_events()
 end)
