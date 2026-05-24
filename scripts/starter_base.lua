@@ -147,21 +147,4 @@ function M.place(force_name, surface)
         .. " on " .. surface.name)
 end
 
---- Called on on_player_changed_surface: place a base if the player has just
---- reached a team surface that doesn't have one yet.
-function M.maybe_place_for_player(player)
-    if not remote.interfaces["mts-v1"] then return end
-
-    local surface = player.physical_surface or player.surface
-    if not (surface and surface.valid) then return end
-
-    storage.bases_placed = storage.bases_placed or {}
-    if storage.bases_placed[surface.name] then return end
-
-    local owner = remote.call("mts-v1", "get_surface_owner", surface.name)
-    if not owner then return end  -- not a team-owned surface
-
-    M.place(owner, surface)
-end
-
 return M
