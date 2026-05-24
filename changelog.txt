@@ -1,0 +1,8 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-05-24
+  Features:
+    - Initial scaffold (work in progress). Remote-only, character-free team play layered on
+      Multi-Team Support: every player's character is removed and they build through a
+      construction-robot network. A self-running starter base is seeded on each team surface.
+    - Pure consumer of the public mts-v1 interface -- no Multi-Team Support changes required.

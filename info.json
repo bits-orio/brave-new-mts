@@ -1,0 +1,15 @@
+{
+  "name": "brave-new-mts",
+  "version": "0.1.0",
+  "title": "Brave New MTS",
+  "author": "bits-orio",
+  "description": "A remote-only, character-free layer for Multi-Team Support. Your character is removed, handcrafting and mining are gone, and you build entirely through a Krastorio 2 construction-robot network seeded at each team's spawn. Place blueprints; the bots do the rest.",
+  "homepage": "https://github.com/bits-orio/brave-new-mts",
+  "factorio_version": "2.0",
+  "dependencies": [
+    "base >= 2.0",
+    "multi-team-support >= 0.4.37",
+    "Krastorio2 >= 2.0.0",
+    "? space-age"
+  ]
+}
