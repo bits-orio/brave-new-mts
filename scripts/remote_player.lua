@@ -46,9 +46,10 @@ function M.make_remote(player)
         storage.view_zoom[player.index] = zoom
     end
 
-    log(("[brave-new-mts] make_remote %s on %s: had_character=%s -> controller=%s character=%s")
+    log(("[brave-new-mts] make_remote %s on %s: had_character=%s -> controller=%s physical=%s character=%s")
         :format(player.name, surface.name, tostring(had_character),
                 controller_name(player.controller_type),
+                controller_name(player.physical_controller_type),
                 tostring(player.character ~= nil)))
 end
 
