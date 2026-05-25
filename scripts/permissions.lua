@@ -14,9 +14,26 @@
 local M = {}
 
 local BLOCKED = {
+    -- No building by hand -- robots build from blueprints.
     "craft",                -- no handcrafting
     "begin_mining",         -- no mining entities / resources
     "begin_mining_terrain", -- no mining ground / water
+
+    -- No moving items by hand -- inserters and bots move items, not players.
+    -- Opening entity GUIs (open_gui) is intentionally LEFT ALLOWED so logistic
+    -- requests / recipes can still be configured; only item movement is blocked.
+    -- The stack_/cursor_ actions are generic (also used for the player's own
+    -- inventory and the blueprint library) -- verify blueprint grab+stamp still
+    -- works; if not, drop stack_transfer/cursor_transfer.
+    "fast_entity_transfer", -- ctrl-click to/from an entity
+    "fast_entity_split",    -- ctrl-right-click to/from an entity
+    "inventory_transfer",   -- ctrl-click "transfer all" within an open inventory
+    "inventory_split",
+    "stack_transfer",       -- click a stack to move it between slots
+    "stack_split",
+    "cursor_transfer",      -- place the held cursor stack into a slot
+    "cursor_split",
+    "drop_item",            -- drop items on the ground
 }
 
 function M.apply()
