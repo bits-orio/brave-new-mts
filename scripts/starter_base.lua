@@ -3,43 +3,45 @@
 -- cheat-free team can bootstrap a bot factory. Placement is idempotent per
 -- surface (storage.bases_placed[surface.name]).
 --
--- Strategy (closely follows the Brave New OARC pattern, using the standalone
--- K2 Roboports mod for the roboport -- detected generically by prototype type):
---   1. Import the configured blueprint and centre it on its roboport so the
---      roboport lands at the team's spawn origin (MTS always spawns at 0,0).
---   2. Create the blueprint's entities as REAL, working entities (not ghosts)
---      -- there are no bots or materials yet to build ghosts.
---   3. Seed power: charge accumulators and the roboport buffer so a night-one
+-- Strategy (follows the Brave New OARC pattern, using the standalone K2
+-- Roboports mod for the roboport -- detected generically by prototype type):
+--   1. Import the blueprint and centre it on its roboport, so the roboport
+--      lands at the team's spawn origin (MTS always spawns at 0,0).
+--   2. CLEAR the footprint first: remove obstacles (trees, rocks, cliffs, fish)
+--      so no entity fails to place, and resources (ore/oil) so the base never
+--      sits on an ore patch. The base has no miners -- the team mines elsewhere.
+--   3. Create the blueprint's entities as REAL working entities (not ghosts) --
+--      there are no bots or materials yet to build ghosts. Power poles
+--      auto-connect on placement, so explicit circuit wires aren't restored.
+--   4. Seed power: charge accumulators and the roboport buffer so a night-one
 --      base doesn't deadlock before solar ramps.
---   4. Seed bots into the roboport.
---   5. Place logistic chests pre-filled with starter items so bots have stock
---      to build the team's first expansion (the anti-soft-lock seed).
---   6. Guarantee raw resources under/near the base so production can actually
---      flow without hand-mining.
+--   5. Seed bots into the roboport (counts from mod settings).
 
 local blueprints = require("scripts.blueprints")
 
 local M = {}
 
--- ─── Tunables (Phase 3 will finalise these once the blueprint exists) ───
-
--- Bots seeded into the base roboport. Construction bots build the blueprints
--- the player draws; logistic bots service requests.
-local STARTER_CONSTRUCTION_ROBOTS = 50
-local STARTER_LOGISTIC_ROBOTS      = 25
-
 -- Joules to pre-load into each accumulator so the base survives night one.
 -- Clamped to the accumulator's actual buffer size.
 local ACCUMULATOR_SEED_ENERGY = 5000000  -- 5 MJ
 
+-- Extra tiles cleared around the blueprint's footprint.
+local CLEAR_MARGIN = 3
+
 -- ─── Internal helpers ──────────────────────────────────────────────────
 
+local function bot_counts()
+    local c = settings.global["bnm-construction-robots"]
+    local l = settings.global["bnm-logistic-robots"]
+    return (c and c.value) or 50, (l and l.value) or 50
+end
+
 --- Fill a freshly-created roboport with starter bots and a full energy buffer.
-local function seed_roboport(roboport)
+local function seed_roboport(roboport, construction, logistic)
     local inv = roboport.get_inventory(defines.inventory.roboport_robot)
     if inv then
-        inv.insert{ name = "construction-robot", count = STARTER_CONSTRUCTION_ROBOTS }
-        inv.insert{ name = "logistic-robot",     count = STARTER_LOGISTIC_ROBOTS }
+        if construction > 0 then inv.insert{ name = "construction-robot", count = construction } end
+        if logistic    > 0 then inv.insert{ name = "logistic-robot",     count = logistic }    end
     end
     -- Start charged so bots can fly before the power network spins up.
     roboport.energy = roboport.electric_buffer_size or roboport.energy
@@ -51,8 +53,9 @@ local function seed_accumulator(accumulator)
     accumulator.energy = math.min(ACCUMULATOR_SEED_ENERGY, cap)
 end
 
---- Find the roboport entity in a blueprint and return its position, so we can
---- offset every entity to land the roboport at the spawn origin.
+--- The roboport's blueprint position, used to offset every entity so the
+--- roboport lands at the spawn origin. Detected by prototype type, so it works
+--- for any roboport mod (K2 Roboports, vanilla, ...).
 local function roboport_offset(bp_entities)
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
@@ -74,10 +77,38 @@ local function decode_blueprint(bp_string)
     return entities or {}
 end
 
+--- World-space bounding box of the footprint once centred on the origin.
+local function footprint_area(origin, bp_entities, ox, oy)
+    local minx, miny, maxx, maxy = math.huge, math.huge, -math.huge, -math.huge
+    for _, e in pairs(bp_entities) do
+        local x, y = e.position.x - ox, e.position.y - oy
+        if x < minx then minx = x end
+        if x > maxx then maxx = x end
+        if y < miny then miny = y end
+        if y > maxy then maxy = y end
+    end
+    return {
+        { origin.x + minx - CLEAR_MARGIN, origin.y + miny - CLEAR_MARGIN },
+        { origin.x + maxx + CLEAR_MARGIN, origin.y + maxy + CLEAR_MARGIN },
+    }
+end
+
+--- Clear the footprint so the base places cleanly and never sits on ore.
+local function clear_footprint(surface, area)
+    local obstacles = surface.find_entities_filtered{
+        area = area,
+        type = { "tree", "simple-entity", "simple-entity-with-owner", "cliff", "fish", "resource" },
+    }
+    for _, e in pairs(obstacles) do
+        if e.valid then e.destroy() end
+    end
+    surface.destroy_decoratives{ area = area }
+end
+
 --- Place all blueprint entities as real entities, origin-centred on the
---- roboport, and seed power as they are created.
-local function build_base(force, surface, origin, bp_entities)
-    local ox, oy = roboport_offset(bp_entities)
+--- roboport, seeding power and bots as they are created.
+local function build_base(force, surface, origin, bp_entities, ox, oy)
+    local construction, logistic = bot_counts()
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
         if not proto then
@@ -85,36 +116,22 @@ local function build_base(force, surface, origin, bp_entities)
                 .. tostring(e.name) .. "' -- skipping")
         else
             local created = surface.create_entity{
-                name      = e.name,
-                position  = { x = origin.x + e.position.x - ox,
-                              y = origin.y + e.position.y - oy },
-                direction = e.direction,
-                force     = force,
-                recipe    = e.recipe,
+                name        = e.name,
+                position    = { x = origin.x + e.position.x - ox,
+                                y = origin.y + e.position.y - oy },
+                direction   = e.direction,
+                force       = force,
+                recipe      = e.recipe,
                 raise_built = true,
             }
             if created then
-                if proto.type == "roboport"    then seed_roboport(created)    end
+                if proto.type == "roboport"    then seed_roboport(created, construction, logistic) end
                 if proto.type == "accumulator" then seed_accumulator(created) end
+            else
+                log("[brave-new-mts] failed to place '" .. e.name .. "' (collision?)")
             end
         end
     end
-end
-
---- Place the logistic chests holding the team's anti-soft-lock starter items.
---- TODO(phase3): finalise positions, chest types (K2 / passive-provider /
---- storage), and the item list to match the chosen blueprint.
-local function place_starter_chests(force, surface, origin)
-    -- Placeholder: intentionally empty until the blueprint + item list exist.
-    -- Will create a small cluster of chests near `origin` and insert the
-    -- starter items so construction bots have stock to build the first base.
-end
-
---- Guarantee raw resources under/near the base so production can flow without
---- hand-mining (cheat mode is intentionally OFF).
---- TODO(phase3): place ore/oil patches sized to the blueprint's miners.
-local function guarantee_resources(force, surface, origin)
-    -- Placeholder: per-planet resource seeding added in Phase 3.
 end
 
 -- ─── Public API ──────────────────────────────────────────────────────
@@ -129,22 +146,22 @@ function M.place(force_name, surface)
     if not (force and force.valid) then return end
 
     local bp_string = blueprints.for_surface(surface)
-    if not bp_string or bp_string == "" then
-        -- No blueprint configured for this surface yet (Phase 1/3). Don't mark
-        -- the surface placed, so it gets seeded once a blueprint is added.
+    if not bp_string or bp_string == "" then return end  -- none configured yet
+
+    local bp_entities = decode_blueprint(bp_string)
+    if #bp_entities == 0 then
+        log("[brave-new-mts] blueprint for " .. surface.name .. " decoded to 0 entities")
         return
     end
 
     local origin = { x = 0, y = 0 }  -- MTS always spawns players at origin.
-    local bp_entities = decode_blueprint(bp_string)
+    local ox, oy = roboport_offset(bp_entities)
 
-    build_base(force, surface, origin, bp_entities)
-    place_starter_chests(force, surface, origin)
-    guarantee_resources(force, surface, origin)
+    clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
+    build_base(force, surface, origin, bp_entities, ox, oy)
 
     storage.bases_placed[surface.name] = true
-    log("[brave-new-mts] starter base placed for " .. force_name
-        .. " on " .. surface.name)
+    log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
 end
 
 return M
