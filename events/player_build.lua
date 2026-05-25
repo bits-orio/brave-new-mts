@@ -1,15 +1,13 @@
 -- events/player_build.lua
--- Humans build ONLY through blueprints + robots. In the physical view a player
--- can pull items from the base chests and hand-place real entities, bypassing
--- the bot economy. There's no permission that blocks real-entity placement
--- without also blocking ghost/blueprint placement (both use input_action.build),
--- so we handle it here: cancel any REAL entity a player builds by hand and
--- refund the item. Ghosts (entity-ghost / tile-ghost), which robots construct,
--- are left alone -- that's the intended way to build.
+-- Everything a player places must be built by robots, never instant-built by
+-- hand. A character-less player is backed by the god controller, which
+-- instant-builds blueprints as FREE real entities -- bypassing the bot economy.
+-- So when a player builds a real entity, we replace it with a ghost, which
+-- robots then construct from the logistic network.
 --
--- Only player-built entities on team surfaces are affected: script-/robot-built
--- entities have no player_index, and the landing pen / non-team surfaces are
--- skipped via the mts-v1 owner check.
+-- In remote view placement is already a ghost (entity-ghost) and passes through
+-- untouched. Script-/robot-built entities have no player_index and are ignored.
+-- Scoped to team surfaces via the mts-v1 owner check.
 
 local M = {}
 
@@ -25,12 +23,24 @@ function M.register()
         if not remote.interfaces["mts-v1"] then return end
         if not remote.call("mts-v1", "get_surface_owner", entity.surface.name) then return end
 
-        local pos = entity.position
-        player.mine_entity(entity, true)  -- remove and refund the item to the player
-        player.create_local_flying_text{
-            text     = "Place blueprints — robots build for you.",
-            position = pos,
+        -- Capture what was placed, then replace the free instant-build with a
+        -- ghost so robots construct it from the network.
+        local surface = entity.surface
+        local ghost = {
+            name       = "entity-ghost",
+            inner_name = entity.name,
+            position   = entity.position,
+            direction  = entity.direction,
+            force      = entity.force,
         }
+        if entity.quality then ghost.quality = entity.quality.name end
+        if entity.type == "assembling-machine" then
+            local ok, recipe = pcall(function() return entity.get_recipe() end)
+            if ok and recipe then ghost.recipe = recipe.name end
+        end
+
+        entity.destroy()
+        surface.create_entity(ghost)
     end)
 end
 
