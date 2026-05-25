@@ -44,10 +44,6 @@ function M.make_remote(player)
         player.zoom = zoom  -- match the zoom level we came from
         storage.view_zoom = storage.view_zoom or {}
         storage.view_zoom[player.index] = zoom
-        -- Pin the physical body back to origin. Safe to teleport here: we're
-        -- already in remote view, so the movement handler won't snap (its
-        -- controller==remote guard), and the body stays home for next time.
-        player.teleport({ 0, 0 }, surface)
     end
 
     log(("[brave-new-mts] make_remote %s on %s: had_character=%s -> controller=%s character=%s")
