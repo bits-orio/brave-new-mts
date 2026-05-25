@@ -25,9 +25,11 @@ function M.make_remote(player)
     if not (player and player.valid) then return end
 
     local had_character = player.character ~= nil
-    -- Anchor the remote camera at wherever the player currently is.
+    -- Anchor the remote camera at wherever the player currently is, and carry
+    -- the current zoom across so the switch feels seamless.
     local surface  = player.physical_surface  or player.surface
     local position = player.physical_position or player.position
+    local zoom     = player.zoom
 
     if player.character then
         player.character.destroy()
@@ -39,6 +41,13 @@ function M.make_remote(player)
             surface  = surface,
             position = position,
         }
+        player.zoom = zoom  -- match the zoom level we came from
+        storage.view_zoom = storage.view_zoom or {}
+        storage.view_zoom[player.index] = zoom
+        -- Pin the physical body back to origin. Safe to teleport here: we're
+        -- already in remote view, so the movement handler won't snap (its
+        -- controller==remote guard), and the body stays home for next time.
+        player.teleport({ 0, 0 }, surface)
     end
 
     log(("[brave-new-mts] make_remote %s on %s: had_character=%s -> controller=%s character=%s")

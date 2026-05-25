@@ -19,8 +19,13 @@ function M.register()
         if not (player and player.valid) then return end
         -- Has a character (landing-pen team picker) -> leave alone.
         if player.character then return end
-        -- Already in remote view -> panning there never charts.
-        if player.controller_type == defines.controllers.remote then return end
+        -- Already in remote view -> panning there never charts. Remember the
+        -- zoom as it changes, so dropping back to physical view can match it.
+        if player.controller_type == defines.controllers.remote then
+            storage.view_zoom = storage.view_zoom or {}
+            storage.view_zoom[player.index] = player.zoom
+            return
+        end
         -- Character-less and moving in the physical view: snap back to remote
         -- view (ensure_remote_if_team_surface gates this to team surfaces).
         remote_player.ensure_remote_if_team_surface(player)

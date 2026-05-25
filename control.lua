@@ -16,12 +16,14 @@ local permissions         = require("scripts.permissions")
 local ev_player_lifecycle  = require("events.player_lifecycle")
 local ev_player_surface    = require("events.player_surface")
 local ev_player_movement   = require("events.player_movement")
+local ev_player_controller = require("events.player_controller")
 local ev_player_build      = require("events.player_build")
 
 local function init_events()
     ev_player_lifecycle.register()
     ev_player_surface.register()
     ev_player_movement.register()
+    ev_player_controller.register()
     ev_player_build.register()
 end
 
@@ -31,6 +33,8 @@ script.on_init(function()
     log("[brave-new-mts] on_init fired")
     -- surface name -> true once a starter base has been placed there.
     storage.bases_placed = {}
+    -- player_index -> last zoom level, carried across remote/physical switches.
+    storage.view_zoom = {}
     permissions.apply()
     init_events()
 end)
@@ -44,6 +48,7 @@ end)
 script.on_configuration_changed(function()
     log("[brave-new-mts] on_configuration_changed fired")
     storage.bases_placed = storage.bases_placed or {}
+    storage.view_zoom = storage.view_zoom or {}
     permissions.apply()
     init_events()
 end)
