@@ -4,9 +4,12 @@
 -- outright (start_walking also drives remote-view panning), so we clamp the
 -- physical body to already-charted territory -- the Brave New OARC approach.
 --
--- Remote view (render_mode ~= game) is never clamped, so camera panning stays
--- free. Only the physical view (render_mode == game), where walking actually
--- charts, is constrained.
+-- The gate is the CONTROLLER, not the render mode: in remote view the player
+-- is in controllers.remote (so is MTS's spectate), and panning there never
+-- charts -- we skip it. Every physical-body state (the god controller, at any
+-- zoom -- first-person OR the zoomed-out abstract view) charts on the move, so
+-- we clamp all of them. (Keying off render_mode == game missed the zoomed-out
+-- physical view.)
 --
 -- prev_physical_pos is stored ONLY while standing in a charted chunk, so it is
 -- always a valid "good" position to snap back to -- never the uncharted spot
@@ -28,9 +31,10 @@ end
 
 function M.on_changed_position(player)
     if not (player and player.valid) then return end
-    -- Only the character-less physical body, only in the physical view.
+    -- Only the character-less physical body. Skip remote view (and MTS
+    -- spectate) -- both use the remote controller and don't chart on pan.
     if player.character then return end
-    if player.render_mode ~= defines.render_mode.game then return end
+    if player.controller_type == defines.controllers.remote then return end
 
     local surface = player.physical_surface or player.surface
     if not (surface and surface.valid) or surface.name == "landing-pen" then return end
