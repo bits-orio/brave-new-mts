@@ -5,7 +5,8 @@
 -- placement is naturally ghosts, which robots build. No god controller, no
 -- instant-build, no charting hacks.
 
-local pen_cells = require("scripts.pen_cells")
+local pen_cells    = require("scripts.pen_cells")
+local starter_base = require("scripts.starter_base")
 
 local M = {}
 
@@ -66,7 +67,7 @@ function M.park(player, team_surface)
     player.set_controller{
         type     = defines.controllers.remote,
         surface  = team_surface,
-        position = { 0, 0 },
+        position = starter_base.BASE_ORIGIN,  -- centre the view on the base
     }
     log("[brave-new-mts] parked " .. player.name .. " in " .. fn
         .. " cell; viewing " .. team_surface.name)

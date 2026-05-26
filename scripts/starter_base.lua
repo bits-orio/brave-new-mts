@@ -21,6 +21,13 @@ local blueprints = require("scripts.blueprints")
 
 local M = {}
 
+-- The base is centred on a CHUNK CENTRE (16,16), not the spawn corner (0,0).
+-- The roboport's construction area reveals whole chunks around the roboport's
+-- chunk; that reveal is only symmetric when the roboport sits at the chunk's
+-- centre -- otherwise it spills a chunk toward +x/+y. Players never stand here
+-- (their character is parked in the pen), and remote view is centred here too.
+M.BASE_ORIGIN = { x = 16, y = 16 }
+
 -- Joules to pre-load into each accumulator so the base survives night one.
 -- Clamped to the accumulator's actual buffer size.
 local ACCUMULATOR_SEED_ENERGY = 5000000  -- 5 MJ
@@ -202,7 +209,7 @@ function M.place(force_name, surface)
         return
     end
 
-    local origin = { x = 0, y = 0 }  -- MTS always spawns players at origin.
+    local origin = M.BASE_ORIGIN  -- chunk centre, so the roboport reveal is symmetric
     local ox, oy = roboport_offset(bp_entities)
 
     clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
