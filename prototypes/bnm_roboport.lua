@@ -1,7 +1,7 @@
 -- prototypes/bnm_roboport.lua
 -- A self-contained mega-roboport for the starter base: ~2x reach, 4x energy,
 -- 16 charging docks, 20 robot slots. It reuses the vanilla roboport's graphics
--- and 4x4 footprint, recoloured with a bold Google-blue tint to mark it as a
+-- and 4x4 footprint, recoloured with a bold Google-red tint to mark it as a
 -- special, one-of-a-kind structure (no custom art needed).
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
@@ -49,14 +49,14 @@ rb.is_military_target           = true
 rb.charge_approach_distance     = 5
 rb.request_to_open_door_timeout = 15
 
--- ─── Distinct look: a glowing Google-blue "overseer" roboport ───────────
+-- ─── Distinct look: a glowing Google-red "overseer" roboport ────────────
 -- tint multiplies the vanilla sprite, so a bold colour marks it as a special,
 -- one-of-a-kind structure. Recolour by editing BNM_TINT -- Google palette:
 --   blue   #4285F4  { 0.259, 0.522, 0.957 }
 --   red    #EA4335  { 0.918, 0.263, 0.208 }
 --   yellow #FBBC05  { 0.984, 0.737, 0.020 }
 --   green  #34A853  { 0.204, 0.659, 0.325 }
-local BNM_TINT = { r = 0.259, g = 0.522, b = 0.957, a = 1.0 }  -- Google blue
+local BNM_TINT = { r = 0.918, g = 0.263, b = 0.208, a = 1.0 }  -- Google red
 
 local function tint_layers(def)
     if type(def) ~= "table" then return end
@@ -72,8 +72,8 @@ for _, key in ipairs({ "base", "base_patch", "base_animation",
     tint_layers(rb[key])
 end
 
--- A bright blue charging glow to match.
-rb.recharging_light = { intensity = 0.6, size = 5, color = { r = 0.30, g = 0.55, b = 1.0 } }
+-- A bright red charging glow to match.
+rb.recharging_light = { intensity = 0.6, size = 5, color = { r = 1.0, g = 0.30, b = 0.25 } }
 
 -- Recolour the entity's map/alert icon too.
 if rb.icon then
