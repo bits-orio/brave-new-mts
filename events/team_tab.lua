@@ -68,7 +68,7 @@ local function build_tab(player, element)
     end
 end
 
-local function on_gui_click(event)
+function M.on_gui_click(event)
     local el = event.element
     if not (el and el.valid and el.name == UNLOCK_BUTTON) then return end
     local player = game.get_player(event.player_index)
@@ -93,8 +93,9 @@ end
 --- Registering lazily (e.g. on a one-shot tick) is NOT multiplayer-safe: a client
 --- joining mid-game hasn't run that tick yet, so its handler set differs from the
 --- long-running server's and the join is rejected ("event handlers not identical").
+-- on_gui_click is dispatched centrally from control.lua (only one handler may
+-- be registered for it), so M.register only wires the custom event handler.
 function M.register()
-    script.on_event(defines.events.on_gui_click, on_gui_click)
     local id = storage.bnm_tab_event_id
     if id then script.on_event(id, on_tab_built) end
 end

@@ -185,6 +185,33 @@ local function clear_footprint(surface, area)
     surface.destroy_decoratives{ area = area }
 end
 
+-- Cargo a team has already dropped to this planet lands near origin as a
+-- "cargo-pod-container" (type temporary-container); a pod may also be present.
+-- We must NOT destroy it -- it holds the player's items. Instead, scoot any
+-- such cargo that overlaps the base footprint just outside it. Returns silently
+-- if there's nowhere clear to move a pod (better to fail one base entity than
+-- to delete a team's cargo).
+local function relocate_cargo(surface, area)
+    local cargo = surface.find_entities_filtered{
+        area = area,
+        type = { "temporary-container", "cargo-pod" },
+    }
+    local margin = 6  -- push clear of the footprint edge before settling
+    for _, e in pairs(cargo) do
+        if e.valid then
+            -- Aim just past whichever footprint edge the cargo is nearest.
+            local p = e.position
+            local target = {
+                x = (p.x < (area[1][1] + area[2][1]) / 2)
+                    and area[1][1] - margin or area[2][1] + margin,
+                y = p.y,
+            }
+            local pos = surface.find_non_colliding_position(e.name, target, 32, 1)
+            if pos then e.teleport(pos) end
+        end
+    end
+end
+
 -- The power core kept NON-MINABLE until the team opts into "I know what I am
 -- doing": losing any of it would strand the base. Everything else in the
 -- starter base is minable from the start, so a team can freely redesign it.
@@ -294,7 +321,9 @@ function M.place(force_name, surface)
     local origin = M.BASE_ORIGIN  -- chunk centre, so the roboport reveal is symmetric
     local ox, oy = roboport_offset(bp_entities)
 
-    clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
+    local area = footprint_area(origin, bp_entities, ox, oy)
+    relocate_cargo(surface, area)  -- preserve any cargo the team already dropped here
+    clear_footprint(surface, area)
     place_tiles(surface, origin, bp_tiles, ox, oy)
     local roboport, protected = build_base(force, surface, origin, bp_entities, ox, oy)
 

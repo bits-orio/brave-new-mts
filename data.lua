@@ -2,3 +2,4 @@
 -- Prototypes defined by Brave New MTS.
 
 require("prototypes.bnm_roboport")
+require("prototypes.bnm_clone")
