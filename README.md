@@ -1,6 +1,6 @@
 # Brave New MTS
 
-A remote-only, character-free experience layered on top of
+A remote-only experience layered on top of
 [Multi-Team Support](https://github.com/bits-orio/multi-team-support) (MTS).
 
 Inspired by Brave New OARC, but built entirely on the public **`mts-v1`**
@@ -9,15 +9,19 @@ experience the same way.
 
 ## What it does
 
-- **No character.** Every player's character is removed; you play from remote
-  view. Handcrafting and hand-mining are impossible by construction — no
-  permission groups, no cheat mode (so the save is never flagged as cheated).
+- **You're the overseer.** When you spawn into a team, your character is parked
+  in your team's walled cell in the landing pen and you play entirely through
+  **remote view** of your team surface. Teammates stand together in the same
+  cell; the body never sets foot on the team surface (so it can't roam or expose
+  the map). No god mode, no cheat mode — the save is never flagged as cheated.
 - **You place blueprints, robots build.** Each team's spawn is seeded with a
   self-running starter base — power (solar + accumulators + substations) and a
-  [K2 Roboports](https://mods.factorio.com/mod/K2-Roboports) roboport stocked
-  with construction and logistic robots — plus logistic chests pre-filled with
-  starter items so the bots always have stock to bootstrap from. You expand by
-  drawing blueprints; the network does the rest.
+  [Better Robots Extended](https://mods.factorio.com/mod/Better_Robots_Extended)
+  roboport stocked with construction and logistic robots — plus logistic chests
+  pre-filled with starter items so the bots always have stock to bootstrap from.
+  You expand by drawing blueprints; the network does the rest.
+- **No hand-work.** Handcrafting, mining, and manual item transfer to/from
+  chests are blocked; everything moves through inserters and bots.
 - **Every team surface.** A starter base is placed on each team surface the
   team reaches, including additional planets under Space Age. Aquilo gets a
   variant with extra solar.
@@ -25,15 +29,8 @@ experience the same way.
 ## Requirements
 
 - `multi-team-support` (required)
-- [`K2-Roboports`](https://mods.factorio.com/mod/K2-Roboports) (required — the
-  standalone roboport, not the full Krastorio 2 overhaul)
+- [`Better_Robots_Extended`](https://mods.factorio.com/mod/Better_Robots_Extended) (required)
 - `space-age` (optional — enables per-planet starter bases)
-
-## Status
-
-Work in progress. See the phase notes and `TODO(phase3)` markers in
-`scripts/` — the starter-base blueprint strings, chest contents, and resource
-seeding are filled in once the in-game blueprint is finalised.
 
 ## License
 

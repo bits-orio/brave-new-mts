@@ -3,8 +3,8 @@
 -- cheat-free team can bootstrap a bot factory. Placement is idempotent per
 -- surface (storage.bases_placed[surface.name]).
 --
--- Strategy (follows the Brave New OARC pattern, using the standalone K2
--- Roboports mod for the roboport -- detected generically by prototype type):
+-- Strategy (follows the Brave New OARC pattern; the blueprint's roboport --
+-- a Better Robots Extended roboport -- is detected generically by prototype type):
 --   1. Import the blueprint and centre it on its roboport, so the roboport
 --      lands at the team's spawn origin (MTS always spawns at 0,0).
 --   2. CLEAR the footprint first: remove obstacles (trees, rocks, cliffs, fish)
