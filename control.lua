@@ -31,7 +31,7 @@ end
 
 local function init_storage()
     storage.bases_placed = storage.bases_placed or {}  -- surface name -> base placed
-    storage.bnm_base     = storage.bnm_base     or {}  -- surface name -> { force, roboport, others, unlocked }
+    storage.bnm_base     = storage.bnm_base     or {}  -- surface name -> { force, roboport, protected, unlocked }
     storage.park_index   = storage.park_index   or {}  -- force -> player_index -> slot
     storage.home_surface = storage.home_surface or {}  -- player_index -> team surface name
 end

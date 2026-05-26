@@ -12,14 +12,15 @@ local TAB_NAME      = "brave-new-mts"
 local UNLOCK_BUTTON = "bnm_unlock_minable"
 
 local WARNING =
-    "Your starter base can't be mined or deconstructed by default, so you "
-    .. "can't accidentally tear down your own power and strand your team.\n\n"
-    .. "Unlocking lets you mine / deconstruct the starter base (power, belts, "
-    .. "chests, walls, ...) to redesign your spawn. The central roboport can "
-    .. "NEVER be removed.\n\n"
-    .. "[color=1,0.5,0.2]Warning:[/color] if you remove your power or bots "
-    .. "before replacements are running, your team can be soft-locked with no "
-    .. "way to recover. This is one-way."
+    "You can already mine and redesign most of your starter base. Only the "
+    .. "power core stays locked: solar panels, accumulators, substations, the "
+    .. "main power poles and the lights -- so you can't accidentally kill your "
+    .. "own power and strand your team.\n\n"
+    .. "Unlocking lets you mine / deconstruct that power core too, to rebuild "
+    .. "it your way. The central roboport can NEVER be removed.\n\n"
+    .. "[color=1,0.5,0.2]Warning:[/color] if you remove your power before "
+    .. "replacements are running, your team can be soft-locked with no way to "
+    .. "recover. This is one-way."
 
 local function is_leader(player)
     if not remote.interfaces["mts-v1"] then return false end
@@ -40,7 +41,7 @@ local function build_tab(player, element)
     if starter_base.is_unlocked(player.force.name) then
         local ok = element.add{
             type    = "label",
-            caption = "[color=0,1,0]Your starter base is now mineable "
+            caption = "[color=0,1,0]Your power core is now mineable too "
                 .. "(except the central roboport).[/color]",
         }
         ok.style.single_line  = false

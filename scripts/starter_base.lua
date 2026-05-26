@@ -3,8 +3,7 @@
 -- cheat-free team can bootstrap a bot factory. Placement is idempotent per
 -- surface (storage.bases_placed[surface.name]).
 --
--- Strategy (follows the Brave New OARC pattern; the blueprint's roboport --
--- a Better Robots Extended roboport -- is detected generically by prototype type):
+-- Strategy (the blueprint's roboport is detected generically by prototype type):
 --   1. Import the blueprint and centre it on its roboport, so the roboport
 --      lands at the team's spawn origin (MTS always spawns at 0,0).
 --   2. CLEAR the footprint first: remove obstacles (trees, rocks, cliffs, fish)
@@ -33,22 +32,26 @@ M.BASE_ORIGIN = { x = 16, y = 16 }
 -- names/counts here to retune. Any name that isn't a valid item is skipped
 -- (and logged) at placement time.
 M.STARTER_ITEMS = {
-    { name = "transport-belt",        count = 400 },
-    { name = "medium-electric-pole",  count = 50  },
-    { name = "underground-belt",      count = 20  },
-    { name = "pipe",                  count = 20  },
-    { name = "inserter",              count = 20  },
-    { name = "splitter",              count = 10  },
-    { name = "pipe-to-ground",        count = 10  },
-    { name = "small-lamp",            count = 10  },
-    { name = "burner-inserter",       count = 4   },
+    { name = "transport-belt",        count = 100 },
+    { name = "medium-electric-pole",  count = 20  },
+    { name = "inserter",              count = 12  },
+    { name = "pipe",                  count = 10  },
+    { name = "burner-inserter",       count = 8   },
+    { name = "underground-belt",      count = 4  },
+    { name = "splitter",              count = 4  },
+    { name = "pipe-to-ground",        count = 4  },
+    { name = "small-lamp",            count = 4  },
     { name = "stone-furnace",         count = 4   },
-    { name = "assembling-machine-1",  count = 4   },
-    { name = "electric-mining-drill", count = 4   },
+    { name = "assembling-machine-2",  count = 1   },
+    { name = "electric-mining-drill", count = 1   },
     { name = "steam-engine",          count = 2   },
     { name = "lab",                   count = 2   },
+    { name = "boiler",                count = 2   },
     { name = "offshore-pump",         count = 1   },
-    { name = "boiler",                count = 1   },
+    { name = "advanced-circuit",      count = 4  },
+    -- Defense + early mid-tier bootstrap.
+    { name = "gun-turret",            count = 4   },
+    { name = "firearm-magazine",      count = 100  },
 }
 
 -- Joules to pre-load into each accumulator so the base survives night one.
@@ -69,7 +72,7 @@ local CHART_CHUNK_MARGIN = 3
 local function bot_counts()
     local c = settings.global["bnm-construction-robots"]
     local l = settings.global["bnm-logistic-robots"]
-    return (c and c.value) or 50, (l and l.value) or 50
+    return (c and c.value) or 100, (l and l.value) or 50
 end
 
 -- Repair packs seeded into the central roboport's material slots so the
@@ -182,13 +185,31 @@ local function clear_footprint(surface, area)
     surface.destroy_decoratives{ area = area }
 end
 
+-- The power core kept NON-MINABLE until the team opts into "I know what I am
+-- doing": losing any of it would strand the base. Everything else in the
+-- starter base is minable from the start, so a team can freely redesign it.
+-- The central roboport is always non-minable and is handled separately.
+local PROTECTED_TYPES = {
+    ["solar-panel"] = true,   -- power generation
+    ["accumulator"] = true,   -- night-one storage
+    ["lamp"]        = true,   -- the lights
+}
+local PROTECTED_NAMES = {
+    ["substation"]           = true,  -- the two substations
+    ["medium-electric-pole"] = true,  -- the two medium poles
+}
+local function is_power_core(proto)
+    return PROTECTED_TYPES[proto.type] or PROTECTED_NAMES[proto.name] or false
+end
+
 --- Place all blueprint entities as real entities, origin-centred on the
---- roboport, seeding power and bots as they are created. The whole starter base
---- is made NON-MINABLE so a team can't accidentally deconstruct its own power
---- and soft-lock. Returns the roboport and the list of other base entities.
+--- roboport, seeding power and bots as they are created. Only the power core
+--- (solar / accumulators / substations / main poles / lights) and the central
+--- roboport are made non-minable, so the team can't accidentally strand itself;
+--- everything else stays minable. Returns the roboport and the protected list.
 local function build_base(force, surface, origin, bp_entities, ox, oy)
     local construction, logistic = bot_counts()
-    local roboport, others, provider = nil, {}, nil
+    local roboport, protected, provider = nil, {}, nil
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
         if not proto then
@@ -205,16 +226,20 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
                 raise_built = true,
             }
             if created then
-                created.minable = false  -- gifted base can't be mined/deconstructed
                 if proto.type == "roboport" then
                     roboport = created
+                    created.minable = false  -- the heart of the base; never minable
                     seed_roboport(created, construction, logistic)
                 else
-                    others[#others + 1] = created
                     if proto.type == "accumulator" then seed_accumulator(created) end
                     -- Stock the FIRST passive provider chest with the starter kit.
                     if not provider and proto.logistic_mode == "passive-provider" then
                         provider = created
+                    end
+                    -- Lock only the power core; the rest stays minable.
+                    if is_power_core(proto) then
+                        created.minable = false
+                        protected[#protected + 1] = created
                     end
                 end
             else
@@ -227,7 +252,7 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
     else
         log("[brave-new-mts] no passive provider chest in blueprint -- starter kit not placed")
     end
-    return roboport, others
+    return roboport, protected
 end
 
 --- Chart whole chunks symmetrically around the base footprint, so the reveal is
@@ -271,33 +296,35 @@ function M.place(force_name, surface)
 
     clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
     place_tiles(surface, origin, bp_tiles, ox, oy)
-    local roboport, others = build_base(force, surface, origin, bp_entities, ox, oy)
+    local roboport, protected = build_base(force, surface, origin, bp_entities, ox, oy)
 
     -- Reveal the base on the map (no character stands here to chart it).
     chart_base(force, surface, origin, bp_entities, ox, oy)
 
     -- Track the base per surface so the minable toggle and the roboport
-    -- loss-condition can find it.
+    -- loss-condition can find it. `protected` is the power core (non-minable
+    -- until the team opts in); everything else is already minable.
     storage.bnm_base = storage.bnm_base or {}
     storage.bnm_base[surface.name] = {
-        force    = force_name,
-        roboport = roboport,
-        others   = others,
-        unlocked = false,
+        force     = force_name,
+        roboport  = roboport,
+        protected = protected,
+        unlocked  = false,
     }
 
     storage.bases_placed[surface.name] = true
     log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
 end
 
---- Make the team's starter base minable (except the roboport), opt-in once the
---- team accepts the soft-lock risk. Applies across all of the team's bases.
+--- Unlock the team's power core (solar / accumulators / substations / poles /
+--- lights) so it can be mined too, opt-in once the team accepts the soft-lock
+--- risk. The roboport always stays non-minable. Applies to all the team's bases.
 function M.unlock_minable(force_name)
     if not storage.bnm_base then return end
     for _, base in pairs(storage.bnm_base) do
         if base.force == force_name then
             base.unlocked = true
-            for _, e in pairs(base.others) do
+            for _, e in pairs(base.protected) do
                 if e.valid then e.minable = true end
             end
             -- roboport stays non-minable, always.
