@@ -22,8 +22,33 @@ data:extend({
             "Ship one to a planet your team's space platform has reached, then "
             .. "press \"Establish base\" in the platform hub to found your "
             .. "overseer base there. Weighs a full rocket on its own." },
-        icon                  = "__core__/graphics/icons/entity/character.png",
-        icon_size             = 64,
+        -- Radioactive uranium-green clone: a green-tinted character icon, plus
+        -- an additive glow layer so it actually radiates when on the ground/belt.
+        icons = {
+            {
+                icon      = "__core__/graphics/icons/entity/character.png",
+                icon_size = 64,
+                tint      = { r = 0.25, g = 1.0, b = 0.25, a = 1.0 },
+            },
+        },
+        pictures = {
+            layers = {
+                {
+                    size     = 64,
+                    filename = "__core__/graphics/icons/entity/character.png",
+                    scale    = 0.5,
+                    tint     = { r = 0.25, g = 1.0, b = 0.25, a = 1.0 },
+                },
+                {
+                    draw_as_light = true,
+                    blend_mode    = "additive",
+                    size          = 64,
+                    filename      = "__core__/graphics/icons/entity/character.png",
+                    scale         = 0.5,
+                    tint          = { r = 0.1, g = 1.0, b = 0.1, a = 0.6 },
+                },
+            },
+        },
         stack_size            = 1,
         weight                = rocket_lift,
         subgroup              = "intermediate-product",

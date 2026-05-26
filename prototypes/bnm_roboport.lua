@@ -1,8 +1,8 @@
 -- prototypes/bnm_roboport.lua
 -- A self-contained mega-roboport for the starter base: ~2x reach, 4x energy,
 -- 16 charging docks, 20 robot slots. It reuses the vanilla roboport's graphics
--- and 4x4 footprint, recoloured with a bold Google-red tint to mark it as a
--- special, one-of-a-kind structure (no custom art needed).
+-- and 4x4 footprint, recoloured with a radioactive uranium-green glow to mark
+-- it as a special, one-of-a-kind structure (no custom art needed).
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
 -- that exist are the ones this mod places at each team's spawn (via the starter
@@ -49,14 +49,12 @@ rb.is_military_target           = true
 rb.charge_approach_distance     = 5
 rb.request_to_open_door_timeout = 15
 
--- ─── Distinct look: a glowing Google-red "overseer" roboport ────────────
--- tint multiplies the vanilla sprite, so a bold colour marks it as a special,
--- one-of-a-kind structure. Recolour by editing BNM_TINT -- Google palette:
---   blue   #4285F4  { 0.259, 0.522, 0.957 }
---   red    #EA4335  { 0.918, 0.263, 0.208 }
---   yellow #FBBC05  { 0.984, 0.737, 0.020 }
---   green  #34A853  { 0.204, 0.659, 0.325 }
-local BNM_TINT = { r = 0.918, g = 0.263, b = 0.208, a = 1.0 }  -- Google red
+-- ─── Distinct look: a radioactive uranium-green "overseer" roboport ─────
+-- The recolour tint multiplies the vanilla sprite; an extra additive glow
+-- layer over the base makes it actually radiate (like uranium ore). Recolour
+-- by editing BNM_TINT. Uranium green is the canonical Factorio glow colour:
+--   uranium  { r = 0.1, g = 1.0, b = 0.1 }
+local BNM_TINT = { r = 0.15, g = 1.0, b = 0.15, a = 1.0 }  -- uranium green
 
 local function tint_layers(def)
     if type(def) ~= "table" then return end
@@ -72,8 +70,20 @@ for _, key in ipairs({ "base", "base_patch", "base_animation",
     tint_layers(rb[key])
 end
 
--- A bright red charging glow to match.
-rb.recharging_light = { intensity = 0.6, size = 5, color = { r = 1.0, g = 0.30, b = 0.25 } }
+-- Strong always-on uranium glow: an additive copy of the base sprite drawn as
+-- glow, so the roboport visibly radiates green even when idle.
+local base_layers = rb.base and rb.base.layers
+if base_layers and base_layers[1] then
+    local glow = table.deepcopy(base_layers[1])
+    glow.draw_as_shadow = nil
+    glow.draw_as_glow   = true
+    glow.blend_mode     = "additive"
+    glow.tint           = BNM_TINT
+    base_layers[#base_layers + 1] = glow
+end
+
+-- A bright uranium-green charging glow to match.
+rb.recharging_light = { intensity = 0.8, size = 6, color = { r = 0.1, g = 1.0, b = 0.1 } }
 
 -- Recolour the entity's map/alert icon too.
 if rb.icon then
