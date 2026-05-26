@@ -73,9 +73,10 @@ local function build_box(surface, c, label)
         surface   = surface,
         target    = { c.x, c.y - WALL - 2 },
         color     = { r = 1, g = 0.9, b = 0.6 },
-        scale     = 1.5,
+        scale     = 1.0,
         alignment = "center",
-        font      = "default-bold",
+        -- A natively large font renders crisp; scaling a small font up is blurry.
+        font      = "default-large-bold",
     }
 end
 
