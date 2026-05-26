@@ -77,8 +77,24 @@ local function decode_blueprint(bp_string)
     local stack = inv[1]
     local ok = pcall(function() stack.import_stack(bp_string) end)
     local entities = ok and stack.get_blueprint_entities() or nil
+    local tiles    = ok and stack.get_blueprint_tiles() or nil
     inv.destroy()
-    return entities or {}
+    return entities or {}, tiles or {}
+end
+
+--- Lay the blueprint's floor tiles, origin-centred on the roboport like the
+--- entities. No-op if the blueprint has no tiles.
+local function place_tiles(surface, origin, bp_tiles, ox, oy)
+    if #bp_tiles == 0 then return end
+    local tiles = {}
+    for _, t in pairs(bp_tiles) do
+        tiles[#tiles + 1] = {
+            name = t.name,
+            position = { x = origin.x + t.position.x - ox,
+                         y = origin.y + t.position.y - oy },
+        }
+    end
+    surface.set_tiles(tiles)
 end
 
 --- World-space bounding box of the footprint once centred on the origin.
@@ -152,7 +168,7 @@ function M.place(force_name, surface)
     local bp_string = blueprints.for_surface(surface)
     if not bp_string or bp_string == "" then return end  -- none configured yet
 
-    local bp_entities = decode_blueprint(bp_string)
+    local bp_entities, bp_tiles = decode_blueprint(bp_string)
     if #bp_entities == 0 then
         log("[brave-new-mts] blueprint for " .. surface.name .. " decoded to 0 entities")
         return
@@ -162,6 +178,7 @@ function M.place(force_name, surface)
     local ox, oy = roboport_offset(bp_entities)
 
     clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
+    place_tiles(surface, origin, bp_tiles, ox, oy)
     build_base(force, surface, origin, bp_entities, ox, oy)
 
     -- Reveal the base on the map. In the parked-character model nobody stands on
