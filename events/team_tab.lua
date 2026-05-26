@@ -31,11 +31,11 @@ end
 local function build_tab(player, element)
     if not (player and player.valid and element and element.valid) then return end
     element.clear()
-    element.style.vertical_spacing = 8
 
     local warn = element.add{ type = "label", caption = WARNING }
-    warn.style.single_line  = false
+    warn.style.single_line   = false
     warn.style.maximal_width = 360
+    warn.style.bottom_margin = 8
 
     if starter_base.is_unlocked(player.force.name) then
         local ok = element.add{
