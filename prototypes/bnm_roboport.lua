@@ -1,7 +1,8 @@
 -- prototypes/bnm_roboport.lua
 -- A self-contained mega-roboport for the starter base: ~2x reach, 4x energy,
 -- 16 charging docks, 20 robot slots. It reuses the vanilla roboport's graphics
--- and 4x4 footprint (no custom art).
+-- and 4x4 footprint, recoloured with a warm gold tint to mark it as a special,
+-- one-of-a-kind structure (no custom art needed).
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
 -- that exist are the ones this mod places at each team's spawn (via the starter
@@ -47,7 +48,34 @@ rb.resistances = {
 rb.is_military_target           = true
 rb.charge_approach_distance     = 5
 rb.request_to_open_door_timeout = 15
-rb.recharging_light             = { intensity = 0.2, size = 3, color = { 0.5, 0.5, 1 } }
+
+-- ─── Distinct look: a glowing golden "overseer" roboport ────────────────
+-- tint multiplies the vanilla sprite, so a warm gold reads as a special,
+-- one-of-a-kind structure. Recolour the whole thing by editing BNM_TINT.
+local BNM_TINT = { r = 1.0, g = 0.80, b = 0.30, a = 1.0 }
+
+local function tint_layers(def)
+    if type(def) ~= "table" then return end
+    if def.layers then
+        for _, l in pairs(def.layers) do tint_layers(l) end
+    elseif def.filename and not def.draw_as_shadow then
+        def.tint = BNM_TINT
+    end
+end
+
+for _, key in ipairs({ "base", "base_patch", "base_animation",
+                       "door_animation_up", "door_animation_down" }) do
+    tint_layers(rb[key])
+end
+
+-- A warm golden charging glow to match.
+rb.recharging_light = { intensity = 0.5, size = 5, color = { r = 1.0, g = 0.72, b = 0.22 } }
+
+-- Recolour the entity's map/alert icon too.
+if rb.icon then
+    rb.icons = { { icon = rb.icon, icon_size = rb.icon_size or 64, tint = BNM_TINT } }
+    rb.icon  = nil
+end
 
 -- ─── Item: exists for placement/blueprints, but has NO recipe ───────────
 local item = table.deepcopy(data.raw.item["roboport"])
@@ -55,5 +83,9 @@ item.name          = NAME
 item.localised_name = { "", "Brave New Roboport" }
 item.place_result  = NAME
 item.order         = (item.order or "c") .. "-bnm"
+if item.icon then
+    item.icons = { { icon = item.icon, icon_size = item.icon_size or 64, tint = BNM_TINT } }
+    item.icon  = nil
+end
 
 data:extend({ rb, item })
