@@ -1,27 +1,31 @@
 -- events/player_lifecycle.lua
--- Brave New MTS players have no character once they are on a team surface.
--- The character-removal itself is gated on team-surface ownership (see
--- remote_player.ensure_remote_if_team_surface), so these handlers are safe to
--- fire during the landing-pen phase too -- they simply no-op until the player
--- is actually on their team's surface.
---
--- on_player_changed_surface (events/player_surface.lua) is the PRIMARY trigger
--- and catches the spawn into the world. These cover the rest: a player who
--- rejoins directly onto their team surface (no surface-change event), and the
--- no-landing-pen flow where MTS spawns the player within on_player_created.
+-- Re-assert parking + remote view on the lifecycle events (using each player's
+-- remembered home surface), and release the parked slot when a player leaves
+-- their team. The primary parking trigger is arrival on a team surface
+-- (events/player_surface.lua); these cover reconnects and respawns.
 
 local remote_player = require("scripts.remote_player")
 
 local M = {}
 
 function M.register()
-    local function ensure(event)
-        remote_player.ensure_remote_if_team_surface(game.get_player(event.player_index))
+    local function reassert(event)
+        remote_player.park(game.get_player(event.player_index))
     end
 
-    script.on_event(defines.events.on_player_created,     ensure)
-    script.on_event(defines.events.on_player_joined_game, ensure)
-    script.on_event(defines.events.on_player_respawned,   ensure)
+    script.on_event(defines.events.on_player_created,     reassert)
+    script.on_event(defines.events.on_player_joined_game, reassert)
+    script.on_event(defines.events.on_player_respawned,   reassert)
+
+    -- Left a team (MTS moves them off the team force): free the parked slot.
+    -- MTS's return_to_pen relocates the body to the selection ring.
+    script.on_event(defines.events.on_player_changed_force, function(event)
+        local player = game.get_player(event.player_index)
+        if not (player and player.valid) then return end
+        if not player.force.name:match("^team%-%d+$") then
+            remote_player.unpark(player)
+        end
+    end)
 end
 
 return M

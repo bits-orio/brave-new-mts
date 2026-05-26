@@ -1,73 +1,89 @@
 -- scripts/remote_player.lua
--- Turns a player into a character-free remote builder: destroy the character
--- and put the player into remote view. With no character, handcrafting and
--- hand-mining are impossible by construction, so no permission group is
--- needed -- the player can only place blueprints, and construction robots
--- build them from the network.
---
--- We strip the character only once the player is on a TEAM-owned surface.
--- MTS's landing-pen / team-selection phase happens on the (unowned)
--- "landing-pen" surface, where the player keeps a character so MTS's pen GUI
--- behaves normally. The character MTS creates when a team is claimed is the
--- one we remove, on arrival at the team surface.
+-- Parks a team player's CHARACTER in their team's landing-pen cell and puts the
+-- player into remote view of their team surface. The character never sets foot
+-- on the team surface, so it can't chart or collide with it -- and remote-view
+-- placement is naturally ghosts, which robots build. No god controller, no
+-- instant-build, no charting hacks.
+
+local pen_cells = require("scripts.pen_cells")
 
 local M = {}
 
-local function controller_name(ct)
-    for name, value in pairs(defines.controllers) do
-        if value == ct then return name end
-    end
-    return tostring(ct)
+local function is_team_force(name)
+    return name:match("^team%-%d+$") ~= nil
 end
 
---- Remove the player's character (if any) and ensure they are in remote view.
-function M.make_remote(player)
+--- Lowest free slot index within a team's cell for this player (stable once set).
+local function slot_for(force_name, player_index)
+    storage.park_index = storage.park_index or {}
+    storage.park_index[force_name] = storage.park_index[force_name] or {}
+    local slots = storage.park_index[force_name]
+    if slots[player_index] then return slots[player_index] end
+
+    local used = {}
+    for _, s in pairs(slots) do used[s] = true end
+    local idx = 0
+    while used[idx] do idx = idx + 1 end
+    slots[player_index] = idx
+    return idx
+end
+
+--- Park `player` for their team and view their team surface. `team_surface` is
+--- the surface to view; if omitted, the player's remembered home surface is used
+--- (so a reconnecting player is re-asserted into remote view).
+function M.park(player, team_surface)
     if not (player and player.valid) then return end
+    if not remote.interfaces["mts-v1"] then return end
 
-    local had_character = player.character ~= nil
-    -- Anchor the remote camera at wherever the player currently is, and carry
-    -- the current zoom across so the switch feels seamless.
-    local surface  = player.physical_surface  or player.surface
-    local position = player.physical_position or player.position
-    local zoom     = player.zoom
+    local fn = player.force.name
+    if not is_team_force(fn) then return end  -- not on a team (e.g. in the pen)
 
-    if player.character then
-        player.character.destroy()
+    storage.home_surface = storage.home_surface or {}
+    if team_surface and team_surface.valid then
+        storage.home_surface[player.index] = team_surface.name
+    else
+        local name = storage.home_surface[player.index]
+        team_surface = name and game.surfaces[name]
+    end
+    if not (team_surface and team_surface.valid) then return end
+
+    pen_cells.ensure_built()
+    local pen = game.surfaces["landing-pen"]
+    if not (pen and pen.valid) then return end
+
+    -- Ensure a character exists to park (MTS provides one on spawn; create as a
+    -- fallback for any path that doesn't).
+    if not player.character then
+        player.set_controller{ type = defines.controllers.god }
+        player.create_character()
     end
 
-    if player.controller_type ~= defines.controllers.remote then
-        player.set_controller{
-            type     = defines.controllers.remote,
-            surface  = surface,
-            position = position,
-        }
-        player.zoom = zoom  -- match the zoom level we came from
-        storage.view_zoom = storage.view_zoom or {}
-        storage.view_zoom[player.index] = zoom
-    end
+    local pos = pen_cells.park_position(fn, slot_for(fn, player.index))
+    if not pos then return end
 
-    log(("[brave-new-mts] make_remote %s on %s: had_character=%s -> controller=%s physical=%s character=%s")
-        :format(player.name, surface.name, tostring(had_character),
-                controller_name(player.controller_type),
-                controller_name(player.physical_controller_type),
-                tostring(player.character ~= nil)))
+    player.teleport(pos, pen)
+    if player.character then player.character.destructible = false end
+    player.set_controller{
+        type     = defines.controllers.remote,
+        surface  = team_surface,
+        position = { 0, 0 },
+    }
+    log("[brave-new-mts] parked " .. player.name .. " in " .. fn
+        .. " cell; viewing " .. team_surface.name)
 end
 
---- Strip the character iff the player is on a team-owned surface (queried from
---- mts-v1). Returns the owning force name + surface when it acted, so callers
---- can chain starter-base placement; returns nil otherwise (e.g. landing pen).
-function M.ensure_remote_if_team_surface(player)
-    if not (player and player.valid) then return nil end
-    if not remote.interfaces["mts-v1"] then return nil end
-
-    local surface = player.physical_surface or player.surface
-    if not (surface and surface.valid) then return nil end
-
-    local owner = remote.call("mts-v1", "get_surface_owner", surface.name)
-    if not owner then return nil end  -- not a team surface (landing pen, etc.)
-
-    M.make_remote(player)
-    return owner, surface
+--- Release a player's parked slot and home surface (on leaving a team). MTS's
+--- return_to_pen moves the body back to the selection ring; we just free state.
+function M.unpark(player)
+    if not (player and player.valid) then return end
+    if storage.park_index then
+        for _, team in pairs(storage.park_index) do
+            team[player.index] = nil
+        end
+    end
+    if storage.home_surface then
+        storage.home_surface[player.index] = nil
+    end
 end
 
 return M

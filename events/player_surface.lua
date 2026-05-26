@@ -1,17 +1,11 @@
 -- events/player_surface.lua
--- PRIMARY trigger for both jobs: when a player arrives on a team-owned surface
--- (the spawn into the world, or travel to another team planet), strip their
--- character into remote view and seed the starter base for that surface.
+-- PRIMARY trigger: when a player's character lands on a team-owned surface (the
+-- spawn into the world), seed the starter base there and then PARK the
+-- character in the team's landing-pen cell, switching the player to remote view
+-- of the team surface.
 --
--- on_player_changed_surface is a base-game event, so we don't depend on MTS's
--- internal surface-creation timing; we only ask MTS (via mts-v1) whether the
--- surface belongs to a team. The landing-pen surface is unowned, so the
--- team-selection phase is naturally skipped.
---
--- EMPIRICAL CHECKPOINT (Phase 3): with no character, does merely switching the
--- remote-view surface fire on_player_changed_surface? If so we may place bases
--- on planets the team is only *looking* at. If that proves true, switch the
--- base-placement trigger to the mts-v1 on_team_surface_created event.
+-- After parking, the character is on the landing-pen surface, so the re-fired
+-- surface-change (to the pen, which has no team owner) is ignored -- no loop.
 
 local remote_player = require("scripts.remote_player")
 local starter_base  = require("scripts.starter_base")
@@ -21,10 +15,17 @@ local M = {}
 function M.register()
     script.on_event(defines.events.on_player_changed_surface, function(event)
         local player = game.get_player(event.player_index)
-        local owner, surface = remote_player.ensure_remote_if_team_surface(player)
-        if owner then
-            starter_base.place(owner, surface)
-        end
+        if not (player and player.valid) then return end
+        if not remote.interfaces["mts-v1"] then return end
+
+        local surface = player.physical_surface or player.surface
+        if not (surface and surface.valid) then return end
+
+        local owner = remote.call("mts-v1", "get_surface_owner", surface.name)
+        if not owner then return end  -- not a team surface (pen, etc.)
+
+        starter_base.place(owner, surface)
+        remote_player.park(player, surface)
     end)
 end
 

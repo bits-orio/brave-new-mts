@@ -1,55 +1,53 @@
--- Brave New MTS - control.lua
+-- Brave New MTS - control.lua  (parked-character-pen branch)
 -- Author: bits-orio
 -- License: MIT
 --
--- A remote-only, character-free experience layered on top of Multi-Team
--- Support. This mod is a PURE CONSUMER of the public `mts-v1` interface --
--- it never edits MTS source. Two responsibilities:
---   1. Remove every player's character and keep them in remote view
---      (events/player_lifecycle.lua).
---   2. Seed a self-running starter base on each team surface the team
---      reaches, so construction robots can build from real stock
+-- A remote-only experience layered on top of Multi-Team Support. PURE CONSUMER
+-- of the public `mts-v1` interface -- never edits MTS source. Responsibilities:
+--   1. Park each spawned team player's character in their team's walled cell in
+--      the landing pen, and put the player in remote view of their team surface
+--      (events/player_surface.lua, events/player_lifecycle.lua,
+--      scripts/remote_player.lua, scripts/pen_cells.lua). The body never touches
+--      the team surface -- so no charting, no collisions, and placement is
+--      naturally ghosts that robots build.
+--   2. Seed a self-running starter base on each team surface
 --      (events/player_surface.lua + scripts/starter_base.lua).
+--   3. Block hand-craft / mining / item transfer via permissions
+--      (scripts/permissions.lua).
 
-local permissions         = require("scripts.permissions")
-local pen_cutout          = require("scripts.pen_cutout")  -- parked-character cell (wired in next step)
+local permissions = require("scripts.permissions")
 
-local ev_player_lifecycle  = require("events.player_lifecycle")
-local ev_player_surface    = require("events.player_surface")
-local ev_player_movement   = require("events.player_movement")
-local ev_player_controller = require("events.player_controller")
-local ev_player_build      = require("events.player_build")
+local ev_player_lifecycle = require("events.player_lifecycle")
+local ev_player_surface   = require("events.player_surface")
 
 local function init_events()
     ev_player_lifecycle.register()
     ev_player_surface.register()
-    ev_player_movement.register()
-    ev_player_controller.register()
-    ev_player_build.register()
+end
+
+local function init_storage()
+    storage.bases_placed = storage.bases_placed or {}  -- surface name -> base placed
+    storage.park_index   = storage.park_index   or {}  -- force -> player_index -> slot
+    storage.home_surface = storage.home_surface or {}  -- player_index -> team surface name
 end
 
 -- ─── Lifecycle ─────────────────────────────────────────────────────────
 
 script.on_init(function()
     log("[brave-new-mts] on_init fired")
-    -- surface name -> true once a starter base has been placed there.
-    storage.bases_placed = {}
-    -- player_index -> last zoom level, carried across remote/physical switches.
-    storage.view_zoom = {}
+    init_storage()
     permissions.apply()
     init_events()
 end)
 
 script.on_load(function()
-    -- on_load must NOT write to storage. Event registrations don't persist
-    -- across save/load, so re-establish them every session.
+    -- on_load must NOT write to storage. Event registrations don't persist.
     init_events()
 end)
 
 script.on_configuration_changed(function()
     log("[brave-new-mts] on_configuration_changed fired")
-    storage.bases_placed = storage.bases_placed or {}
-    storage.view_zoom = storage.view_zoom or {}
+    init_storage()
     permissions.apply()
     init_events()
 end)
