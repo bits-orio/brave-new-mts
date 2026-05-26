@@ -42,54 +42,78 @@ local function hub_inventory(hub)
     return hub.get_inventory(defines.inventory.hub_main)
 end
 
---- Fill the anchored widget frame with the (possibly disabled) button.
+--- Assess whether a base can be established from this hub right now, and collect
+--- ALL the reasons it can't. Returns: ready (bool), reasons (array of strings),
+--- target surface name (or nil).
+local function evaluate(player, hub)
+    local surface_name, why = target_for(player, hub)
+    local inv       = hub_inventory(hub)
+    local has_clone = (inv and inv.get_item_count(CLONE) > 0) and true or false
+    local placed    = (surface_name and storage.bases_placed
+                       and storage.bases_placed[surface_name]) and true or false
+
+    local reasons = {}
+    if not has_clone then
+        reasons[#reasons + 1] = "no Character Clone is aboard (ship one up in a rocket)"
+    end
+    if not surface_name then
+        if why == "moving" or why == "in_transit" or why == "no_platform" then
+            reasons[#reasons + 1] = "the platform isn't stopped at a planet"
+        else
+            reasons[#reasons + 1] = "this platform isn't above one of your team's planets"
+        end
+    elseif placed then
+        reasons[#reasons + 1] = "your team already has a base on this planet"
+    end
+
+    local ready = has_clone and surface_name and not placed and true or false
+    return ready, reasons, surface_name
+end
+
+-- Make the button big and bold; assigning a style resets it, so size after.
+local function apply_button_style(btn, style_name)
+    btn.style                          = style_name
+    btn.style.minimal_width            = 220
+    btn.style.minimal_height           = 40
+    btn.style.horizontally_stretchable = true
+    btn.style.font                     = "default-large-bold"
+end
+
+--- Fill / refresh the anchored widget. Updates the button IN PLACE (no clear),
+--- so the bounded refresh poll doesn't make it flicker. Green when ready to
+--- establish, red otherwise, with a tooltip listing every blocking reason.
 local function build_widget(player, element, hub)
     if not (player and player.valid and element and element.valid
             and hub and hub.valid) then return end
-    element.clear()
 
-    local surface_name, why = target_for(player, hub)
-    local inv = hub_inventory(hub)
-    local has_clone = inv and inv.get_item_count(CLONE) > 0
-    local placed = surface_name and storage.bases_placed
-                   and storage.bases_placed[surface_name] or false
+    local ready, reasons = evaluate(player, hub)
 
-    local btn = element.add{
-        type    = "button",
-        name    = ESTABLISH_BUTTON,
-        caption = { "", "[item=" .. CLONE .. "] Establish base" },
-        enabled = (has_clone and surface_name and not placed) and true or false,
-    }
-    btn.style.horizontally_stretchable = true
+    local btn = element[ESTABLISH_BUTTON]
+    if not (btn and btn.valid) then
+        btn = element.add{ type = "button", name = ESTABLISH_BUTTON }
+    end
+    btn.caption = { "", "[item=" .. CLONE .. "] Establish base" }
+    apply_button_style(btn, ready and "green_button" or "red_button")
 
-    if not has_clone then
-        btn.tooltip = { "", "Ship a [item=" .. CLONE .. "] Character Clone up here "
-            .. "in a rocket (one clone fills a whole rocket), then press this to "
-            .. "found your overseer base on this planet." }
-    elseif why == "not_team_planet" then
-        btn.tooltip = "This platform isn't above one of your team's planets."
-    elseif why == "in_transit" or why == "moving" then
-        btn.tooltip = "Wait for the platform to arrive and stop at a planet."
-    elseif placed then
-        btn.tooltip = "Your team already has a base on this planet."
-    else
+    if ready then
         btn.tooltip = { "", "Consume the [item=" .. CLONE .. "] and found your "
             .. "overseer base on this planet." }
+    else
+        btn.tooltip = "Can't establish a base here yet:\n• " .. table.concat(reasons, "\n• ")
     end
 end
 
 local function establish(player, hub)
-    local surface_name = target_for(player, hub)
-    if not surface_name then return end
-    if storage.bases_placed and storage.bases_placed[surface_name] then return end
-
-    local inv = hub_inventory(hub)
-    if not (inv and inv.get_item_count(CLONE) > 0) then return end
+    local ready, reasons, surface_name = evaluate(player, hub)
+    if not ready then
+        player.print("Can't establish a base: " .. table.concat(reasons, "; ") .. ".")
+        return
+    end
 
     local surface = game.surfaces[surface_name]
     if not (surface and surface.valid) then return end
 
-    inv.remove{ name = CLONE, count = 1 }
+    hub_inventory(hub).remove{ name = CLONE, count = 1 }
     starter_base.place(player.force.name, surface)
     -- Drop the overseer's view down to the new base; the character stays parked.
     player.set_controller{
