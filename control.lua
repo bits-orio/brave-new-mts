@@ -19,10 +19,12 @@ local permissions = require("scripts.permissions")
 
 local ev_player_lifecycle = require("events.player_lifecycle")
 local ev_player_surface   = require("events.player_surface")
+local ev_team_tab         = require("events.team_tab")
 
 local function init_events()
     ev_player_lifecycle.register()
     ev_player_surface.register()
+    ev_team_tab.register()
 end
 
 local function init_storage()

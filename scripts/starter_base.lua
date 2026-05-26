@@ -241,4 +241,13 @@ function M.unlock_minable(force_name)
     end
 end
 
+--- True if the team has opted to make its starter base minable.
+function M.is_unlocked(force_name)
+    if not storage.bnm_base then return false end
+    for _, base in pairs(storage.bnm_base) do
+        if base.force == force_name and base.unlocked then return true end
+    end
+    return false
+end
+
 return M
