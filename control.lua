@@ -12,6 +12,7 @@
 --      (events/player_surface.lua + scripts/starter_base.lua).
 
 local permissions         = require("scripts.permissions")
+local pen_cutout          = require("scripts.pen_cutout")  -- parked-character cell (wired in next step)
 
 local ev_player_lifecycle  = require("events.player_lifecycle")
 local ev_player_surface    = require("events.player_surface")
