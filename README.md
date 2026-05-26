@@ -1,4 +1,6 @@
-# 🤖 Brave New MTS
+<p align="center"><img src="thumbnail.png" alt="Brave New MTS" width="220"></p>
+
+# Brave New MTS
 
 > **You never touch the world. The robots do.**
 
