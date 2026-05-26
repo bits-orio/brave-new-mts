@@ -27,13 +27,11 @@ experience the same way.
 
 ## Requirements
 
-No hard dependencies are declared yet (the roboport mod is still being chosen).
-In practice you need:
-
-- `multi-team-support` — the foundation this mod consumes (declared optional so
-  it loads first; the mod does nothing useful without it)
-- a roboport mod that provides the roboport used in the starter blueprint (TBD)
+- [`multi-team-support`](https://github.com/bits-orio/multi-team-support) (required) — the foundation this mod is built on
 - `space-age` (optional — enables per-planet starter bases)
+
+The starter base's roboport is provided by this mod itself (a self-contained,
+uncraftable mega-roboport), so no roboport mod is needed.
 
 ## License
 
