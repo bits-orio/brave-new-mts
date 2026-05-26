@@ -29,30 +29,26 @@ local M = {}
 M.BASE_ORIGIN = { x = 16, y = 16 }
 
 -- Anti-soft-lock starter kit, dropped into a passive provider chest in the
--- blueprint so the logistic network has stock to bootstrap from. Counts are
--- transcribed from the kit screenshot; edit names/counts here to retune. Any
--- name that isn't a valid item is skipped (and logged) at placement time.
+-- blueprint so the logistic network has stock to bootstrap from. Edit
+-- names/counts here to retune. Any name that isn't a valid item is skipped
+-- (and logged) at placement time.
 M.STARTER_ITEMS = {
     { name = "transport-belt",        count = 400 },
-    { name = "inserter",              count = 50  },
+    { name = "medium-electric-pole",  count = 50  },
     { name = "underground-belt",      count = 20  },
-    { name = "fast-inserter",         count = 20  },
-    { name = "medium-electric-pole",  count = 20  },
+    { name = "pipe",                  count = 20  },
+    { name = "inserter",              count = 20  },
     { name = "splitter",              count = 10  },
-    { name = "long-handed-inserter",  count = 10  },
-    { name = "steel-chest",           count = 10  },
-    { name = "assembling-machine-2",  count = 4   },
+    { name = "pipe-to-ground",        count = 10  },
+    { name = "small-lamp",            count = 10  },
+    { name = "burner-inserter",       count = 4   },
+    { name = "stone-furnace",         count = 4   },
+    { name = "assembling-machine-1",  count = 4   },
     { name = "electric-mining-drill", count = 4   },
-    { name = "electric-furnace",      count = 4   },
-    { name = "small-electric-pole",   count = 4   },
-    { name = "pipe",                  count = 4   },
-    { name = "pipe-to-ground",        count = 4   },
-    { name = "assembling-machine-3",  count = 4   },
-    { name = "lab",                   count = 3   },
-    { name = "pumpjack",              count = 2   },
-    { name = "chemical-plant",        count = 2   },
-    { name = "oil-refinery",          count = 1   },
-    { name = "radar",                 count = 1   },
+    { name = "steam-engine",          count = 2   },
+    { name = "lab",                   count = 2   },
+    { name = "offshore-pump",         count = 1   },
+    { name = "boiler",                count = 1   },
 }
 
 -- Joules to pre-load into each accumulator so the base survives night one.
