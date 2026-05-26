@@ -28,6 +28,33 @@ local M = {}
 -- (their character is parked in the pen), and remote view is centred here too.
 M.BASE_ORIGIN = { x = 16, y = 16 }
 
+-- Anti-soft-lock starter kit, dropped into a passive provider chest in the
+-- blueprint so the logistic network has stock to bootstrap from. Counts are
+-- transcribed from the kit screenshot; edit names/counts here to retune. Any
+-- name that isn't a valid item is skipped (and logged) at placement time.
+M.STARTER_ITEMS = {
+    { name = "transport-belt",        count = 400 },
+    { name = "inserter",              count = 50  },
+    { name = "underground-belt",      count = 20  },
+    { name = "fast-inserter",         count = 20  },
+    { name = "medium-electric-pole",  count = 20  },
+    { name = "splitter",              count = 10  },
+    { name = "long-handed-inserter",  count = 10  },
+    { name = "steel-chest",           count = 10  },
+    { name = "assembling-machine-2",  count = 4   },
+    { name = "electric-mining-drill", count = 4   },
+    { name = "electric-furnace",      count = 4   },
+    { name = "small-electric-pole",   count = 4   },
+    { name = "pipe",                  count = 4   },
+    { name = "pipe-to-ground",        count = 4   },
+    { name = "assembling-machine-3",  count = 4   },
+    { name = "lab",                   count = 3   },
+    { name = "pumpjack",              count = 2   },
+    { name = "chemical-plant",        count = 2   },
+    { name = "oil-refinery",          count = 1   },
+    { name = "radar",                 count = 1   },
+}
+
 -- Joules to pre-load into each accumulator so the base survives night one.
 -- Clamped to the accumulator's actual buffer size.
 local ACCUMULATOR_SEED_ENERGY = 5000000  -- 5 MJ
@@ -49,15 +76,40 @@ local function bot_counts()
     return (c and c.value) or 50, (l and l.value) or 50
 end
 
---- Fill a freshly-created roboport with starter bots and a full energy buffer.
+-- Repair packs seeded into the central roboport's material slots so the
+-- construction network auto-repairs battle damage from the start.
+local STARTER_REPAIR_PACKS = 10
+
+--- Fill a freshly-created roboport with starter bots, repair packs and a full
+--- energy buffer.
 local function seed_roboport(roboport, construction, logistic)
     local inv = roboport.get_inventory(defines.inventory.roboport_robot)
     if inv then
         if construction > 0 then inv.insert{ name = "construction-robot", count = construction } end
         if logistic    > 0 then inv.insert{ name = "logistic-robot",     count = logistic }    end
     end
+    local mat = roboport.get_inventory(defines.inventory.roboport_material)
+    if mat and STARTER_REPAIR_PACKS > 0 then
+        mat.insert{ name = "repair-pack", count = STARTER_REPAIR_PACKS }
+    end
     -- Start charged so bots can fly before the power network spins up.
     roboport.energy = roboport.electric_buffer_size or roboport.energy
+end
+
+--- Drop the anti-soft-lock starter kit into a passive provider chest, so the
+--- logistic network has stock to bootstrap the first builds from. Unknown item
+--- names are skipped (logged) rather than crashing the placement.
+local function seed_provider_chest(chest)
+    for _, stack in ipairs(M.STARTER_ITEMS) do
+        if stack.count and stack.count > 0 then
+            if prototypes.item[stack.name] then
+                chest.insert{ name = stack.name, count = stack.count }
+            else
+                log("[brave-new-mts] starter item '" .. tostring(stack.name)
+                    .. "' is not a known item -- skipping")
+            end
+        end
+    end
 end
 
 --- Pre-charge an accumulator so the base has stored power on the first night.
@@ -140,7 +192,7 @@ end
 --- and soft-lock. Returns the roboport and the list of other base entities.
 local function build_base(force, surface, origin, bp_entities, ox, oy)
     local construction, logistic = bot_counts()
-    local roboport, others = nil, {}
+    local roboport, others, provider = nil, {}, nil
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
         if not proto then
@@ -164,11 +216,20 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
                 else
                     others[#others + 1] = created
                     if proto.type == "accumulator" then seed_accumulator(created) end
+                    -- Stock the FIRST passive provider chest with the starter kit.
+                    if not provider and proto.logistic_mode == "passive-provider" then
+                        provider = created
+                    end
                 end
             else
                 log("[brave-new-mts] failed to place '" .. e.name .. "' (collision?)")
             end
         end
+    end
+    if provider then
+        seed_provider_chest(provider)
+    else
+        log("[brave-new-mts] no passive provider chest in blueprint -- starter kit not placed")
     end
     return roboport, others
 end
