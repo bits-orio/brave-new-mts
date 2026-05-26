@@ -1,6 +1,6 @@
 -- scripts/pen_cells.lua
 -- Per-team holding cells in MTS's landing pen. Each team gets a small walled
--- 5x5 box arranged on a ring around the pen island, labelled with the team
+-- 3x3 box arranged on a ring around the pen island, labelled with the team
 -- name. Spawned-in players' characters are parked in their team's box (while
 -- they play entirely through remote view of their team surface), so teammates
 -- visibly stand together -- and separate from un-spawned players, who remain on
@@ -12,10 +12,9 @@
 
 local SURFACE    = "landing-pen"
 local FLOOR_TILE = "lab-dark-1"   -- distinct shade from the pen's lab-dark-2
-local INNER      = 2              -- 5x5 walkable floor (±2)
-local WALL       = 3              -- wall ring + floor edge at ±3 (7x7 footprint)
-local RING_MIN   = 30             -- minimum ring radius from pen centre
-local BOX_ARC    = 9              -- arc length reserved per box (tiles)
+local WALL       = 2              -- wall ring + floor edge at ±2 (5x5 footprint, 3x3 interior)
+local RING_MIN   = 26             -- minimum ring radius from pen centre
+local BOX_ARC    = 6              -- arc length reserved per box (tiles)
 
 local M = {}
 
@@ -25,7 +24,14 @@ local function team_list()
     if not remote.interfaces["mts-v1"] then return {} end
     local ok, list = pcall(remote.call, "mts-v1", "get_team_list")
     if not ok or type(list) ~= "table" then return {} end
-    table.sort(list, function(a, b) return a.force_name < b.force_name end)
+    -- Sort by the team's numeric slot, not the string name -- otherwise the
+    -- cells go team-1, team-10, team-11, ..., team-2 around the ring.
+    table.sort(list, function(a, b)
+        local na = tonumber(a.force_name:match("(%d+)")) or math.huge
+        local nb = tonumber(b.force_name:match("(%d+)")) or math.huge
+        if na ~= nb then return na < nb end
+        return a.force_name < b.force_name
+    end)
     return list
 end
 
@@ -99,10 +105,10 @@ end
 
 -- ─── Park slots within a box ───────────────────────────────────────────
 
--- Up to 9 teammates per cell, packed inside the 5x5 floor.
+-- Up to 9 teammates per cell, packed inside the 3x3 interior.
 local SLOT_OFFSETS = {
-    { 0, 0 }, { -1.5, 0 }, { 1.5, 0 }, { 0, -1.5 }, { 0, 1.5 },
-    { -1.5, -1.5 }, { 1.5, -1.5 }, { -1.5, 1.5 }, { 1.5, 1.5 },
+    { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
+    { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
 }
 
 --- Parking position inside a team's box for the Nth teammate (0-based).
