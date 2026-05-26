@@ -184,9 +184,14 @@ function M.place(force_name, surface)
     -- Reveal the base on the map. In the parked-character model nobody stands on
     -- the team surface, so without this the area is uncharted and remote view
     -- renders it black. (A radar in the base keeps it live afterwards.)
+    --
+    -- force.chart rounds the box out to whole 32-tile chunks. CHART_RADIUS is a
+    -- multiple of 32, so a +CHART_RADIUS edge sits exactly on a chunk boundary
+    -- and pulls in one extra chunk on the +x/+y side (asymmetric reveal). Ending
+    -- the far edge one tile short keeps the charted chunk range symmetric.
     force.chart(surface, {
-        { origin.x - CHART_RADIUS, origin.y - CHART_RADIUS },
-        { origin.x + CHART_RADIUS, origin.y + CHART_RADIUS },
+        { origin.x - CHART_RADIUS,     origin.y - CHART_RADIUS },
+        { origin.x + CHART_RADIUS - 1, origin.y + CHART_RADIUS - 1 },
     })
 
     storage.bases_placed[surface.name] = true
