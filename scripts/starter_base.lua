@@ -28,6 +28,10 @@ local ACCUMULATOR_SEED_ENERGY = 5000000  -- 5 MJ
 -- Extra tiles cleared around the blueprint's footprint.
 local CLEAR_MARGIN = 3
 
+-- Tiles around origin to chart (reveal) for the team, so the base is visible in
+-- remote view even though no character stands on the team surface.
+local CHART_RADIUS = 96
+
 -- ─── Internal helpers ──────────────────────────────────────────────────
 
 local function bot_counts()
@@ -159,6 +163,14 @@ function M.place(force_name, surface)
 
     clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
     build_base(force, surface, origin, bp_entities, ox, oy)
+
+    -- Reveal the base on the map. In the parked-character model nobody stands on
+    -- the team surface, so without this the area is uncharted and remote view
+    -- renders it black. (A radar in the base keeps it live afterwards.)
+    force.chart(surface, {
+        { origin.x - CHART_RADIUS, origin.y - CHART_RADIUS },
+        { origin.x + CHART_RADIUS, origin.y + CHART_RADIUS },
+    })
 
     storage.bases_placed[surface.name] = true
     log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
