@@ -13,6 +13,11 @@ local CLONE = "bnm-character-clone"
 -- One clone fills a whole rocket payload (weight == the rocket's lift capacity).
 local rocket_lift = (data.raw["utility-constants"]["default"] or {}).rocket_lift_weight or 1000000
 
+-- Live in the Space tab when Space Age is present (the clone is only useful
+-- with planets/platforms); fall back to a base subgroup otherwise so the
+-- prototype still loads cleanly without Space Age.
+local clone_subgroup = mods["space-age"] and "space-rocket" or "intermediate-product"
+
 data:extend({
     {
         type                  = "item",
@@ -28,7 +33,7 @@ data:extend({
             {
                 icon      = "__core__/graphics/icons/entity/character.png",
                 icon_size = 64,
-                tint      = { r = 0.25, g = 1.0, b = 0.25, a = 1.0 },
+                tint      = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
             },
         },
         pictures = {
@@ -37,7 +42,16 @@ data:extend({
                     size     = 64,
                     filename = "__core__/graphics/icons/entity/character.png",
                     scale    = 0.5,
-                    tint     = { r = 0.25, g = 1.0, b = 0.25, a = 1.0 },
+                    tint     = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
+                },
+                -- Two additive light layers, stacked for a brighter, hotter glow.
+                {
+                    draw_as_light = true,
+                    blend_mode    = "additive",
+                    size          = 64,
+                    filename      = "__core__/graphics/icons/entity/character.png",
+                    scale         = 0.5,
+                    tint          = { r = 0.2, g = 1.0, b = 0.2, a = 1.0 },
                 },
                 {
                     draw_as_light = true,
@@ -45,19 +59,19 @@ data:extend({
                     size          = 64,
                     filename      = "__core__/graphics/icons/entity/character.png",
                     scale         = 0.5,
-                    tint          = { r = 0.1, g = 1.0, b = 0.1, a = 0.6 },
+                    tint          = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
                 },
             },
         },
         stack_size            = 1,
         weight                = rocket_lift,
-        subgroup              = "intermediate-product",
+        subgroup              = clone_subgroup,
         order                 = "z[bnm-character-clone]",
     },
     {
         type            = "recipe",
         name            = CLONE,
-        enabled         = true,           -- available from the start (tune as needed)
+        enabled         = false,          -- unlocked by the rocket-silo technology
         energy_required = 30,
         category        = "crafting",     -- assembler-craftable; not hand-craftable
         ingredients     = {
@@ -68,3 +82,11 @@ data:extend({
         results         = { { type = "item", name = CLONE, amount = 1 } },
     },
 })
+
+-- Unlock the clone alongside rocket silo -- you can't ship one anywhere until
+-- you can launch rockets, so that's the natural gate.
+local silo_tech = data.raw.technology["rocket-silo"]
+if silo_tech then
+    silo_tech.effects = silo_tech.effects or {}
+    silo_tech.effects[#silo_tech.effects + 1] = { type = "unlock-recipe", recipe = CLONE }
+end
