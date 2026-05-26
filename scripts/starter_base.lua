@@ -28,9 +28,11 @@ local ACCUMULATOR_SEED_ENERGY = 5000000  -- 5 MJ
 -- Extra tiles cleared around the blueprint's footprint.
 local CLEAR_MARGIN = 3
 
--- Tiles around origin to chart (reveal) for the team, so the base is visible in
--- remote view even though no character stands on the team surface.
-local CHART_RADIUS = 96
+-- Whole chunks of margin to chart (reveal) around the base footprint, so the
+-- base is visible in remote view (no character stands on the team surface).
+-- Charting works in whole 32-tile chunks; expanding the footprint's chunk span
+-- equally on all sides keeps the reveal centred on the base.
+local CHART_CHUNK_MARGIN = 3
 
 -- ─── Internal helpers ──────────────────────────────────────────────────
 
@@ -126,9 +128,12 @@ local function clear_footprint(surface, area)
 end
 
 --- Place all blueprint entities as real entities, origin-centred on the
---- roboport, seeding power and bots as they are created.
+--- roboport, seeding power and bots as they are created. The whole starter base
+--- is made NON-MINABLE so a team can't accidentally deconstruct its own power
+--- and soft-lock. Returns the roboport and the list of other base entities.
 local function build_base(force, surface, origin, bp_entities, ox, oy)
     local construction, logistic = bot_counts()
+    local roboport, others = nil, {}
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
         if not proto then
@@ -145,13 +150,36 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
                 raise_built = true,
             }
             if created then
-                if proto.type == "roboport"    then seed_roboport(created, construction, logistic) end
-                if proto.type == "accumulator" then seed_accumulator(created) end
+                created.minable = false  -- gifted base can't be mined/deconstructed
+                if proto.type == "roboport" then
+                    roboport = created
+                    seed_roboport(created, construction, logistic)
+                else
+                    others[#others + 1] = created
+                    if proto.type == "accumulator" then seed_accumulator(created) end
+                end
             else
                 log("[brave-new-mts] failed to place '" .. e.name .. "' (collision?)")
             end
         end
     end
+    return roboport, others
+end
+
+--- Chart whole chunks symmetrically around the base footprint, so the reveal is
+--- centred on the base (force.chart reveals whole 32-tile chunks; we work in
+--- chunk units to avoid the chunk-boundary asymmetry of a raw tile box).
+local function chart_base(force, surface, origin, bp_entities, ox, oy)
+    local area = footprint_area(origin, bp_entities, ox, oy)
+    local C = 32
+    local cmin_x = math.floor(area[1][1] / C) - CHART_CHUNK_MARGIN
+    local cmin_y = math.floor(area[1][2] / C) - CHART_CHUNK_MARGIN
+    local cmax_x = math.floor(area[2][1] / C) + CHART_CHUNK_MARGIN
+    local cmax_y = math.floor(area[2][2] / C) + CHART_CHUNK_MARGIN
+    force.chart(surface, {
+        { cmin_x * C,           cmin_y * C },
+        { cmax_x * C + (C - 1), cmax_y * C + (C - 1) },
+    })
 end
 
 -- ─── Public API ──────────────────────────────────────────────────────
@@ -179,23 +207,38 @@ function M.place(force_name, surface)
 
     clear_footprint(surface, footprint_area(origin, bp_entities, ox, oy))
     place_tiles(surface, origin, bp_tiles, ox, oy)
-    build_base(force, surface, origin, bp_entities, ox, oy)
+    local roboport, others = build_base(force, surface, origin, bp_entities, ox, oy)
 
-    -- Reveal the base on the map. In the parked-character model nobody stands on
-    -- the team surface, so without this the area is uncharted and remote view
-    -- renders it black. (A radar in the base keeps it live afterwards.)
-    --
-    -- force.chart rounds the box out to whole 32-tile chunks. CHART_RADIUS is a
-    -- multiple of 32, so a +CHART_RADIUS edge sits exactly on a chunk boundary
-    -- and pulls in one extra chunk on the +x/+y side (asymmetric reveal). Ending
-    -- the far edge one tile short keeps the charted chunk range symmetric.
-    force.chart(surface, {
-        { origin.x - CHART_RADIUS,     origin.y - CHART_RADIUS },
-        { origin.x + CHART_RADIUS - 1, origin.y + CHART_RADIUS - 1 },
-    })
+    -- Reveal the base on the map (no character stands here to chart it).
+    chart_base(force, surface, origin, bp_entities, ox, oy)
+
+    -- Track the base per surface so the minable toggle and the roboport
+    -- loss-condition can find it.
+    storage.bnm_base = storage.bnm_base or {}
+    storage.bnm_base[surface.name] = {
+        force    = force_name,
+        roboport = roboport,
+        others   = others,
+        unlocked = false,
+    }
 
     storage.bases_placed[surface.name] = true
     log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
+end
+
+--- Make the team's starter base minable (except the roboport), opt-in once the
+--- team accepts the soft-lock risk. Applies across all of the team's bases.
+function M.unlock_minable(force_name)
+    if not storage.bnm_base then return end
+    for _, base in pairs(storage.bnm_base) do
+        if base.force == force_name then
+            base.unlocked = true
+            for _, e in pairs(base.others) do
+                if e.valid then e.minable = true end
+            end
+            -- roboport stays non-minable, always.
+        end
+    end
 end
 
 return M
