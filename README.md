@@ -16,10 +16,9 @@ experience the same way.
   the map). No god mode, no cheat mode — the save is never flagged as cheated.
 - **You place blueprints, robots build.** Each team's spawn is seeded with a
   self-running starter base — power (solar + accumulators + substations) and a
-  [Better Robots Extended](https://mods.factorio.com/mod/Better_Robots_Extended)
-  roboport stocked with construction and logistic robots — plus logistic chests
-  pre-filled with starter items so the bots always have stock to bootstrap from.
-  You expand by drawing blueprints; the network does the rest.
+  large roboport stocked with construction and logistic robots — plus logistic
+  chests pre-filled with starter items so the bots always have stock to
+  bootstrap from. You expand by drawing blueprints; the network does the rest.
 - **No hand-work.** Handcrafting, mining, and manual item transfer to/from
   chests are blocked; everything moves through inserters and bots.
 - **Every team surface.** A starter base is placed on each team surface the
@@ -28,8 +27,12 @@ experience the same way.
 
 ## Requirements
 
-- `multi-team-support` (required)
-- [`Better_Robots_Extended`](https://mods.factorio.com/mod/Better_Robots_Extended) (required)
+No hard dependencies are declared yet (the roboport mod is still being chosen).
+In practice you need:
+
+- `multi-team-support` — the foundation this mod consumes (declared optional so
+  it loads first; the mod does nothing useful without it)
+- a roboport mod that provides the roboport used in the starter blueprint (TBD)
 - `space-age` (optional — enables per-planet starter bases)
 
 ## License
