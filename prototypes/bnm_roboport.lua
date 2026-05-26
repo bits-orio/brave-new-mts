@@ -39,6 +39,19 @@ rb.charging_offsets = {
     { -1.5, -1.5 }, { -0.5, -1.5 }, { 0.5, -1.5 }, { 1.5, -1.5 },
 }
 
+-- Match Brave New OARC's roboport exactly (everything except the footprint /
+-- graphics, which stay vanilla). BNO's logistics/construction radii are the
+-- vanilla ×2 with its "increase" setting at its default of 0 -> 50 / 110, so the
+-- values above already match; these are the remaining BNO overrides.
+rb.resistances = {
+    { type = "fire",   percent = 60 },
+    { type = "impact", percent = 30 },
+}
+rb.is_military_target           = true
+rb.charge_approach_distance     = 5
+rb.request_to_open_door_timeout = 15
+rb.recharging_light             = { intensity = 0.2, size = 3, color = { 0.5, 0.5, 1 } }
+
 -- ─── Item: exists for placement/blueprints, but has NO recipe ───────────
 local item = table.deepcopy(data.raw.item["roboport"])
 item.name          = NAME
