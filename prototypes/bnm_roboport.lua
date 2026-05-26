@@ -1,7 +1,7 @@
 -- prototypes/bnm_roboport.lua
--- A self-contained mega-roboport for the starter base, modelled on the Brave
--- New OARC roboport: ~2x reach, 4x energy, 16 charging docks, 20 robot slots.
--- It reuses the vanilla roboport's graphics and 4x4 footprint (no custom art).
+-- A self-contained mega-roboport for the starter base: ~2x reach, 4x energy,
+-- 16 charging docks, 20 robot slots. It reuses the vanilla roboport's graphics
+-- and 4x4 footprint (no custom art).
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
 -- that exist are the ones this mod places at each team's spawn (via the starter
@@ -39,10 +39,7 @@ rb.charging_offsets = {
     { -1.5, -1.5 }, { -0.5, -1.5 }, { 0.5, -1.5 }, { 1.5, -1.5 },
 }
 
--- Match Brave New OARC's roboport exactly (everything except the footprint /
--- graphics, which stay vanilla). BNO's logistics/construction radii are the
--- vanilla ×2 with its "increase" setting at its default of 0 -> 50 / 110, so the
--- values above already match; these are the remaining BNO overrides.
+-- Remaining stat overrides (footprint / graphics stay vanilla).
 rb.resistances = {
     { type = "fire",   percent = 60 },
     { type = "impact", percent = 30 },
