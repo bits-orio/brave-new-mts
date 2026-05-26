@@ -79,26 +79,41 @@ local function on_gui_click(event)
     build_tab(player, el.parent)  -- el.parent is the tab content frame
 end
 
+local function on_tab_built(e)
+    if e.tab_name == TAB_NAME then
+        build_tab(game.get_player(e.player_index), e.element)
+    end
+end
+
+--- Register handlers DETERMINISTICALLY. Called from on_init, on_load AND
+--- on_configuration_changed, so it must be identical on every peer and must NOT
+--- remote.call (illegal in on_load). The on_team_tab_built event id is read from
+--- storage, where M.setup() cached it during on_init / on_configuration_changed.
+--- Registering lazily (e.g. on a one-shot tick) is NOT multiplayer-safe: a client
+--- joining mid-game hasn't run that tick yet, so its handler set differs from the
+--- long-running server's and the join is rejected ("event handlers not identical").
 function M.register()
-    -- remote.call is illegal in on_load / the main chunk, so defer the tab
-    -- registration and event-id lookup to a one-shot tick (re-armed each session).
-    script.on_nth_tick(1, function()
-        script.on_nth_tick(1, nil)
-        local iface = remote.interfaces["mts-v1"]
-        if not (iface and iface.register_team_tab) then return end
+    script.on_event(defines.events.on_gui_click, on_gui_click)
+    local id = storage.bnm_tab_event_id
+    if id then script.on_event(id, on_tab_built) end
+end
+
+--- Side-effecting setup that needs remote.call: register our tab with MTS (it
+--- persists the spec in its own storage) and cache the on_team_tab_built event
+--- id. Safe only in on_init / on_configuration_changed -- never on_load. Re-runs
+--- M.register() so the freshly-cached id is attached this session too.
+function M.setup()
+    local iface = remote.interfaces["mts-v1"]
+    if not iface then return end
+    if iface.register_team_tab then
         remote.call("mts-v1", "register_team_tab",
             { name = TAB_NAME, caption = "Brave New MTS", order = "z" })
-        local id = remote.call("mts-v1", "get_event_id", "on_team_tab_built")
-        if id then
-            script.on_event(id, function(e)
-                if e.tab_name == TAB_NAME then
-                    build_tab(game.get_player(e.player_index), e.element)
-                end
-            end)
-        end
-    end)
-
-    script.on_event(defines.events.on_gui_click, on_gui_click)
+    end
+    if iface.get_event_id then
+        storage.bnm_tab_event_id =
+            remote.call("mts-v1", "get_event_id", "on_team_tab_built")
+    end
+    M.register()
 end
 
 return M

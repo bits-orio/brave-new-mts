@@ -43,10 +43,15 @@ script.on_init(function()
     init_storage()
     permissions.apply()
     init_events()
+    -- remote.call is legal here (all interfaces are registered before on_init):
+    -- register our team-settings tab and cache the on_team_tab_built event id.
+    ev_team_tab.setup()
 end)
 
 script.on_load(function()
-    -- on_load must NOT write to storage. Event registrations don't persist.
+    -- on_load must NOT write to storage and must NOT remote.call. Event
+    -- registrations don't persist, so re-register them -- deterministically,
+    -- using the event id cached in storage during on_init (see team_tab.lua).
     init_events()
 end)
 
@@ -55,4 +60,7 @@ script.on_configuration_changed(function()
     init_storage()
     permissions.apply()
     init_events()
+    -- Re-register the tab and refresh the cached event id (it can change if the
+    -- mod set changed, which is exactly when this fires).
+    ev_team_tab.setup()
 end)
