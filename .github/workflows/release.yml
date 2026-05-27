@@ -126,6 +126,7 @@ jobs:
           # and would otherwise leak into the zip).
           rsync -a --exclude='.git' \
                    --exclude='.github' \
+                   --exclude='.claude' \
                    --exclude='.gitignore' \
                    --exclude='.luarc.json' \
                    --exclude='tools' \
