@@ -8,7 +8,7 @@
   "factorio_version": "2.0",
   "dependencies": [
     "base >= 2.0",
-    "multi-team-support >= 0.4.38",
+    "multi-team-support >= 0.4.39",
     "? space-age"
   ]
 }

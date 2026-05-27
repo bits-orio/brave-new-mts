@@ -1,8 +1,26 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
-Date: 2026-05-24
+Date: 2026-05-26
   Features:
-    - Initial scaffold (work in progress). Remote-only, character-free team play layered on
-      Multi-Team Support: every player's character is removed and they build through a
-      construction-robot network. A self-running starter base is seeded on each team surface.
-    - Pure consumer of the public mts-v1 interface -- no Multi-Team Support changes required.
+    - Remote-only, character-free "overseer" play layered on Multi-Team Support. Your
+      character is parked in your team's landing-pen cell; you play entirely through remote
+      view and build through a construction-robot network -- no roaming, no map-peeking, and
+      no god/cheat mode, so achievements stay intact.
+    - Self-running starter base seeded at each team's spawn: a unique, uncraftable roboport
+      (radioactive uranium-green glow) stocked with construction and logistic robots plus
+      repair packs, solar panels and pre-charged accumulators, and a logistic chest set
+      pre-filled with an anti-soft-lock starter kit.
+    - No hand-work: handcrafting, hand-mining and manual chest transfer are blocked by a
+      permission group. Inserters, machines and bots move everything.
+    - Soft-lock protection: the power core (solar, accumulators, substations, main poles,
+      lights) and the central roboport are non-minable by default so a team can't strand
+      itself. A leader-only "I know what I am doing" button in the Brave New MTS team-settings
+      tab unlocks the power core; the roboport can never be removed, and losing it to biters
+      eliminates the team.
+    - Reach other planets by shipping a Character Clone: a heavy item (one fills a rocket),
+      craftable after rocket-silo research. With a clone aboard a platform parked at one of
+      your team's planets, an "Establish base" button anchored in the space platform hub
+      seeds the starter base on that planet's ground and drops your view onto it.
+    - Built entirely on Multi-Team Support's public mts-v1 interface (team-settings tabs,
+      platform-hub widgets, team disband), so other mods can build similar experiences the
+      same way.
