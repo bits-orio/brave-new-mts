@@ -32,7 +32,7 @@ M.BASE_ORIGIN = { x = 16, y = 16 }
 -- names/counts here to retune. Any name that isn't a valid item is skipped
 -- (and logged) at placement time.
 M.STARTER_ITEMS = {
-    { name = "transport-belt",        count = 100 },
+    { name = "transport-belt",        count = 200 },
     { name = "medium-electric-pole",  count = 20  },
     { name = "inserter",              count = 12  },
     { name = "pipe",                  count = 10  },
