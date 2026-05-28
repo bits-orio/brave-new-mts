@@ -1,6 +1,6 @@
 -- Brave New MTS - control.lua  (parked-character-pen branch)
 -- Author: bits-orio
--- License: MIT
+-- License: GPL-3.0-or-later
 --
 -- A remote-only experience layered on top of Multi-Team Support. PURE CONSUMER
 -- of the public `mts-v1` interface -- never edits MTS source. Responsibilities:

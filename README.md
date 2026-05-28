@@ -54,4 +54,4 @@ If you want to extend the MTS team panel from your own mod, this repo is a worki
 
 ## 📄 License
 
-[MIT](LICENSE)
+[GNU GPL v3](LICENSE)
