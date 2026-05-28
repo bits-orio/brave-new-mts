@@ -68,7 +68,9 @@ local function build_box(surface, c, label)
         end
     end
 
-    rendering.draw_text{
+    -- Return the render object so the caller can keep it and update the text
+    -- later (e.g. when the team is renamed).
+    return rendering.draw_text{
         text      = label,
         surface   = surface,
         target    = { c.x, c.y - WALL - 2 },
@@ -95,10 +97,12 @@ function M.ensure_built()
     surface.force_generate_chunk_requests()
 
     storage.cell_center = {}
+    storage.cell_label  = {}
     for i, team in ipairs(teams) do
         local c = box_center(i, n)
         storage.cell_center[team.force_name] = c
-        build_box(surface, c, team.display_name or team.force_name)
+        storage.cell_label[team.force_name] =
+            build_box(surface, c, team.display_name or team.force_name)
     end
     storage.cells_built = true
     log("[brave-new-mts] built " .. n .. " team cells in the landing pen")
@@ -111,6 +115,13 @@ local SLOT_OFFSETS = {
     { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
     { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
 }
+
+--- Update a team's cell label (e.g. after a rename). No-op if the cells aren't
+--- built yet -- ensure_built will draw the current name when it runs.
+function M.set_label(force_name, label)
+    local obj = storage.cell_label and storage.cell_label[force_name]
+    if obj and obj.valid then obj.text = label end
+end
 
 --- Parking position inside a team's box for the Nth teammate (0-based).
 function M.park_position(force_name, index_in_team)

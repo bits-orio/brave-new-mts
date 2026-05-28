@@ -1,6 +1,6 @@
 {
   "name": "brave-new-mts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Brave New MTS",
   "author": "bits-orio",
   "description": "A remote-only, character-free layer for Multi-Team Support. Your character never leaves its cell -- you build entirely through a construction-robot network seeded at each team's spawn around a large roboport. Place blueprints; the bots do the rest.",

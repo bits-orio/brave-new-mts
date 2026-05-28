@@ -7,16 +7,19 @@
 --
 -- It is craftable (in an assembler -- handcrafting is blocked for overseers),
 -- so a team produces clones as part of their factory.
+--
+-- The clone is ONLY meaningful with Space Age (it exists to ship yourself
+-- between planets/platforms). Without Space Age there are no other planets, so
+-- the whole thing -- item, recipe and unlocking technology -- is skipped: the
+-- green-character tech is then not even available, as intended.
 
-local CLONE = "bnm-character-clone"
+if not mods["space-age"] then return end
+
+local CLONE      = "bnm-character-clone"
+local CLONE_TINT = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 }
 
 -- One clone fills a whole rocket payload (weight == the rocket's lift capacity).
 local rocket_lift = (data.raw["utility-constants"]["default"] or {}).rocket_lift_weight or 1000000
-
--- Live in the Space tab when Space Age is present (the clone is only useful
--- with planets/platforms); fall back to a base subgroup otherwise so the
--- prototype still loads cleanly without Space Age.
-local clone_subgroup = mods["space-age"] and "space-rocket" or "intermediate-product"
 
 data:extend({
     {
@@ -33,7 +36,7 @@ data:extend({
             {
                 icon      = "__core__/graphics/icons/entity/character.png",
                 icon_size = 64,
-                tint      = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
+                tint      = CLONE_TINT,
             },
         },
         pictures = {
@@ -42,7 +45,7 @@ data:extend({
                     size     = 64,
                     filename = "__core__/graphics/icons/entity/character.png",
                     scale    = 0.5,
-                    tint     = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
+                    tint     = CLONE_TINT,
                 },
                 -- Two additive light layers, stacked for a brighter, hotter glow.
                 {
@@ -59,19 +62,19 @@ data:extend({
                     size          = 64,
                     filename      = "__core__/graphics/icons/entity/character.png",
                     scale         = 0.5,
-                    tint          = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 },
+                    tint          = CLONE_TINT,
                 },
             },
         },
         stack_size            = 1,
         weight                = rocket_lift,
-        subgroup              = clone_subgroup,
+        subgroup              = "space-rocket",  -- lives in the Space tab
         order                 = "z[bnm-character-clone]",
     },
     {
         type            = "recipe",
         name            = CLONE,
-        enabled         = false,          -- unlocked by the rocket-silo technology
+        enabled         = false,          -- unlocked by the bnm-character-clone technology
         energy_required = 30,
         category        = "crafting",     -- assembler-craftable; not hand-craftable
         ingredients     = {
@@ -81,12 +84,36 @@ data:extend({
         },
         results         = { { type = "item", name = CLONE, amount = 1 } },
     },
+    -- A dedicated technology that unlocks the clone. Requiring BOTH rocket-silo
+    -- (you can't ship a clone until you can launch rockets) AND tank (a military
+    -- gate) means the recipe only appears once both are researched -- two
+    -- separate unlock effects would be an OR, so one shared tech is the way to
+    -- AND them. Space-Age-only: see the guard at the top of this file.
+    {
+        type          = "technology",
+        name          = CLONE,
+        icon_size     = 64,
+        icons = {
+            {
+                icon      = "__core__/graphics/icons/entity/character.png",
+                icon_size = 64,
+                tint      = CLONE_TINT,
+            },
+        },
+        prerequisites = { "rocket-silo", "tank" },
+        effects       = { { type = "unlock-recipe", recipe = CLONE } },
+        unit = {
+            count = 300,
+            ingredients = {
+                { "automation-science-pack", 1 },
+                { "logistic-science-pack",   1 },
+                { "military-science-pack",   1 },
+                { "chemical-science-pack",   1 },
+                { "production-science-pack", 1 },
+                { "utility-science-pack",    1 },
+            },
+            time = 30,
+        },
+        order = "e-z-[bnm-character-clone]",
+    },
 })
-
--- Unlock the clone alongside rocket silo -- you can't ship one anywhere until
--- you can launch rockets, so that's the natural gate.
-local silo_tech = data.raw.technology["rocket-silo"]
-if silo_tech then
-    silo_tech.effects = silo_tech.effects or {}
-    silo_tech.effects[#silo_tech.effects + 1] = { type = "unlock-recipe", recipe = CLONE }
-end

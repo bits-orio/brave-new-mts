@@ -27,13 +27,14 @@ M.blueprints = {
 
 --- Best-effort planet key for an MTS surface name (e.g. "mts-aquilo-3",
 --- "team-3-nauvis"). Returns nil if no known planet fragment matches.
-local function planet_of(surface_name)
+function M.planet_of(surface_name)
     local lowered = surface_name:lower()
     for _, planet in ipairs(PLANETS) do
         if lowered:find(planet, 1, true) then return planet end
     end
     return nil
 end
+local planet_of = M.planet_of
 
 --- Returns the blueprint string for a surface, or "" if none is configured.
 function M.for_surface(surface)

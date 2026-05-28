@@ -67,6 +67,15 @@ local CLEAR_MARGIN = 3
 -- equally on all sides keeps the reveal centred on the base.
 local CHART_CHUNK_MARGIN = 3
 
+-- A generous crude-oil node so a character-free team has oil to tap without
+-- prospecting. For crude oil the displayed yield is amount/3000 percent (verified
+-- in-game: amount 150 000 showed 50%), so 300% == 900 000. It is placed well away
+-- from the base but inside the central roboport's construction radius (110), so
+-- bots can build a pumpjack on it.
+local OIL_NODE_YIELD_PERCENT = 300
+local OIL_NODE_AMOUNT        = OIL_NODE_YIELD_PERCENT * 3000
+local OIL_NODE_DISTANCE      = 100   -- tiles from the base origin (roboport)
+
 -- ─── Internal helpers ──────────────────────────────────────────────────
 
 local function bot_counts()
@@ -173,6 +182,62 @@ local function footprint_area(origin, bp_entities, ox, oy)
     }
 end
 
+-- How far around the spawn origin to sweep for crash-site debris. The freeplay
+-- wreckage sits near (0,0) -- where MTS spawns the team -- while the base is
+-- offset to the chunk centre, so the sweep must cover the whole spawn area, not
+-- just the base footprint.
+local CRASH_SEARCH_RADIUS = 96
+
+--- All crash-site-spaceship* entity prototype names (the ship plus every wreck
+--- piece), discovered generically so mod-added variants are covered too.
+local function crash_site_names()
+    local names = {}
+    for name in pairs(prototypes.entity) do
+        if name:find("^crash%-site") then names[#names + 1] = name end
+    end
+    return names
+end
+
+--- Collect the contents of all crash-site debris around the spawn, then remove
+--- it. The wreck pieces are `container`s holding the freeplay starting items; we
+--- drain every inventory so the loot ends up in the team's storage chest instead
+--- of being deleted with the wreckage. Returns the pooled items as a
+--- {name=, count=} list. Runs before the base is built so the (large) ship hull
+--- can't block base entities from placing.
+local function collect_crash_debris(surface)
+    local names = crash_site_names()
+    if #names == 0 then return {} end
+
+    local R = CRASH_SEARCH_RADIUS
+    local debris = surface.find_entities_filtered{
+        name = names,
+        area = { { -R, -R }, { R, R } },
+    }
+
+    local pooled = {}  -- item name -> count
+    for _, e in pairs(debris) do
+        if e.valid then
+            -- Wrecks are containers (inventory index defines.inventory.chest),
+            -- but probe the low indices generically; absent ones return nil.
+            for inv_id = 1, 8 do
+                local inv = e.get_inventory(inv_id)
+                if inv and inv.valid then
+                    for _, c in pairs(inv.get_contents()) do
+                        pooled[c.name] = (pooled[c.name] or 0) + c.count
+                    end
+                end
+            end
+            e.destroy()
+        end
+    end
+
+    local items = {}
+    for name, count in pairs(pooled) do
+        items[#items + 1] = { name = name, count = count }
+    end
+    return items
+end
+
 --- Clear the footprint so the base places cleanly and never sits on ore.
 local function clear_footprint(surface, area)
     local obstacles = surface.find_entities_filtered{
@@ -183,6 +248,69 @@ local function clear_footprint(surface, area)
         if e.valid then e.destroy() end
     end
     surface.destroy_decoratives{ area = area }
+end
+
+--- True if a crude-oil well can sit at `p`: buildable ground (so not water/cliffs)
+--- and clear of any existing resource (so we never stack it on an ore patch).
+local function oil_spot_is_clear(surface, p)
+    if not surface.can_place_entity{ name = "crude-oil", position = p } then return false end
+    local on_ore = surface.find_entities_filtered{ position = p, radius = 2, type = "resource" }
+    return #on_ore == 0
+end
+
+--- A starting angle (radians) for the oil-node sweep, derived from the MAP seed
+--- (the main surface's seed -- one game-wide value, so every team gets the SAME
+--- direction) rather than anything per-surface. Deterministic across multiplayer
+--- peers; a different map seed gives a different direction, but within a game all
+--- teams match.
+local function oil_start_angle()
+    local main = game.surfaces[1]
+    local seed = (main and main.map_gen_settings and main.map_gen_settings.seed) or 0
+    return (seed % 360) / 360 * 2 * math.pi
+end
+
+--- Drop a single rich crude-oil node away from the base (so it doesn't crowd the
+--- build) but inside the roboport's construction radius (so bots can reach it).
+--- Sweeps a ring of candidate angles at the target distance, with a couple of
+--- fallback radii, for a spot clear of water and ore. Charts it so it's visible.
+local function place_oil_node(force, surface)
+    if not prototypes.entity["crude-oil"] then return end
+    -- Oil fields are a Nauvis-only feature: only seed one on a Nauvis surface,
+    -- never on other planets (or unrecognised surfaces).
+    if blueprints.planet_of(surface.name) ~= "nauvis" then return end
+    local o     = M.BASE_ORIGIN
+    local start = oil_start_angle()
+    for _, dist in ipairs({ OIL_NODE_DISTANCE, 64, 96 }) do
+        for step = 0, 11 do
+            local ang = start + (step / 12) * 2 * math.pi
+            local p = { x = o.x + math.cos(ang) * dist, y = o.y + math.sin(ang) * dist }
+            if oil_spot_is_clear(surface, p) then
+                surface.create_entity{ name = "crude-oil", position = p, amount = OIL_NODE_AMOUNT }
+                force.chart(surface, { { p.x - 3, p.y - 3 }, { p.x + 3, p.y + 3 } })
+                return
+            end
+        end
+    end
+    log("[brave-new-mts] no clear spot (no water / no ore) found for the starter oil node")
+end
+
+--- Per-planet tweaks to the decoded blueprint before it is built. On Fulgora the
+--- left-most and right-most lamps become lightning rods (which also harvest the
+--- planet's lightning for power). Mutates the entity list in place.
+local function apply_planet_substitutions(surface, bp_entities)
+    local planet = blueprints.planet_of(surface.name)
+    if planet == "fulgora" and prototypes.entity["lightning-rod"] then
+        local left, right
+        for _, e in pairs(bp_entities) do
+            local proto = prototypes.entity[e.name]
+            if proto and proto.type == "lamp" then
+                if not left  or e.position.x < left.position.x  then left  = e end
+                if not right or e.position.x > right.position.x then right = e end
+            end
+        end
+        if left  then left.name  = "lightning-rod" end
+        if right then right.name = "lightning-rod" end
+    end
 end
 
 -- Cargo a team has already dropped to this planet lands near origin as a
@@ -236,7 +364,7 @@ end
 --- everything else stays minable. Returns the roboport and the protected list.
 local function build_base(force, surface, origin, bp_entities, ox, oy)
     local construction, logistic = bot_counts()
-    local roboport, protected, provider = nil, {}, nil
+    local roboport, protected, provider, storage_chest = nil, {}, nil, nil
     for _, e in pairs(bp_entities) do
         local proto = prototypes.entity[e.name]
         if not proto then
@@ -259,9 +387,13 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
                     seed_roboport(created, construction, logistic)
                 else
                     if proto.type == "accumulator" then seed_accumulator(created) end
-                    -- Stock the FIRST passive provider chest with the starter kit.
+                    -- Stock the FIRST passive provider chest with the starter kit;
+                    -- the storage chest receives any salvaged crash-site loot.
                     if not provider and proto.logistic_mode == "passive-provider" then
                         provider = created
+                    end
+                    if not storage_chest and proto.logistic_mode == "storage" then
+                        storage_chest = created
                     end
                     -- Lock only the power core; the rest stays minable.
                     if is_power_core(proto) then
@@ -279,7 +411,29 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
     else
         log("[brave-new-mts] no passive provider chest in blueprint -- starter kit not placed")
     end
-    return roboport, protected
+    return roboport, protected, provider, storage_chest
+end
+
+--- Insert a {name=, count=} item list into a chest, skipping unknown items.
+local function insert_items(chest, items)
+    if not (chest and chest.valid) then return end
+    for _, stack in pairs(items) do
+        if stack.count and stack.count > 0 and prototypes.item[stack.name] then
+            chest.insert{ name = stack.name, count = stack.count }
+        end
+    end
+end
+
+--- The admin-configured starter items tracked by MTS. With BNM loaded these are
+--- routed into the team's passive provider chest instead of a (non-existent)
+--- player inventory, so every team -- including ones that spawn after an admin
+--- adds items -- gets them. Empty/nil when MTS has none or is too old to expose
+--- the query.
+local function mts_starter_items()
+    if not remote.interfaces["mts-v1"] then return {} end
+    local ok, items = pcall(remote.call, "mts-v1", "get_starter_items")
+    if ok and type(items) == "table" then return items end
+    return {}
 end
 
 --- Chart whole chunks symmetrically around the base footprint, so the reveal is
@@ -318,31 +472,56 @@ function M.place(force_name, surface)
         return
     end
 
+    apply_planet_substitutions(surface, bp_entities)  -- e.g. Fulgora lightning rods
+
     local origin = M.BASE_ORIGIN  -- chunk centre, so the roboport reveal is symmetric
     local ox, oy = roboport_offset(bp_entities)
 
     local area = footprint_area(origin, bp_entities, ox, oy)
     relocate_cargo(surface, area)  -- preserve any cargo the team already dropped here
+    local crash_loot = collect_crash_debris(surface)  -- sweep the whole spawn area
     clear_footprint(surface, area)
     place_tiles(surface, origin, bp_tiles, ox, oy)
-    local roboport, protected = build_base(force, surface, origin, bp_entities, ox, oy)
+    local roboport, protected, provider, storage_chest =
+        build_base(force, surface, origin, bp_entities, ox, oy)
+
+    -- Salvaged crash-site loot goes to the storage chest (provider as fallback).
+    insert_items(storage_chest or provider, crash_loot)
+    -- Admin-configured starter items (MTS) land in the provider chest, since a
+    -- BNM team has no character inventory to receive them.
+    insert_items(provider, mts_starter_items())
+
+    place_oil_node(force, surface)
 
     -- Reveal the base on the map (no character stands here to chart it).
     chart_base(force, surface, origin, bp_entities, ox, oy)
 
     -- Track the base per surface so the minable toggle and the roboport
     -- loss-condition can find it. `protected` is the power core (non-minable
-    -- until the team opts in); everything else is already minable.
+    -- until the team opts in); everything else is already minable. `provider`
+    -- lets a later admin item-grant top up already-spawned teams.
     storage.bnm_base = storage.bnm_base or {}
     storage.bnm_base[surface.name] = {
         force     = force_name,
         roboport  = roboport,
         protected = protected,
+        provider  = provider,
         unlocked  = false,
     }
 
     storage.bases_placed[surface.name] = true
     log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
+end
+
+--- Push an admin's freshly-added starter items into the provider chest of every
+--- base already placed. Teams that haven't spawned yet pick the items up at
+--- placement time via mts_starter_items(), so between the two paths every team
+--- ends up with the full admin list.
+function M.add_items_to_spawned_bases(items)
+    if not (storage.bnm_base and items and #items > 0) then return end
+    for _, base in pairs(storage.bnm_base) do
+        insert_items(base.provider, items)
+    end
 end
 
 --- Unlock the team's power core (solar / accumulators / substations / poles /
@@ -357,6 +536,23 @@ function M.unlock_minable(force_name)
                 if e.valid then e.minable = true end
             end
             -- roboport stays non-minable, always.
+        end
+    end
+end
+
+--- Forget all per-surface base state for a force, so a team that later recycles
+--- this slot gets a fresh base. MTS deletes the team's surfaces on disband; if
+--- we kept `bases_placed` set for those (recycled) surface names, M.place would
+--- early-return and never re-chart the new base -- leaving the new occupant
+--- unable to see their surface. Keyed off bnm_base (which records the owning
+--- force per surface), since the surfaces themselves are already gone by the
+--- time on_team_released fires.
+function M.cleanup_force(force_name)
+    if not storage.bnm_base then return end
+    for surface_name, base in pairs(storage.bnm_base) do
+        if base.force == force_name then
+            storage.bnm_base[surface_name] = nil
+            if storage.bases_placed then storage.bases_placed[surface_name] = nil end
         end
     end
 end

@@ -58,6 +58,9 @@ function M.park(player, team_surface)
         player.set_controller{ type = defines.controllers.god }
         player.create_character()
     end
+    -- The parked body is purely a placeholder -- an overseer carries nothing.
+    -- Empty it so no starting loadout lingers on the character in the pen.
+    if player.character then player.character.clear_items_inside() end
 
     local pos = pen_cells.park_position(fn, slot_for(fn, player.index))
     if not pos then return end
@@ -85,6 +88,13 @@ function M.unpark(player)
     if storage.home_surface then
         storage.home_surface[player.index] = nil
     end
+end
+
+--- Drop a whole team's parked-slot bookkeeping when its slot is released, so a
+--- team that recycles the slot starts cell-slot numbering from scratch instead
+--- of inheriting the previous occupants' (now meaningless) assignments.
+function M.cleanup_force(force_name)
+    if storage.park_index then storage.park_index[force_name] = nil end
 end
 
 return M
