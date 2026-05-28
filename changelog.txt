@@ -1,4 +1,31 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.2
+Date: 2026-05-27
+  Changes:
+    - Hide character-only research from overseer teams: the steel-axe mining-speed tech and
+      the Space Age health tech, neither of which can benefit a character-free team.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2026-05-27
+  Features:
+    - Each Nauvis starter base now gets a rich crude-oil node (300%), placed away from the
+      base but inside the central roboport's construction range, in a seed-derived
+      direction (consistent for every team) that avoids water and existing ore patches.
+    - Fulgora starter bases swap their outermost lamps for lightning rods.
+    - Crash-site debris around the spawn is cleared and its contents are collected into the
+      base's storage chest instead of being lost.
+  Changes:
+    - Admin-configured starter items (from Multi-Team Support) are delivered into the team's
+      passive provider chest instead of a player inventory, and the parked overseer
+      character is emptied on spawn -- teams that spawn later get the items too.
+    - The Character Clone now requires Space Age, and its recipe is gated behind both the
+      rocket-silo and tank technologies.
+    - A team's landing-pen cell label updates when the team is renamed.
+  Bugfixes:
+    - When a team is disbanded, its per-surface base state is now cleared, so a player who
+      later recycles the same team slot gets a fresh, properly-charted base instead of a
+      blank/invisible surface.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.0
 Date: 2026-05-26
   Features:
