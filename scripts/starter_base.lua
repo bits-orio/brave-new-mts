@@ -42,6 +42,7 @@ M.STARTER_ITEMS = {
     { name = "pipe-to-ground",        count = 4  },
     { name = "small-lamp",            count = 4  },
     { name = "stone-furnace",         count = 4   },
+    { name = "assembling-machine-3",  count = 1   },
     { name = "electric-mining-drill", count = 3   },
     { name = "steam-engine",          count = 2   },
     { name = "lab",                   count = 2   },
@@ -344,9 +345,10 @@ end
 -- starter base is minable from the start, so a team can freely redesign it.
 -- The central roboport is always non-minable and is handled separately.
 local PROTECTED_TYPES = {
-    ["solar-panel"] = true,   -- power generation
-    ["accumulator"] = true,   -- night-one storage
-    ["lamp"]        = true,   -- the lights
+    ["solar-panel"]   = true,   -- power generation
+    ["accumulator"]   = true,   -- night-one storage
+    ["lamp"]          = true,   -- the lights
+    ["display-panel"] = true,   -- informational signage
 }
 local PROTECTED_NAMES = {
     ["substation"]           = true,  -- the two substations
@@ -386,6 +388,14 @@ local function build_base(force, surface, origin, bp_entities, ox, oy)
                     seed_roboport(created, construction, logistic)
                 else
                     if proto.type == "accumulator" then seed_accumulator(created) end
+                    if proto.type == "display-panel" then
+                        if e.text        then created.display_panel_text          = e.text        end
+                        if e.always_show ~= nil then created.display_panel_always_show = e.always_show end
+                        if e.show_in_chart ~= nil then created.display_panel_show_in_chart = e.show_in_chart end
+                        if e.icon then
+                            created.display_panel_icon = { type = "entity", name = e.icon.name }
+                        end
+                    end
                     -- Stock the FIRST passive provider chest with the starter kit;
                     -- the storage chest receives any salvaged crash-site loot.
                     if not provider and proto.logistic_mode == "passive-provider" then
