@@ -10,6 +10,10 @@ A Factorio 2.0 mod that turns [Multi-Team Support](https://github.com/bits-orio/
 
 > **Note on tooling:** This mod is developed with AI coding assistants alongside human review and in-game testing. Bug reports, feature requests, and contributions are welcome from everyone. There's a human on the other side — please keep it kind.
 
+## 💬 Community
+
+Join the Discord: https://discord.gg/tWz4FT74pH
+
 ## ✨ Features
 
 ### 👁️ You're the overseer
