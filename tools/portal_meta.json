@@ -2,7 +2,7 @@
   "mod": "brave-new-mts",
   "title": "Brave New MTS",
   "summary": "Requires Multi-Team Support. Brave New World-style play for MTS: no character, bots only. Your character never leaves its cell, and construction robots build everything from the blueprints you place. No handcrafting, no hand-mining, no god mode. A starter base on every team surface. Inspired by Brave New OARC.",
-  "category": "scenarios",
+  "category": "overhaul",
   "tags": [
     "environment",
     "logistic-network",
