@@ -1,0 +1,15 @@
+{
+  "mod": "brave-new-mts",
+  "title": "Brave New MTS",
+  "summary": "Requires Multi-Team Support. A remote-only, character-free layer for MTS: your character never leaves its cell, and you build entirely through a construction-robot network seeded at each team's spawn around a large roboport. Place blueprints; the bots do the rest. No handcrafting, no hand-mining, no god mode. Starter bases on every team surface, including the Space Age planets.",
+  "category": "scenarios",
+  "tags": [
+    "environment",
+    "logistic-network",
+    "character",
+    "blueprints"
+  ],
+  "license": "default_gnugplv3",
+  "homepage": "https://discord.gg/tWz4FT74pH",
+  "source_url": "https://github.com/bits-orio/brave-new-mts"
+}
