@@ -1,7 +1,7 @@
 {
   "mod": "brave-new-mts",
   "title": "Brave New MTS",
-  "summary": "Requires Multi-Team Support. A remote-only, character-free layer for MTS: your character never leaves its cell, and you build entirely through a construction-robot network seeded at each team's spawn around a large roboport. Place blueprints; the bots do the rest. No handcrafting, no hand-mining, no god mode. Starter bases on every team surface, including the Space Age planets.",
+  "summary": "Requires Multi-Team Support. Brave New World-style play for MTS: no character, bots only. Your character never leaves its cell, and construction robots build everything from the blueprints you place. No handcrafting, no hand-mining, no god mode. A starter base on every team surface. Inspired by Brave New OARC.",
   "category": "scenarios",
   "tags": [
     "environment",
