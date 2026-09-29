@@ -2,9 +2,9 @@
 Version: 0.2.0
 Date: 2026-09-28
   Features:
-    - Space Age outposts: research the Character Clone (rocket-silo plus red, green and blue
-      science), ship one to a planet on a space platform, and press Establish base in the
-      platform hub to found a starter base there, complete with its own cargo landing pad.
+    - Space Age outposts: a base founded with a Character Clone is now an outpost, with its own
+      cargo landing pad below the south wall, so a platform overhead can drop supplies to it,
+      and a short kit for its planet.
     - Every planet now gets power tuned to it: solar panels and accumulators are swapped for
       uncraftable, planet-sized versions in the same spots, and Fulgora runs off a lightning
       collector and tuned accumulators instead of the sun.
@@ -20,7 +20,12 @@ Date: 2026-09-28
     - Off-world surfaces now have their chunks generated before the base is built, so a new
       outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
       the terrain generates later.
-    - Enemy nests and worm turrets near a new base's footprint are cleared before placement.
+    - Enemy nests and worm turrets within the roboport's 110-tile reach are cleared before a new
+      base is placed.
+    - The Character Clone technology now needs only rocket-silo and red, green and blue science
+      (it needed tank and all six science packs).
+    - The bnm-roboport leaves no ghost when it is destroyed: a lost outpost is re-founded with a
+      clone, not rebuilt from a ghost no item can fill.
     - A base founded after the team has already unlocked its power core is created unlocked,
       instead of locked and waiting on a second unlock click.
     - Off-world starter kits are now planet-specific (a heating tower and heat pipes on Aquilo,
@@ -35,23 +40,26 @@ Date: 2026-09-28
     - Pen cells now hold 12 teammates instead of wrapping around and stacking the 10th member on
       top of another player; a released team's cell is emptied and its label reset.
     - The team-settings tab's unlock warning now lists everything the power core actually locks,
-      including Fulgora's lightning collector and rods.
+      including Fulgora's lightning collector and the warning sign.
     - The team-settings tab and the platform hub's Establish-base widget are now removed
       automatically from a save if Brave New MTS is ever taken out of it.
     - Now requires Multi-Team Support 0.6.6 or newer.
   Bugfixes:
     - The bnm-roboport no longer freezes on Aquilo, so a new Aquilo base has a working
-      construction network from the moment it's placed.
+      construction network from the moment it's placed. Its radar and inserter there never
+      freeze either.
     - Reconnecting, or a server restart, no longer empties blueprints, blueprint books and
       planners out of a player's parked body; only a genuine first spawn is cleared.
     - An admin looking at a team's surface in the map editor no longer triggers a free starter
       base or changes the admin's own home surface.
-    - The Establish base button now works the moment a platform arrives at a planet, instead of
-      waiting for it to fully stop, and reports the real reason it's unavailable.
+    - The Establish base button now works on a planet the team has never landed on (its surface
+      is created on the click), and the moment a platform arrives instead of once it fully
+      stops. It reports the real reason it's unavailable.
     - A Character Clone of any quality is recognised and consumed, and only after the base is
       actually built, so a failed placement no longer loses the clone for nothing.
     - Roboport feeder requests and other per-entity blueprint settings are restored on placement
-      again, and the starter base's display panel text is accurate to what's locked.
+      again, and the starter base's sign now says what is true on its planet and whether it is
+      the home base or an outpost. Unpowered robots slow down; they do not crash.
     - Mod settings, the starter roboport, the Character Clone and every planet-generated entity
       now have proper in-game names and descriptions instead of raw internal keys.
     - Deleting a team's surface, by an admin or on team disband, now correctly clears Brave New

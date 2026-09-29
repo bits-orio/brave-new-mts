@@ -77,11 +77,13 @@ editor does.
 
 | Command | What it does |
 |---|---|
-| `/bnm-status [team-N]` | Read-only. Lists a team's bases (home and outposts): which surface, whether the roboport is valid, whether the power core is unlocked, and where each member is currently parked. Run this first, before anything else, to see what actually happened. |
-| `/bnm-repark <player> [surface]` | Puts a player who's stuck outside remote view (for example, after spectating a rival team through the ordinary MTS Teams panel) back into their team's cell and remote view, either their recorded home surface or the one you name. |
-| `/bnm-forget-base <surface>` | Clears Brave New MTS's own bookkeeping for that surface so it can be re-founded from scratch. Use it on a base that failed to place correctly or is otherwise stuck; it does not place a new base by itself, and re-founding still needs a live team and (for an outpost) another Character Clone. Do not use it on a healthy base -- it's for recovering a broken one. |
+| `/bnm-status [team-N]` | Read-only. Lists each team's bases (home or outpost, per surface), whether each roboport is alive, whether the power core is unlocked, and for each member the surface they are viewing, the one they last viewed and their home surface. It also flags a surface marked as founded with no base record. Without an argument it covers every team. Run this first, to see what actually happened. |
+| `/bnm-repark <player>` | Puts a connected player who's stuck outside remote view (for example, after spectating a rival team through the ordinary MTS Teams panel) back into their team's cell and remote view: the own-team surface they last viewed, else their home surface, else the team's home base. An offline player is re-parked when they reconnect. |
+| `/bnm-forget-base <surface>` | Clears Brave New MTS's own bookkeeping for that surface so it can be founded again. It refuses while the base's roboport is still alive, so it only recovers a base that is already gone or failed to place. It does not place a new base by itself: a player arriving on a home surface, or another Character Clone for an outpost, does that. |
 
-Log and `game.print` every use so there's an audit trail on a public server.
+`/bnm-repark` and `/bnm-forget-base` are logged and announced to everyone on the
+server, so a public server keeps an audit trail. `/bnm-status` answers only the
+admin who ran it.
 
 ## Manual client test checklist
 
