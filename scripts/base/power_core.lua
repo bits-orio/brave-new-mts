@@ -4,9 +4,10 @@
 --
 -- The power core stays NON-MINABLE until the team opts into "I know what I am
 -- doing": losing any of it would strand the base. It is the power generation
--- and storage, the lightning attractors that shield it (and the Fulgora
--- collector that is its night power), the substations and main poles, the
--- lights and the sign. Planet-tuned copies are locked for good (is_tuned).
+-- and storage (on Fulgora, the lightning collector: a lightning-attractor
+-- that is both its night power and its shield), the substations and main
+-- poles, the lights and the sign. Planet-tuned copies are locked for good
+-- (is_tuned).
 -- Everything else is minable from the start, so a team can freely redesign
 -- the base. The central roboport is never minable and is handled separately
 -- (scripts/base/builder.lua).

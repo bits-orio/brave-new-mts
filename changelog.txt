@@ -35,6 +35,10 @@ Date: 2026-09-28
       instead of locked and waiting on a second unlock click.
     - Off-world starter kits are now planet-specific (a heating tower and heat pipes on Aquilo,
       gun turrets on Gleba, and so on) instead of the Nauvis kit everywhere.
+    - Fulgora bases no longer turn their outermost lamps into lightning rods. The lightning
+      collector in the power core now shields the base, and the Fulgora outpost kit carries 10
+      lightning rods for covering robots that fly further out. Bases built on 0.1.x keep their
+      rods.
     - Admin-added starter items are delivered to the home base only, and delivery now spreads
       across every provider and storage chest instead of overflowing a single one.
     - Reconnecting no longer snaps a player's remote view back to their home planet or the base's
