@@ -351,8 +351,9 @@ for what each check verifies and how the fixtures work.
     its roboport standing and after `destroy()` removed it (no death event),
     and refused the outpost while its roboport stood. None of those changed
     a record, placed flag, entity count or core lock. With its roboport
-    gone, the outpost's record and flag were forgotten, nothing else, and
-    `place()` founded it again with a new roboport.
+    gone, the outpost's record and flag were forgotten and all 47 of its
+    core entities became minable, as when a roboport dies; no other record
+    or entity changed, and `place()` founded it again with a new roboport.
 11. **Unlock:** team-14 unlocked with Gleba and Fulgora outposts standing,
     then founded Aquilo. Gleba's 40, Fulgora's 16 and Aquilo's 42 tuned
     copies (Aquilo's include `bnm-radar` and `bnm-inserter`) stayed

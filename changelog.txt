@@ -10,8 +10,8 @@ Date: 2026-09-28
       spots, and Fulgora adds a lightning collector and tuned accumulators to its ordinary solar
       panels.
     - Admin commands (server console or admin only): /bnm-status to inspect a team's bases,
-      /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to clear a
-      broken outpost's bookkeeping so it can be re-founded. It refuses a home base, which can
+      /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to wipe a
+      broken outpost, as its roboport's death would, so it can be re-founded. It refuses a home base, which can
       never be re-founded; /mts-disband ends that team instead.
     - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
       credit for reaching a planet.

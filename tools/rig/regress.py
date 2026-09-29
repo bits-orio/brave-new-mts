@@ -26,8 +26,8 @@ check does not stop the suite. Every server it starts is stopped at the end.
      there is lost (what no chest holds is spilled, marked for the robots),
      and what the team built came back as items
  10  /bnm-forget-base over RCON refuses a home base, standing or not, and
-     changes no record; it refuses a standing outpost, and forgets a lost
-     one, which can then be founded again
+     changes no record; it refuses a standing outpost, and wipes a lost one
+     (record forgotten, core minable), which can then be founded again
  11  unlocking the power core leaves the planet-tuned copies (every bnm-*
      entity, the roboport included) locked and makes the vanilla core
      minable, on bases founded before and after the unlock; walls are never
@@ -848,7 +848,13 @@ def check_forget_home(ctx, c):
     c.expect("forgot the base record for %s" % outpost in said and outpost in before["records"]
              and after["records"] == kept, "the lost outpost's record and placed flag are forgotten, and no other "
              "record changed (%s)" % changes(dict(before, records=kept), after))
-    c.expect(after["site"] == before["site"], "the lost outpost's site is untouched until it is founded again")
+    sb, sa = before["site"], after["site"]
+    c.note("%s's core: %d of %d locked before the forget, %d after" % (outpost, sb["core_locked"], sb["core"],
+                                                                       sa["core_locked"]))
+    c.expect(sa["counts"] == sb["counts"] and sa["core"] == sb["core"] and sb["core_locked"] > 0
+             and sa["core_locked"] == 0, "the lost outpost's entities are untouched and its core became minable, as "
+             "when its roboport dies (%d of %d locked before, %d after)" % (sb["core_locked"], sb["core"],
+                                                                         sa["core_locked"]))
     again = bnm(rig, 'REG.place("%s", "%s", true)' % (force, outpost))
     rp = bnm(rig, 'REG.base("%s")' % outpost).get("roboport") or {}
     c.note("founded %s again after the forget: %s, roboport unit %s" % (outpost, again, rp.get("unit")))
