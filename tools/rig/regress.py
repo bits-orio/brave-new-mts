@@ -36,7 +36,12 @@ check does not stop the suite. Every server it starts is stopped at the end.
      back on the spot they were looking at, once
  13  placing twice: a second place() on a surface with a base (home or
      outpost) returns false and builds, removes and restocks nothing
- 14  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
+ 14  a re-found keeps what carries data: an equipped spidertron and tank in
+     the site come back as items with their equipment, spidertron items,
+     armor and a blueprint in a team's chest and a base chest keep theirs, a
+     train and its rails come back once each, and a spider parked outside
+     with a leg in the site is left alone
+ 15  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
 Checks 5 and 6 build on 4, which is added when either is asked for.
@@ -75,8 +80,8 @@ OLD_REV = "0ad9363"   # 0.1.3, the last release before the fix-up
 CLONE = "bnm-character-clone"
 GAME_MINUTE = 3600    # ticks
 # Loaded into BNM's state on every server start, the shared core first.
-LUA_HELPERS = ("regress.lua", "regress_platform.lua", "regress_site.lua", "regress_records.lua",
-               "regress_player.lua")
+LUA_HELPERS = ("regress.lua", "regress_platform.lua", "regress_site.lua", "regress_salvage.lua",
+               "regress_records.lua", "regress_player.lua")
 
 # ── Check 2: power targets (sustained total, idle included, kW) ─────────────
 # "about": the highest passing total is within POWER_TOL of the target (the
@@ -101,7 +106,8 @@ IDLE_SLOT, SWEEP_SLOTS = 4, list(range(5, 13))   # slots 1-3 belong to checks 3-
 # headless server's normal reaction to having no console.
 LOG_ERROR = re.compile(r" Error (?!InterruptibleStdioStream.*Got EOF on stdin)")
 BNM_TROUBLE = ("failed to place", "lost its blueprint logistic request", "no room in the base's chests",
-               "is not a known item", "unknown entity", "no roboport was built", "no clone was left")
+               "is not a known item", "unknown entity", "no roboport was built", "no clone was left",
+               "could not sweep")
 
 
 def log(msg):
@@ -973,7 +979,66 @@ def check_idempotent(ctx, c):
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
 
 
-# ─── 14. Migration from 0.1.3 ──────────────────────────────────────────────
+# ─── 14. What a re-found keeps whole ───────────────────────────────────────
+
+DATA_FORCE, DATA_SURFACE = "team-17", "mts-gleba-17"
+# What REG.build_data_extras builds in the site comes back as its placing
+# item: the in-site spidertron and tank with their equipment, the train (6
+# rails and a locomotive) and the iron chest. IN_CHESTS are the data items in
+# that chest and in one of the base's own storage chests.
+DATA_REFUNDS = {"spidertron": 1, "tank": 1, "rail": 6, "locomotive": 1, "iron-chest": 1}
+IN_CHESTS = ["blueprint set-up", "modular-armor eq=1", "spidertron eq=1", "spidertron eq=2"]
+VEHICLES = ["spidertron eq=3", "tank eq=2"]
+
+
+def check_salvage_data(ctx, c):
+    rig, force, surface = ctx.rig, DATA_FORCE, DATA_SURFACE
+    # Place, read the kit and build in one tick, so no robot moves an item in between.
+    r = bnm(rig, 'local r = REG.place("%s", "%s", true) local fresh = REG.base("%s") '
+                 'return {r = r, fresh = fresh, built = REG.build_data_extras("%s", "%s")}' % (
+                     force, surface, surface, surface, force))
+    if not c.expect(r["r"]["ok"] and r["r"]["outpost"], "outpost placed on %s (%s)" % (surface, r["r"])):
+        return
+    fresh, b = r["fresh"], r["built"]
+    kit, out = as_dict(fresh.get("site_contents")), b["outside"]
+    c.note("built: spidertron with %d pieces, tank with %d, %d rails and a locomotive %s; the chests hold %s" % (
+        b["spider_eq"], b["tank_eq"], b["rails"], b["loco"], b["data"]))
+    c.note("a spidertron with %d piece parked outside the site at (%s, %s), %d of its legs inside" % (
+        out["eq"], out["x"], out["y"], out["legs_in"]))
+    c.expect(b["spider_eq"] == 3 and b["tank_eq"] == 2 and b["rails"] == 6 and b["loco"] and b["data"] == IN_CHESTS,
+             "the vehicles, the train and the chests' data items were built as meant")
+    c.expect(out["body_out"] and out["legs_in"] > 0, "the parked spider's body is outside the site, a leg inside")
+    ctx.main.take_log()
+    c.expect(kill_roboport(rig, surface, force), "roboport.die() killed it")
+    r = bnm(rig, 'local left = REG.base("%s", "%s") local res = REG.place("%s", "%s", true) '
+                 'return {left = left, res = res, new = REG.base("%s"), ground = REG.ground_items("%s"), '
+                 'after = REG.data_after("%s", "%s", %d)}' % (
+                     surface, force, force, surface, surface, surface, surface, force, out["unit"]))
+    lines = ctx.main.take_log()
+    left, res, new, after = r["left"], r["res"], r["new"], r["after"]
+    held = as_dict(left.get("site_contents"))
+    want = added(held, kit, DATA_REFUNDS)
+    got = added(as_dict(new.get("site_contents")), as_dict(r["ground"].get("items")))
+    swept = [int(m.group(1)) for m in (re.search(r"swept (\d+) leftover entities from the base site on %s$"
+                                                 % re.escape(surface), ln.rstrip()) for ln in lines) if m]
+    leftover = sum(as_dict(left.get("counts")).values())
+    c.note("re-found %s; swept %s of %d; data items now %s" % (res.get("ok"), swept, leftover, after["data"]))
+    c.note("the parked spider after: %s; rails standing %d, locomotives %d" % (
+        after["outside"], after["rails"], after["locos"]))
+    if not c.expect(res.get("ok") and new.get("outpost"), "re-founded (%s)" % res):
+        return
+    c.expect(after["data"] == sorted(IN_CHESTS + VEHICLES), "every vehicle came back as an item with its "
+             "equipment, and the chests' items kept their grids and blueprint (%s)" % after["data"])
+    c.expect(after["outside"] and after["outside"]["eq"] == out["eq"] and (after["outside"]["x"], after["outside"]["y"])
+             == (out["x"], out["y"]), "the spider parked outside the site is untouched (%s)" % after["outside"])
+    c.expect(after["rails"] == 0 and after["locos"] == 0, "no rail or locomotive left standing in the site")
+    c.expect(swept == [leftover], "every leftover was swept (%s of %d)" % (swept, leftover))
+    c.expect(got == want, "everything held or built in the site is in the new base or on the ground, once "
+             "(want, got: %s)" % diff(want, got))
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+
+
+# ─── 15. Migration from 0.1.3 ──────────────────────────────────────────────
 
 OLD_PLACE_LUA = """
 local sb = package.loaded["__brave-new-mts__/scripts/starter_base.lua"]
@@ -1061,10 +1126,11 @@ CHECKS = [
     (11, "unlocking keeps the planet-tuned copies locked, frees the vanilla core", check_unlock),
     (12, "a reconnect views the spot the player left (simulated player)", check_reconnect_view),
     (13, "placing twice on a surface builds once", check_idempotent),
-    (14, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
+    (14, "a re-found keeps vehicles' equipment and items' data", check_salvage_data),
+    (15, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
 ]
 NEEDS = {5: [4], 6: [4]}
-MIGRATION_CHECK = 14   # runs in its own world, after the main server stops
+MIGRATION_CHECK = 15   # runs in its own world, after the main server stops
 
 
 def set_rig(name, ports):

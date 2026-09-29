@@ -20,8 +20,8 @@ Date: 2026-09-28
       just that outpost instead of disbanding the whole team; another Character Clone re-founds
       it. Re-founding sweeps the leftovers from the site: the new base gets its full kit first,
       then everything the old chests and pad held, and whatever the team built there comes back
-      as items. Anything that still doesn't fit is spilled beside the roboport, marked for the
-      robots to bring in.
+      as items, a vehicle with its equipment and a blueprint with its contents. Anything that
+      still doesn't fit is spilled beside the roboport, marked for the robots to bring in.
     - Off-world surfaces now have their chunks generated before the base is built, so a new
       outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
       the terrain generates later.

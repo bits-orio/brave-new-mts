@@ -2,8 +2,10 @@
 -- The salvage pool: what a cleared site held, gathered before the build and
 -- delivered into the new base after its kit, so salvage never crowds out the
 -- kit. At home it is the crash site's loot; on a re-founded outpost, the lost
--- base's leftovers and whatever the team built around them. What no chest or
--- pad can hold is spilled for the robots (scripts/item_delivery.lua).
+-- base's leftovers and whatever the team built around them. Items move as
+-- whole stacks, so a vehicle keeps its equipment and a blueprint what it
+-- holds. What no chest or pad can hold is spilled for the robots
+-- (scripts/item_delivery.lua).
 
 local item_delivery = require("scripts.item_delivery")
 local geometry      = require("scripts.base.geometry")
@@ -18,12 +20,16 @@ local M = {}
 -- just the base footprint.
 local CRASH_SEARCH_RADIUS = 96
 
--- Never swept as a leftover: a body, a pod still flying down, robots in the air.
+-- Never swept as a leftover: a body, a pod still flying down, robots in the
+-- air, and a spider's legs. Removing a leg removes its whole spider, so its
+-- body takes them along, and a spider parked outside the site with a leg
+-- reaching in is left alone.
 local SWEEP_SKIP = {
     ["character"]          = true,
     ["cargo-pod"]          = true,
     ["construction-robot"] = true,
     ["logistic-robot"]     = true,
+    ["spider-leg"]         = true,
 }
 
 -- Salvage fills the chests robots empty on their own, storage chests first,
@@ -32,6 +38,9 @@ local SWEEP_SKIP = {
 -- buffer only when set to), and salvage in the roboport's feeder would crowd
 -- out the robots it requests.
 local SALVAGE_MODES = { "storage", "passive-provider", "active-provider" }
+
+--- A new, empty salvage pool (scripts/item_delivery.lua). M.deliver frees it.
+M.new_pool = item_delivery.new_pool
 
 -- ─── Gathering ───────────────────────────────────────────────────────
 
@@ -55,10 +64,7 @@ function M.collect_crash_debris(surface, pool)
     if #names == 0 then return end
     local R = CRASH_SEARCH_RADIUS
     for _, e in pairs(surface.find_entities_filtered{ name = names, area = { { -R, -R }, { R, R } } }) do
-        if e.valid then
-            item_delivery.pool_contents(e, pool)
-            e.destroy()
-        end
+        if e.valid and item_delivery.take(e, pool) then e.destroy() end
     end
 end
 
@@ -82,33 +88,62 @@ local function take_base_part(entity, budget)
     return true
 end
 
---- Pool the item that places `entity`, the one robots would build it from.
-local function pool_placing_item(entity, pool)
+--- True if an item places `entity`, the one robots would build it from.
+local function has_placing_item(entity)
     local items = entity.prototype.items_to_place_this
-    local item  = items and items[1]
-    if item then item_delivery.pool_add(pool, item.name, entity.quality.name, item.count) end
+    return items ~= nil and items[1] ~= nil
+end
+
+--- Clear one leftover into `pool`. What the team built is mined, so it comes
+--- back as the item that places it (a vehicle's with its equipment grid)
+--- along with everything it held; anything else is emptied and destroyed.
+--- What cannot be removed yet (a rail under a train) is left untouched:
+--- mining it would take the train with it. True once it is gone.
+local function sweep_one(job, pool)
+    local e = job.entity
+    if not e.valid then return true end
+    if not e.can_be_destroyed() then return false end
+    if job.refund then return item_delivery.mine(e, pool) end
+    return item_delivery.take(e, pool) and e.destroy()
+end
+
+--- Sweep each job's entity into `pool`. Returns the jobs still standing.
+local function sweep(jobs, pool)
+    local stuck = {}
+    for _, job in ipairs(jobs) do
+        if not sweep_one(job, pool) then stuck[#stuck + 1] = job end
+    end
+    return stuck
+end
+
+--- Log how many leftovers were swept, and name any left standing.
+local function log_sweep(surface, swept, stuck)
+    local where = " leftover entities from the base site on " .. surface.name
+    if swept > 0 then log("[brave-new-mts] swept " .. swept .. where) end
+    if #stuck == 0 then return end
+    local names = {}
+    for _, job in ipairs(stuck) do names[#names + 1] = job.entity.name end
+    log("[brave-new-mts] could not sweep " .. #stuck .. where .. ": " .. table.concat(names, ", "))
 end
 
 --- A lost outpost being re-founded leaves its entities (unlocked by
 --- lose_outpost), their ghosts and whatever the team built around them in
---- the site. Pool what they hold and destroy them, so nothing blocks the new
---- build and no item is lost. What the team built also comes back as the item
---- that places it. Up to one base's worth of the base's own buildings
---- (base_counts of `plan`) does not, since the new base replaces them.
+--- the site. Move what they hold into the pool and remove them, so nothing
+--- blocks the new build and no item is lost. What the team built also comes
+--- back as the item that places it. Up to one base's worth of the base's own
+--- buildings (base_counts of `plan`) does not, since the new base replaces
+--- them. What could not go on the first pass (a rail under a train) is tried
+--- once more, after what stood on it.
 function M.sweep_leftovers(force, surface, area, pool, plan)
-    local budget = base_counts(plan)
-    local n = 0
+    local budget, jobs = base_counts(plan), {}
     for _, e in pairs(surface.find_entities_filtered{ area = area, force = force }) do
         if e.valid and not SWEEP_SKIP[e.type] then
-            item_delivery.pool_contents(e, pool)
-            if not take_base_part(e, budget) then pool_placing_item(e, pool) end
-            e.destroy()
-            n = n + 1
+            local refund = not take_base_part(e, budget) and has_placing_item(e)
+            jobs[#jobs + 1] = { entity = e, refund = refund }
         end
     end
-    if n > 0 then
-        log("[brave-new-mts] swept " .. n .. " leftover entities from the base site on " .. surface.name)
-    end
+    local stuck = sweep(sweep(jobs, pool), pool)
+    log_sweep(surface, #jobs - #stuck, stuck)
 end
 
 -- ─── Delivering ──────────────────────────────────────────────────────
@@ -130,13 +165,16 @@ local function salvage_targets(built)
 end
 
 --- Deliver the salvage pool into the new base; spill what no chest or pad
---- can hold around the roboport, for the robots to bring in.
+--- can hold around the roboport, for the robots to bring in. Frees the pool.
 function M.deliver(pool, built, force, surface)
-    local left = item_delivery.deliver(pool, salvage_targets(built), records.network_of(built))
-    if #left == 0 then return end
-    item_delivery.spill(left, { surface = surface, position = geometry.BASE_ORIGIN, force = force })
-    log("[brave-new-mts] spilled salvage for the robots to bring in on " .. surface.name
-        .. ": " .. item_delivery.describe(left))
+    item_delivery.deliver_pool(pool, salvage_targets(built), records.network_of(built))
+    if not pool.is_empty() then
+        local left = pool.get_contents()
+        item_delivery.spill_pool(pool, { surface = surface, position = geometry.BASE_ORIGIN, force = force })
+        log("[brave-new-mts] spilled salvage for the robots to bring in on " .. surface.name
+            .. ": " .. item_delivery.describe(left))
+    end
+    pool.destroy()
 end
 
 return M

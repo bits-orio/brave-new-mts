@@ -27,13 +27,14 @@ local CORE_NAMES = { ["substation"] = true, ["medium-electric-pole"] = true }
 
 -- Never swept as a leftover (scripts/base/salvage.lua SWEEP_SKIP), so never counted.
 local NOT_BASE = { ["character"] = true, ["cargo-pod"] = true,
-                   ["construction-robot"] = true, ["logistic-robot"] = true }
+                   ["construction-robot"] = true, ["logistic-robot"] = true, ["spider-leg"] = true }
 
 --- A loaded BNM module by path, e.g. R.module("scripts/starter_base").
 function R.module(path) return package.loaded["__brave-new-mts__/" .. path .. ".lua"] end
 local function starter_base() return R.module("scripts/starter_base") end
 
---- True for anything a base or its site holds: all but a body, a pod or a robot.
+--- True for anything a base or its site holds: all but a body, a pod, a robot
+--- or a spider's leg.
 function R.in_base(e) return not NOT_BASE[e.type] end
 
 --- True for an entity of the power core BNM locks.

@@ -109,12 +109,19 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
 2. Clear enemies (force `enemy`) inside the roboport's construction area (a
    square of half-width `construction_radius`, not a circle).
 3. Sweep leftovers of the same force in the footprint and pad area (a lost
-   outpost being re-founded): pool what they hold (inventories, belt lanes,
-   inserter hands), destroy them and their ghosts. An entity beyond one
-   base's count of its name (a blueprint name after the swaps, or the pad),
-   or not normal quality, is also pooled as the item that places it. A
-   replacement the team built for a destroyed base part counts as a base
-   part: the new base re-supplies it.
+   outpost being re-founded) into the salvage pool, a script inventory that
+   takes whole stacks, so an item keeps its data (an equipment grid, a
+   set-up blueprint). An entity beyond one base's count of its name (a
+   blueprint name after the swaps, or the pad), or not normal quality, is
+   something the team built: it is mined, so it comes back as the item that
+   places it (a vehicle's with its grid) along with what it holds, belt
+   lanes and inserter hand included. The old base's own entities and what no
+   item places (ghosts) are emptied and destroyed. A replacement the team
+   built for a destroyed base part counts as a base part: the new base
+   re-supplies it. Spider legs are skipped (the body takes them along, and a
+   spider parked outside the site is left alone); nothing that cannot be
+   destroyed yet (a rail under a train) is touched, and whatever failed is
+   tried once more after the rest.
 4. Substitute entities per profile (panels, accumulators, Fulgora collector at
    the panel slot (3.5, -1.5) placed at (3, -1), radar, inserter). Compute the
    roboport offset before substituting.
@@ -243,7 +250,7 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | ID | Task | Status |
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
-| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 14/14 checks pass; see Results below |
+| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 15/15 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
@@ -277,8 +284,8 @@ construction-robotics grant; extra portal tags.
 
 ## Results
 
-`tools/rig/regress.py` (fourteen checks, about 2.5 minutes, driven by the
-`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 14/14 on
+`tools/rig/regress.py` (fifteen checks, about 2.5 minutes, driven by the
+`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 15/15 on
 the final code on `space-age-fixup` (run as `--rig bnm-reg2 --ports
 34343,27343`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
 against the code before those fixes, all four fail. Check 13 guards
@@ -365,7 +372,23 @@ for what each check verifies and how the fixtures work.
     and the entity count, unit-number sum, roboport, site contents and
     record table were unchanged. A call 60 ticks later also returned false
     and changed nothing, and each base was logged as placed once.
-14. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
+14. **Salvage keeps data:** team-17's Gleba outpost had an equipped
+    spidertron (3 pieces, 50 iron plate aboard) and tank (2 pieces, 20 wood)
+    beside its pad, six rails with a locomotive (10 coal) above it, an iron
+    chest holding a spidertron item with 2 pieces, a modular armor with 1 and
+    a set-up blueprint, a spidertron item with 1 piece in one of the base's
+    own storage chests, and a spidertron with 1 piece parked outside the
+    site, 2 legs inside. The re-found swept all 158 leftovers. The vehicles came
+    back as items with all their equipment, the chests' items kept their
+    grids and the blueprint its contents, the parked spider stood where it
+    was with its equipment, no rail or locomotive was left, and the new base
+    plus the ground held exactly what the site held, the kit and one item for
+    each thing built. Run on the code before this fix, the same check found
+    the in-site spidertron gone with its trunk (a leg came first and took it),
+    the tank and the chest's spidertron flattened to plain items, the armor
+    emptied, the blueprint blank, the parked spider deleted, and one rail
+    still standing under the refunded locomotive.
+15. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
    `provider` record ran `on_configuration_changed` with 0 errors. The
    record now has `home = true`, `outpost = false`, 4 valid providers and 4
    storage chests. The old key and the cached event ids are gone.

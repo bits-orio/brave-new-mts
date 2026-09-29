@@ -82,13 +82,14 @@ local function clear_obstacles(surface, area)
 end
 
 --- Get the site ready to build on. Returns the pool of salvaged items (crash
---- loot at home, leftovers of a lost base) for the new chests.
+--- loot at home, leftovers of a lost base) for the new chests;
+--- salvage.deliver frees it.
 function M.prepare(force, surface, origin, site, plan, home)
     chunks.generate(surface, origin)
     local roboport = prototypes.entity[plan.roboport]
     clear_enemies(surface, origin, roboport.construction_radius or 0)
     relocate_cargo(surface, site.area)
-    local pool = {}
+    local pool = salvage.new_pool()
     if home then salvage.collect_crash_debris(surface, pool) end
     salvage.sweep_leftovers(force, surface, site.area, pool, plan)
     clear_obstacles(surface, site.area)
