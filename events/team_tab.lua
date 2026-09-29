@@ -1,8 +1,8 @@
 -- events/team_tab.lua
 -- Registers a "Brave New MTS" tab in MTS's Team Settings panel (via the
 -- mts-v1 register_team_tab API) and fills it with a soft-lock warning plus a
--- one-time, leader-only "I know what I am doing" button that makes the starter
--- base minable (except the permanent roboport).
+-- one-time, leader-only "I know what I am doing" button that makes the locked
+-- power core of every base minable (except the permanent roboports).
 
 local starter_base = require("scripts.starter_base")
 
@@ -11,13 +11,16 @@ local M = {}
 local TAB_NAME      = "brave-new-mts"
 local UNLOCK_BUTTON = "bnm_unlock_minable"
 
+-- Mirrors starter_base's power core: solar panels, accumulators, substations,
+-- lamps, lightning collectors (Fulgora) and the display panel.
 local WARNING =
-    "You can already mine and redesign most of your starter base. Only the "
-    .. "power core stays locked: solar panels, accumulators, substations, the "
-    .. "main power poles and the lights -- so you can't accidentally kill your "
-    .. "own power and strand your team.\n\n"
-    .. "Unlocking lets you mine / deconstruct that power core too, to rebuild "
-    .. "it your way. The central roboport can NEVER be removed.\n\n"
+    "You can already mine and redesign most of your bases. Only the power core "
+    .. "stays locked: solar panels, accumulators, substations, lamps, lightning "
+    .. "collectors and the power warning sign, so you can't accidentally kill "
+    .. "your own power and strand your team.\n\n"
+    .. "Unlocking lets you mine / deconstruct that power core too, on every base "
+    .. "your team has or founds later, to rebuild it your way. The central "
+    .. "roboports can NEVER be removed.\n\n"
     .. "[color=1,0.5,0.2]Warning:[/color] if you remove your power before "
     .. "replacements are running, your team can be soft-locked with no way to "
     .. "recover. This is one-way."
@@ -41,8 +44,8 @@ local function build_tab(player, element)
     if starter_base.is_unlocked(player.force.name) then
         local ok = element.add{
             type    = "label",
-            caption = "[color=0,1,0]Your power core is now mineable too "
-                .. "(except the central roboport).[/color]",
+            caption = "[color=0,1,0]Your power core and warning sign are now "
+                .. "mineable too (except the central roboports).[/color]",
         }
         ok.style.single_line  = false
         ok.style.maximal_width = 360
@@ -56,7 +59,8 @@ local function build_tab(player, element)
             type    = "button",
             name    = UNLOCK_BUTTON,
             caption = "I know what I am doing",
-            tooltip = "Make the starter base mineable (except the roboport). One-way.",
+            tooltip = "Make the locked power core and warning sign mineable on "
+                .. "every base (except the roboports). One-way.",
         }
     else
         local note = element.add{
@@ -75,8 +79,9 @@ function M.on_gui_click(event)
     if not (player and player.valid) or not is_leader(player) then return end
 
     starter_base.unlock_minable(player.force.name)
-    player.force.print("Starter base unlocked: it can now be mined / deconstructed "
-        .. "(except the central roboport). Be careful not to soft-lock the team.")
+    player.force.print("Power core unlocked on every base: it can now be mined / "
+        .. "deconstructed (except the central roboports). Be careful not to "
+        .. "soft-lock the team.")
     build_tab(player, el.parent)  -- el.parent is the tab content frame
 end
 
@@ -103,13 +108,14 @@ end
 --- Side-effecting setup that needs remote.call: register our tab with MTS (it
 --- persists the spec in its own storage) and cache the on_team_tab_built event
 --- id. Safe only in on_init / on_configuration_changed -- never on_load. Re-runs
---- M.register() so the freshly-cached id is attached this session too.
+--- M.register() so the freshly-cached id is attached this session too. `mod`
+--- lets MTS drop the tab if BNM is removed from the save.
 function M.setup()
     local iface = remote.interfaces["mts-v1"]
     if not iface then return end
     if iface.register_team_tab then
         remote.call("mts-v1", "register_team_tab",
-            { name = TAB_NAME, caption = "Brave New MTS", order = "z" })
+            { name = TAB_NAME, caption = "Brave New MTS", order = "z", mod = script.mod_name })
     end
     if iface.get_event_id then
         storage.bnm_tab_event_id =
