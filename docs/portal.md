@@ -25,7 +25,7 @@ Playable and in active development, running on public multiplayer servers. Space
 - Self-running starter base: solar, accumulators, substations and a large roboport stocked with construction and logistic robots, pre-charged so the network is alive when you arrive.
 - Blueprints in, factory out. A ghost, from a blueprint or a single entity, is the only way to place something; bots build every one.
 - Hand-work is blocked: no handcrafting, no hand-mining, no manual transfer to or from chests. Inserters, machines and bots move everything.
-- The power core (solar panels, accumulators, substations and the lights) is non-minable by default, and a team-leader button in the mod's team-settings tab unlocks it for a team that wants to rebuild on its own terms. The rest of the base is already minable.
+- The power core (solar panels, accumulators, substations, the lights, the warning sign and, on Fulgora, the lightning collector) is non-minable by default, and a team-leader button in the mod's team-settings tab unlocks it for a team that wants to rebuild on its own terms. The rest of the base is already minable.
 - The central roboport is a custom, uncraftable entity that can never be made minable. Losing your team's home roboport eliminates the team; losing an outpost's roboport only wipes that outpost.
 - No god mode and no cheat mode; the save is never flagged as cheated, so achievements stay intact.
 - Space Age: research and ship a Character Clone to found an outpost on any planet your team has reached, complete with a cargo landing pad and power tuned to that planet.

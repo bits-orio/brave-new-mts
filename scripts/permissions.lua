@@ -26,8 +26,10 @@ local BLOCKED = {
     -- stack_/cursor_/inventory_ transfer actions are shared with managing your
     -- own inventory and the blueprint library, so blocking them breaks copying
     -- and storing blueprints. open_gui stays allowed (logistic requests/recipes).
-    -- Consequence: deliberate click-dragging items out of an open chest is
-    -- still possible; the common ctrl-click vector is not.
+    -- Players reach team chests only through remote view: the body is parked
+    -- on the landing-pen surface, and 2.0 remote view cannot put items into or
+    -- take them out of a chest (2.0.59 closed the last gap, blueprint items).
+    -- These blocks cover ctrl-click and dropping, which need the body in reach.
     "fast_entity_transfer", -- ctrl-click to/from an entity
     "fast_entity_split",    -- ctrl-right-click to/from an entity
     "drop_item",            -- drop items on the ground
