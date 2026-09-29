@@ -5,22 +5,31 @@
 -- it as a special, one-of-a-kind structure (no custom art needed).
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
--- that exist are the ones this mod places at each team's spawn (via the starter
--- blueprint). It IS minable (returns its own item) so the team can relocate it
--- with bots, but it can never be duplicated. Stamping a blueprint that contains
--- it just makes an unbuildable ghost (no obtainable item), so it can't be
--- copied that way either.
+-- that exist are the ones this mod places at each base (via the starter
+-- blueprint). It is never minable either: starter_base.lua sets minable = false
+-- on every copy it places and never lifts it, so the team can't pick it up,
+-- move it or strand itself; only damage removes one. Stamping a blueprint that
+-- contains it just makes an unbuildable ghost (no obtainable item), so it
+-- can't be copied that way either.
+--
+-- It never freezes. Space Age gives the vanilla roboport 300 kW of heating
+-- before this file copies it, and on Aquilo a frozen roboport has no logistic
+-- network, so a character-free team could never build the heat source that
+-- would thaw it.
+--
+-- It leaves no ghost when it dies: a lost outpost is founded again with a
+-- character clone, not rebuilt from a ghost that no item can fill.
 
 local NAME = "bnm-roboport"
 
 -- ─── Entity: vanilla roboport, scaled up ───────────────────────────────
 local rb = table.deepcopy(data.raw.roboport["roboport"])
 rb.name                  = NAME
-rb.localised_name        = { "", "Brave New Roboport" }
-rb.localised_description  = { "", "A self-powered mega-roboport seeded at spawn. Cannot be crafted." }
 rb.minable               = { mining_time = 1, result = NAME }
 rb.placeable_by          = { item = NAME, count = 1 }
 rb.next_upgrade          = nil
+rb.heating_energy        = "0kW"   -- never freezes (see the header)
+rb.create_ghost_on_death = false   -- a lost base is re-founded, not rebuilt
 
 rb.logistics_radius      = (rb.logistics_radius   or 25) * 2   -- 25 -> 50
 rb.construction_radius   = (rb.construction_radius or 55) * 2  -- 55 -> 110
@@ -94,7 +103,6 @@ end
 -- ─── Item: exists for placement/blueprints, but has NO recipe ───────────
 local item = table.deepcopy(data.raw.item["roboport"])
 item.name          = NAME
-item.localised_name = { "", "Brave New Roboport" }
 item.place_result  = NAME
 item.order         = (item.order or "c") .. "-bnm"
 if item.icon then
