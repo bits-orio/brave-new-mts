@@ -13,8 +13,8 @@ folder is ever written into the repo's mod code.
 | `probe.py` | RCON helper (library and CLI) that runs Lua in the level, BNM or MTS state |
 | `lua/power_rig.lua` | In-game power sampler, loaded into the level state by `power_test.py` |
 | `power_test.py` | Measures the starter base's sustainable power on every planet |
-| `regress.py` | The regression suite: nine PASS/FAIL checks on a fresh server of its own |
-| `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state: place, establish, inspect a base |
+| `regress.py` | The regression suite: thirteen PASS/FAIL checks on a fresh server of its own |
+| `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state: place, establish, inspect a base, fill its chests, read its locks, drive a simulated player |
 
 ## Quick start
 
@@ -148,17 +148,19 @@ surface.
 ## regress.py: the regression suite
 
 ```sh
-tools/rig/regress.py                      # all nine checks, about 3 minutes
+tools/rig/regress.py                      # all thirteen checks, about 3 minutes
 tools/rig/regress.py --checks 4,6         # a subset (5 and 6 pull in 4)
 tools/rig/regress.py --out /tmp/reg.json  # also write every check's numbers as JSON
+tools/rig/regress.py --rig bnm-f4 --ports 34341,27341   # a second suite beside the first
 ```
 
 It stages the working tree (`stage.sh --hooks` into `~/factorio-dev/rig/mods-bnm-reg`),
 starts a fresh server named `bnm-reg` on game port 34332 and RCON 27332, runs the
-checks in order and stops the server. Each check prints PASS or FAIL with the
+checks in order and stops the server. `--rig NAME` and `--ports GAME,RCON` change
+the server name (and so its mods dir `mods-NAME` and write-data `w-NAME`) and ports. Each check prints PASS or FAIL with the
 numbers it judged, then a summary; the exit code is 0 only if all pass. A failing
 check does not stop the others. It refuses to start while anything listens on
-RCON 27332; `--keep` leaves the server running at the end, `--no-stage` reuses
+its RCON port; `--keep` leaves the server running at the end, `--no-stage` reuses
 the staged mods dir.
 
 | # | Check | Passes when |
@@ -171,12 +173,16 @@ the staged mods dir.
 | 6 | Outpost loss | `die()` on the outpost roboport: team-1 is not disbanded, the outpost is forgotten, its core became minable. A new clone re-founds it: the site holds exactly one fresh base, every leftover was swept, and the new storage chests hold exactly what the leftovers held |
 | 7 | Home loss | `die()` on the home roboport: MTS disbands the team, deletes its surfaces, BNM forgets its bases and its `on_team_released` handler ran |
 | 8 | Save and reload | Team-2 founds a Gleba outpost, the server restarts on its save with no error, then checks 6 and 7 again, which proves the handlers came back in `on_load` |
-| 9 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
+| 9 | Re-found over full chests | Team-3 founds a Fulgora outpost; every logistic chest is filled with stone and the pad with coal, and a few things are built in the gap above the pad (chests with items, a belt carrying plates, a pole, a stone wall). After the roboport dies and the outpost is re-founded: the site holds one fresh base, the whole fresh kit is in its chests, and what is in the new base plus what lies on the ground equals what the site held, plus the fresh kit, plus one placing item per extra except the stone wall (a base building). Every pile on the ground is marked for deconstruction |
+| 10 | Forget a home | Team-13's home and outpost lose their roboports to `destroy()` (no death event). `/bnm-forget-base` over RCON refuses the home, naming `/mts-disband team-13`, and keeps its record; it still forgets the outpost |
+| 11 | Unlock | Team-14 founds Gleba and Fulgora outposts, unlocks its power core, then founds Aquilo. On all three the planet-tuned copies (no item places them; Aquilo's include `bnm-radar` and `bnm-inserter`) stay non-minable, and the vanilla core entities are minable |
+| 12 | Reconnect view | A stand-in player table on team-14 (a real player needs a client) goes through `remember_view_spot` and `park`: the spot it left on is stored and viewed once, the next re-park centres on the base, nothing is stored on a rival's surface or outside remote view, and a spot on another surface is dropped |
+| 13 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
 
 How it gets there:
 
-- Checks 3 to 8 use teams 1 to 3 (`mts-<planet>-1` .. `-3`); the power runs use slots
-  4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
+- Checks 3 to 9 use teams 1 to 3 (`mts-<planet>-1` .. `-3`), checks 10 to 12 teams 13
+  to 15; the power runs use slots 4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
   (Nauvis as a home, everywhere else as an outpost). Slot 4 is the idle run; the
   others carry test loads that bracket the target, 8 in parallel.
 - Establishing goes through the real core, `platform_hub.establish_for(force, hub)`,
@@ -191,8 +197,10 @@ How it gets there:
   give the team an empty `storage.park_index` entry in BNM, which only BNM's
   `on_team_released` handler clears. This is test state in a throwaway world;
   MTS's code is never changed.
-- Check 9 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
+- Check 13 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
   same ports, after stopping `bnm-reg`.
+- Check 12 creates the landing pen with MTS's own `get_or_create_surface` (in MTS's
+  state), as a player's first landing would, since `park` needs the pen.
 - Every check also scans the log lines written during it: an engine ` Error `
   (other than "Got EOF on stdin") or a BNM warning about a base it could not build
   fully (`failed to place`, `no room in the base's chests`, ...) fails the check.

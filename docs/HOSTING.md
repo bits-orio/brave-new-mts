@@ -110,7 +110,8 @@ that touches parking, remote view or the platform hub:
   spot on one of your team's planets well away from its roboport, then disconnect
   and reconnect. Confirm the view comes back on that planet at that spot, not
   re-centred on the roboport. Then spectate a rival and come back: that return
-  should centre on the base again.
+  should centre on the base again. The headless rig checks the stored spot with a
+  simulated player (regress.py check 12), but only a client shows the real view.
 - **Kicked, or team ended, while offline.** With a second member offline, have the
   leader kick them (`/mts-kick` or the Teams panel), then reconnect as that member.
   Confirm they come back in the open pen with its GUI, not walled inside the team's
