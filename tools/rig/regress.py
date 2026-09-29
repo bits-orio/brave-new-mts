@@ -701,16 +701,19 @@ def check_reload(ctx, c):
 FILLER, PAD_FILLER = "stone", "coal"   # items no outpost kit carries
 # What a team might have built in the gap between the south wall and the pad
 # (dx, dy from the pad's centre; the pad is 8x8, 3 tiles below the wall). All
-# of it comes back as items except the stone-wall, which is one of the base's
-# own buildings, and the belt's lane contents, which REG.base cannot see.
+# of it comes back as items, the stone-wall and the inserter too: the base has
+# its own of both, but these are one past a base's worth of each. The belt's
+# lane contents come back as well; REG.base cannot see them, hence ON_BELTS.
 EXTRAS = [
     {"name": "iron-chest",          "dx": -3.5, "dy": -5.5, "items": {"name": "copper-plate", "count": 100}},
     {"name": "fast-transport-belt", "dx": -2.5, "dy": -5.5, "items": {"name": "iron-plate", "count": 2}},
     {"name": "small-electric-pole", "dx": -1.5, "dy": -5.5},
     {"name": "wooden-chest",        "dx": 0.5,  "dy": -5.5, "items": {"name": "wood", "count": 30}},
     {"name": "stone-wall",          "dx": 2.5,  "dy": -5.5},
+    {"name": "inserter",            "dx": 3.5,  "dy": -5.5},
 ]
-REFUNDS = {"iron-chest": 1, "fast-transport-belt": 1, "small-electric-pole": 1, "wooden-chest": 1}
+REFUNDS = {"iron-chest": 1, "fast-transport-belt": 1, "small-electric-pole": 1, "wooden-chest": 1,
+           "stone-wall": 1, "inserter": 1}
 ON_BELTS = {"iron-plate": 2}
 
 
@@ -766,7 +769,7 @@ def check_full_refound(ctx, c):
     c.expect(sum(got.values()) == sum(want.values()), "no item count lost: %d before, %d after" % (
         sum(want.values()), sum(got.values())))
     c.expect(returned == dict({x["name"]: 0 for x in EXTRAS}, **REFUNDS), "each thing the team built came back "
-             "as its placing item, the stone wall (a base building) excepted (want, got: %s)" % diff(
+             "as its placing item, a base building's name beyond one base's worth included (want, got: %s)" % diff(
                  dict({x["name"]: 0 for x in EXTRAS}, **REFUNDS), returned))
     c.expect(spilled and ground.get("piles", 0) > 0, "the overflow was spilled and logged (%d log lines)" % len(spilled))
     c.expect(ground.get("marked") == ground.get("piles"), "every pile is marked for the robots (%s of %s)" % (

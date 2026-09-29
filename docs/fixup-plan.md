@@ -17,7 +17,7 @@ a real game client), `ask` (author decides before it ships).
 | Fulgora | Lightning-based power: one vanilla lightning collector (in a panel slot) plus tuned accumulators, vanilla panels kept (measured design D1). |
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
-| Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester and buffer chests out (see step 7 below): the author to confirm. |
+| Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (up to one base's count of each blueprint name after substitution, and the pad, at normal quality) do not. The code leaves requester and buffer chests out (see step 7 below): the author to confirm. |
 | Forgetting a home | `/bnm-forget-base` refuses a home base: a home cannot be re-founded, and `/mts-disband` is the way to end that team. |
 | Reconnect view | A reconnect returns the remote view to the spot the player was looking at on their team's own (non-platform) surface, not only to the same surface. |
 | Clone tech | Prerequisite `rocket-silo` only, red/green/blue science. |
@@ -110,9 +110,11 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
    square of half-width `construction_radius`, not a circle).
 3. Sweep leftovers of the same force in the footprint and pad area (a lost
    outpost being re-founded): pool what they hold (inventories, belt lanes,
-   inserter hands), destroy them and their ghosts. An entity that is not one
-   of the base's own (a blueprint name after the swaps, or the pad) is also
-   pooled as the item that places it.
+   inserter hands), destroy them and their ghosts. An entity beyond one
+   base's count of its name (a blueprint name after the swaps, or the pad),
+   or not normal quality, is also pooled as the item that places it. A
+   replacement the team built for a destroyed base part counts as a base
+   part: the new base re-supplies it.
 4. Substitute entities per profile (panels, accumulators, Fulgora collector at
    the panel slot (3.5, -1.5) placed at (3, -1), radar, inserter). Compute the
    roboport offset before substituting.

@@ -62,12 +62,24 @@ function M.collect_crash_debris(surface, pool)
     end
 end
 
---- The entity names a starter base is built from: the blueprint's, after the
---- planet's swaps, and the landing pad.
-local function base_names(plan)
-    local names = { [landing_pad.PAD_NAME] = true }
-    for _, e in pairs(plan.entities) do names[e.name] = true end
-    return names
+--- How many of each entity a starter base is built with: the blueprint's,
+--- after the planet's swaps, and the landing pad. All are normal quality.
+local function base_counts(plan)
+    local counts = { [landing_pad.PAD_NAME] = 1 }
+    for _, e in pairs(plan.entities) do counts[e.name] = (counts[e.name] or 0) + 1 end
+    return counts
+end
+
+--- True if `entity` may be one of the old base's own buildings, which the new
+--- base replaces; it uses up one of its name in `budget`. Past one base's
+--- worth of a name, or at any other quality, it is something the team built.
+--- A replacement the team built for a destroyed base part counts as a base
+--- part: the new base re-supplies it.
+local function take_base_part(entity, budget)
+    local left = entity.quality.name == "normal" and budget[entity.name] or 0
+    if left == 0 then return false end
+    budget[entity.name] = left - 1
+    return true
 end
 
 --- Pool the item that places `entity`, the one robots would build it from.
@@ -81,15 +93,15 @@ end
 --- lose_outpost), their ghosts and whatever the team built around them in
 --- the site. Pool what they hold and destroy them, so nothing blocks the new
 --- build and no item is lost. What the team built also comes back as the item
---- that places it; the base's own buildings (base_names of `plan`) do not,
---- since the new base replaces them.
+--- that places it. Up to one base's worth of the base's own buildings
+--- (base_counts of `plan`) does not, since the new base replaces them.
 function M.sweep_leftovers(force, surface, area, pool, plan)
-    local old_base = base_names(plan)
+    local budget = base_counts(plan)
     local n = 0
     for _, e in pairs(surface.find_entities_filtered{ area = area, force = force }) do
         if e.valid and not SWEEP_SKIP[e.type] then
             item_delivery.pool_contents(e, pool)
-            if not old_base[e.name] then pool_placing_item(e, pool) end
+            if not take_base_part(e, budget) then pool_placing_item(e, pool) end
             e.destroy()
             n = n + 1
         end
