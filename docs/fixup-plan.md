@@ -146,6 +146,11 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 
 ## Tasks
 
+Every status below was re-checked against the code on `space-age-fixup` as of
+this pass (2026-09-29): README, `docs/portal.md`, `docs/HOSTING.md`,
+`changelog.txt`, `tools/portal_meta.json` and `locale/en/locale.cfg` all still
+match what the code does, so only E2 needed updating.
+
 ### Spikes (finished)
 
 | ID | Task | Status |
@@ -214,7 +219,7 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 | ID | Task | Status |
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
-| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors | todo |
+| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors | done — `tools/rig/regress.py` + `tools/rig/lua/regress.lua`, 9/9 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
@@ -245,3 +250,68 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 Roboport creation failure soft-lock; rod coverage on the current layout (moot
 under D1); Vulcanus demolisher territory at spawn; changelog missing the
 construction-robotics grant; extra portal tags.
+
+## Results
+
+`tools/rig/regress.py` (nine checks, about 2.5 minutes, driven by
+`tools/rig/lua/regress.lua` inside BNM's own state) passed 9/9 on the final
+code on `space-age-fixup`. No check failed, so the mod needed no further
+fixes. See [`tools/rig/README.md`](https://github.com/bits-orio/brave-new-mts/blob/master/tools/rig/README.md#regresspy-the-regression-suite)
+for what each check verifies and how the fixtures work.
+
+1. **Clean load:** 0 errors in the log. `bnm-planet-profiles` holds 105
+   profiles, and those for `mts-<planet>-1` match the design contract above.
+   Measured: Gleba panel 150 kW / accumulator 9.20 MJ, Aquilo panel 9000 kW /
+   accumulator 22.07 MJ, Fulgora accumulator 10 MJ. `bnm-roboport`,
+   `bnm-radar` and `bnm-inserter` need no heating.
+2. **Power** (sustained total, idle about 255.5 kW):
+
+   | Planet | Sustained | Next load fails at | Target | Result |
+   |---|---|---|---|---|
+   | Nauvis | 848.5 kW | 858.9 kW | about 855 kW (+-2.5%) | PASS |
+   | Vulcanus | 3780.0 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
+   | Gleba | 1089.7 kW | 1097.3 kW | at least 1080 kW | PASS |
+   | Aquilo | 1309.7 kW | 1317.3 kW | at least 1300 kW | PASS |
+   | Fulgora | 2 bases x 20 days at 1091 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 51.6 MJ |
+3. **Aquilo:** after 10 game minutes the roboport, `bnm-radar` and
+   `bnm-inserter` are all unfrozen, and the roboport has a network with 50
+   bots. A transport-belt ghost 23 tiles out was built after 612 ticks.
+4. **Establish:** `mts-vulcanus-1` had no surface before. After
+   `establish_for`, the surface exists (owner team-1) with 81 chunks
+   generated and 0 out-of-map tiles. The uncommon clone was consumed, the
+   outpost was recorded, and the pad sits at (16, 30), 3 tiles below the
+   south wall and centred under the roboport.
+5. **Pad delivery:** the pad received 100 iron plate after 1214 ticks, and
+   the hub was left with 0.
+6. **Outpost loss:** team-1's slot stayed occupied and its home was kept.
+   The record and `bases_placed` were cleared, and all 47 core entities
+   became minable. A new clone re-founded the outpost: all 148 leftovers
+   were swept, the base's entity counts match a fresh one, and the new
+   storage chests hold exactly what the leftovers held, including the 37
+   iron-gear-wheel marker. The new core is locked.
+7. **Home loss:** MTS released team-1's slot, both of its surfaces were
+   deleted, BNM forgot its bases, and BNM's `on_team_released` handler ran.
+8. **Save and reload:** the reload had 0 errors (tick 260448 before, 260575
+   after), and the Gleba outpost survived. After the reload, check 6 passed
+   again for team-2 on Gleba (148 swept, pooled exactly), and check 7 also
+   repeated: team-2 was disbanded.
+9. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
+   `provider` record ran `on_configuration_changed` with 0 errors. The
+   record now has `home = true`, `outpost = false`, 4 valid providers and 4
+   storage chests. The old key and the cached event ids are gone.
+
+Two fixtures the suite relies on to make these checks real, neither a change
+to MTS's or BNM's own code:
+
+- **MTS storage.** A server with no players never claims a team slot, so
+  MTS's `disband_team` does nothing for an unclaimed one. Each team that gets
+  a home in the suite has `storage.team_pool[N] = "occupied"` set in MTS's
+  storage, so "not disbanded" in check 6 and the disband in check 7 are real
+  tests.
+- **BNM storage.** Checks 7 and 8 add an empty `storage.park_index[force]`,
+  which only BNM's `on_team_released` handler clears -- proof the handler
+  ran, including after the reload.
+
+One caveat the suite reports but does not fail on: after a disband, the
+engine only schedules the team's platforms for deletion, about 17,500 ticks
+later.
