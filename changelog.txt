@@ -44,8 +44,8 @@ Date: 2026-09-28
     - Reconnecting no longer snaps a player's remote view back to their home planet or the base's
       roboport: it returns to the spot the player was looking at on their team's own ground. The
       view ignores the map editor, other teams' surfaces and platforms.
-    - MTS's "Spectate a rival team" button no longer strands a player out of remote view;
-      returning from spectating re-centres their camera on their own base.
+    - Spectating a rival team from the MTS Teams panel no longer strands a player out of remote
+      view; returning from spectating re-centres their camera on their own base.
     - Pen cells now hold 12 teammates instead of wrapping around and stacking the 10th member on
       top of another player; a released team's cell is emptied and its label reset.
     - The team-settings tab's unlock warning now lists everything the power core actually locks,
