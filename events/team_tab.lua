@@ -7,6 +7,7 @@
 
 local starter_base = require("scripts.starter_base")
 local mts_events   = require("scripts.mts_events")
+local teams        = require("scripts.teams")
 
 local M = {}
 
@@ -53,8 +54,7 @@ local UNLOCK_TOOLTIP = "Make the locked " .. CORE .. " mineable on every base. "
 local LABEL_WIDTH = 360
 
 local function is_leader(player)
-    if not remote.interfaces["mts-v1"] then return false end
-    local info = remote.call("mts-v1", "get_team_info", player.force.name)
+    local info = teams.info(player.force.name)
     return info ~= nil and info.leader_player_index == player.index
 end
 

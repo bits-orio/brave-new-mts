@@ -18,6 +18,7 @@ local starter_base  = require("scripts.starter_base")
 local remote_player = require("scripts.remote_player")
 local pen_cells     = require("scripts.pen_cells")
 local mts_events    = require("scripts.mts_events")
+local teams         = require("scripts.teams")
 
 local M = {}
 
@@ -25,9 +26,7 @@ local function on_team_released(e)
     starter_base.cleanup_force(e.force_name)
     remote_player.cleanup_force(e.force_name)
     pen_cells.evict_cell(e.force_name)
-    local info = remote.interfaces["mts-v1"]
-        and remote.call("mts-v1", "get_team_info", e.force_name)
-    pen_cells.set_label(e.force_name, (info and info.display_name) or e.force_name)
+    pen_cells.set_label(e.force_name, teams.display_name(e.force_name))
 end
 
 --- Attach the handler. Safe in on_init/on_load/on_config; identical on every

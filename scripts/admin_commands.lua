@@ -78,10 +78,10 @@ local function player_line(player)
         .. get("last_view") .. ", home " .. get("home_surface")
 end
 
---- Status lines for one team force.
+--- Status lines for one team force. "?" in place of the team's name says
+--- MTS does not know the force, which teams.display_name would hide.
 local function team_lines(force_name)
-    local info  = remote.interfaces["mts-v1"]
-        and remote.call("mts-v1", "get_team_info", force_name)
+    local info  = teams.info(force_name)
     local lines = { force_name .. " (" .. ((info and info.display_name) or "?") .. ")" }
     local bases = storage.bnm_base or {}
     for _, name in ipairs(sorted_keys(bases)) do
@@ -112,9 +112,9 @@ end
 local function status(cmd)
     if not authorised(cmd) then return end
     local team  = trimmed(cmd.parameter)
-    local teams = team and { team } or teams_to_show()
+    local shown = team and { team } or teams_to_show()
     local lines = {}
-    for _, fn in ipairs(teams) do
+    for _, fn in ipairs(shown) do
         for _, line in ipairs(team_lines(fn)) do lines[#lines + 1] = line end
     end
     -- A "placed" flag without a base record would block a planet for good.

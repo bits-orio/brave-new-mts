@@ -20,21 +20,16 @@ local function planet_label(surface)
     return surface.planet and surface.planet.prototype.localised_name or surface.name
 end
 
-local function team_name(force_name)
-    local info = remote.call("mts-v1", "get_team_info", force_name)
-    return (info and info.display_name) or force_name
-end
-
 local function lose_outpost(force, surface)
     starter_base.lose_outpost(surface.name)
     log("[brave-new-mts] " .. force.name .. " lost its outpost on " .. surface.name)
-    force.print({ "", "[Brave New MTS] ", team_name(force.name), " lost its ",
+    force.print({ "", "[Brave New MTS] ", teams.display_name(force.name), " lost its ",
         planet_label(surface), " outpost. Your other bases are safe: ship another ",
         "[item=bnm-character-clone] to a platform above the planet to re-found it." })
 end
 
 local function eliminate(force_name)
-    game.print("[Brave New MTS] " .. team_name(force_name)
+    game.print("[Brave New MTS] " .. teams.display_name(force_name)
         .. " lost their home roboport, and the team has been eliminated!")
     if remote.interfaces["mts-v1"].disband_team then
         remote.call("mts-v1", "disband_team", force_name)
