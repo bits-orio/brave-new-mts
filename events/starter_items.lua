@@ -4,7 +4,7 @@
 -- with MTS (via mts-v1) and route the items into the team's passive provider
 -- chest instead:
 --   * teams that spawn LATER pick up the current list at base placement, via
---     starter_base.mts_starter_items() (a get_starter_items query); and
+--     mts_starter_items() in scripts/base/kits.lua (a get_starter_items query); and
 --   * when an admin adds items while teams are already spawned, MTS raises
 --     on_starter_items_added and we top up every placed base here.
 -- Together those two paths give every team the full admin list.

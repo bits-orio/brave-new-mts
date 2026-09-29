@@ -1,7 +1,7 @@
 -- scripts/blueprints.lua
 -- What a starter base is made of: the one human-designed blueprint, the
 -- per-planet swaps made to it, and the text on its sign. starter_base.lua
--- decides where the base goes, builds it and stocks its chests.
+-- (scripts/base/) decides where the base goes, builds it and stocks its chests.
 --
 -- Every planet gets the SAME footprint. Planet power is tuned by swapping
 -- entities in their blueprint slots, never by a second blueprint:
@@ -18,7 +18,7 @@
 -- The blueprint holds the whole base: power, the roboport, walls, floor tiles
 -- and the logistic chests, including the requester that feeds robots to the
 -- roboport (its request is part of the blueprint). The chests are empty here;
--- starter_base.lua fills them from its kits, so item lists live in code.
+-- scripts/base/kits.lua fills them from its kits, so item lists live in code.
 
 local M = {}
 

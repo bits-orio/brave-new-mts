@@ -13,9 +13,10 @@ local M = {}
 local TAB_NAME      = "brave-new-mts"
 local UNLOCK_BUTTON = "bnm_unlock_minable"
 
--- Mirrors starter_base's power core: solar panels, accumulators, substations,
--- lamps, lightning collectors (Fulgora) and the display panel, plus the
--- planet-tuned copies (is_tuned), which stay locked even after the unlock.
+-- Mirrors the power core (scripts/base/power_core.lua): solar panels,
+-- accumulators, substations, lamps, lightning collectors (Fulgora) and the
+-- display panel, plus the planet-tuned copies (is_tuned), which stay locked
+-- even after the unlock.
 local WARNING =
     "You can already mine and redesign most of your bases. The power core "
     .. "stays locked: solar panels, accumulators, substations, lamps, lightning "

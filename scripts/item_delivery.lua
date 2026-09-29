@@ -1,5 +1,5 @@
 -- scripts/item_delivery.lua
--- Moves items into a base without losing any. starter_base.lua uses it to
+-- Moves items into a base without losing any. The starter base uses it to
 -- pool what a cleared site held (crash-site loot, a lost outpost's leftovers),
 -- to fill a base's chests with kits and salvage, and to spill whatever no
 -- chest can hold onto the ground, marked for the team's robots to bring in.

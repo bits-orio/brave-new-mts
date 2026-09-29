@@ -6,7 +6,7 @@
 --
 -- Crucially it has NO RECIPE, so players can never craft one -- the only copies
 -- that exist are the ones this mod places at each base (via the starter
--- blueprint). It is never minable either: starter_base.lua sets minable = false
+-- blueprint). It is never minable either: scripts/base/builder.lua sets minable = false
 -- on every copy it places and never lifts it, so the team can't pick it up,
 -- move it or strand itself; only damage removes one. Stamping a blueprint that
 -- contains it just makes an unbuildable ghost (no obtainable item), so it

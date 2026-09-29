@@ -15,11 +15,11 @@ local R = REG
 
 local CLONE = "bnm-character-clone"
 
--- The power core starter_base.lua locks (PROTECTED_TYPES / PROTECTED_NAMES).
+-- The power core BNM locks (scripts/base/power_core.lua PROTECTED_TYPES / PROTECTED_NAMES).
 local CORE_TYPES = { "solar-panel", "accumulator", "lightning-attractor", "lamp", "display-panel" }
 local CORE_NAMES = { ["substation"] = true, ["medium-electric-pole"] = true }
 
--- Never swept as a leftover (starter_base.lua SWEEP_SKIP), so never counted.
+-- Never swept as a leftover (scripts/base/salvage.lua SWEEP_SKIP), so never counted.
 local NOT_BASE = { ["character"] = true, ["cargo-pod"] = true,
                    ["construction-robot"] = true, ["logistic-robot"] = true }
 
@@ -113,7 +113,7 @@ end
 
 --- The site of a base: its walls' box, and the landing pad below it (found on
 --- the ground, so a lost outpost's pad counts too), grown by 3 tiles
---- (starter_base's CLEAR_MARGIN), i.e. what a re-found sweeps.
+--- (scripts/base/geometry.lua CLEAR_MARGIN), i.e. what a re-found sweeps.
 local function site(s, force_name)
     local walls = s.find_entities_filtered{ type = "wall", force = force_name,
         area = { { -100, -100 }, { 132, 132 } } }
