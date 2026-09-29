@@ -16,33 +16,39 @@ local UNLOCK_BUTTON = "bnm_unlock_minable"
 -- Mirrors the power core (scripts/base/power_core.lua): solar panels,
 -- accumulators, substations, lamps, lightning collectors (Fulgora) and the
 -- display panel, plus the planet-tuned copies (is_tuned), which stay locked
--- even after the unlock.
+-- even after the unlock. The sign is part of the core, so every string says
+-- so the same way (CORE). STAYS_LOCKED is what the unlock never frees: the
+-- roboport (scripts/base/builder.lua) and the tuned copies. README.md ("The
+-- base is permanent") and docs/portal.md (Features) repeat these rules and
+-- cannot be built from here: change them together.
+local CORE         = "power core (warning sign included)"
+local STAYS_LOCKED = "The central roboports and the green-tinted, planet-tuned "
+    .. "buildings stay locked, because nothing can place one again."
+
 local WARNING =
     "You can already mine and redesign most of your bases. The power core "
     .. "stays locked: solar panels, accumulators, substations, lamps, lightning "
     .. "collectors and the power warning sign, so you can't accidentally kill "
-    .. "your own power and strand your team. The green-tinted, planet-tuned "
-    .. "panels, accumulators, radar and inserter stay locked even after you "
-    .. "unlock, because nothing can ever place one again.\n\n"
+    .. "your own power and strand your team.\n\n"
     .. "Unlocking lets you mine / deconstruct that power core too, on every base "
-    .. "your team has or founds later, to rebuild it your way. The central "
-    .. "roboports can NEVER be removed.\n\n"
+    .. "your team has or founds later, to rebuild it your way. " .. STAYS_LOCKED
+    .. " The tuned buildings are the panels, accumulators, radar and inserter "
+    .. "made for their planet.\n\n"
     .. "[color=1,0.5,0.2]Warning:[/color] if you remove your power before "
     .. "replacements are running, your team can be soft-locked with no way to "
     .. "recover. This is one-way."
 
-local UNLOCKED_NOTE =
-    "[color=0,1,0]Your power core and warning sign are now "
-    .. "mineable too (except the central roboports and the "
-    .. "planet-tuned buildings).[/color]"
+local UNLOCKED_NOTE = "[color=0,1,0]Your " .. CORE .. " is now mineable on every "
+    .. "base. " .. STAYS_LOCKED .. "[/color]"
+
+local UNLOCKED_PRINT = "[Brave New MTS] Power core unlocked on every base: it can "
+    .. "now be mined / deconstructed. " .. STAYS_LOCKED
+    .. " Be careful not to soft-lock the team."
 
 local LEADER_ONLY_NOTE = "[color=1,0.65,0]Only your team leader can change this.[/color]"
 
-local UNLOCK_TOOLTIP =
-    "Make the locked power core and warning sign mineable on "
-    .. "every base. The roboports and the green-tinted, planet-tuned "
-    .. "buildings stay locked, because nothing can place one again. "
-    .. "One-way."
+local UNLOCK_TOOLTIP = "Make the locked " .. CORE .. " mineable on every base. "
+    .. STAYS_LOCKED .. " One-way."
 
 local LABEL_WIDTH = 360
 
@@ -92,9 +98,7 @@ function M.on_gui_click(event)
     if not (player and player.valid) or not is_leader(player) then return end
 
     starter_base.unlock_minable(player.force.name)
-    player.force.print("Power core unlocked on every base: it can now be mined / "
-        .. "deconstructed (except the central roboports and the planet-tuned "
-        .. "buildings). Be careful not to soft-lock the team.")
+    player.force.print(UNLOCKED_PRINT)
     build_tab(player, el.parent)  -- el.parent is the tab content frame
 end
 
