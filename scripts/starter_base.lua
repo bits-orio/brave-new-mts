@@ -519,6 +519,14 @@ function M.place(force_name, surface)
     }
 
     storage.bases_placed[surface.name] = true
+
+    -- Grant construction robotics so bot-driven play is possible from the start.
+    local cr = force.technologies["construction-robotics"]
+    if cr and not cr.researched then
+        cr.researched = true
+        force.print("[Brave New MTS] Construction robotics research has been unlocked for your team.")
+    end
+
     log("[brave-new-mts] starter base placed for " .. force_name .. " on " .. surface.name)
 end
 
