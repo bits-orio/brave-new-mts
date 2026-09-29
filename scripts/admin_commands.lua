@@ -15,10 +15,11 @@
 local remote_player = require("scripts.remote_player")
 local starter_base  = require("scripts.starter_base")
 local teams         = require("scripts.teams")
+local chat          = require("scripts.chat")
 
 local M = {}
 
-local PREFIX = "[Brave New MTS] "
+local PREFIX = chat.PREFIX
 
 -- ─── Caller, replies and audit ─────────────────────────────────────────
 

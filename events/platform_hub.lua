@@ -18,6 +18,7 @@
 
 local starter_base = require("scripts.starter_base")
 local mts_events   = require("scripts.mts_events")
+local chat         = require("scripts.chat")
 
 local M = {}
 
@@ -188,10 +189,6 @@ local function build_widget(player, element, hub)
     end
 end
 
-local function planet_label(surface)
-    return surface.planet and surface.planet.prototype.localised_name or surface.name
-end
-
 --- The click, for a player: establish, then drop their remote view onto the
 --- new base (the character stays parked in the pen) and tell the team.
 local function establish(player, hub)
@@ -206,8 +203,8 @@ local function establish(player, hub)
         surface  = surface,
         position = starter_base.BASE_ORIGIN,
     }
-    player.force.print({ "", "[Brave New MTS] ", player.name, " founded an outpost on ",
-        planet_label(surface), ". If its roboport is destroyed, only this outpost ",
+    player.force.print({ "", chat.PREFIX, player.name, " founded an outpost on ",
+        chat.planet_label(surface), ". If its roboport is destroyed, only this outpost ",
         "is lost, and another clone re-founds it." })
 end
 

@@ -27,6 +27,7 @@
 
 local blueprints  = require("scripts.blueprints")
 local builder     = require("scripts.base.builder")
+local chat        = require("scripts.chat")
 local chunks      = require("scripts.base.chunks")
 local geometry    = require("scripts.base.geometry")
 local kits        = require("scripts.base.kits")
@@ -98,7 +99,7 @@ local function grant_construction_robotics(force)
     local cr = force.technologies[CONSTRUCTION_TECH]
     if cr and not cr.researched then
         cr.researched = true
-        force.print("[Brave New MTS] Construction robotics research has been unlocked for your team.")
+        force.print(chat.PREFIX .. "Construction robotics research has been unlocked for your team.")
     end
 end
 

@@ -8,6 +8,7 @@
 local starter_base = require("scripts.starter_base")
 local mts_events   = require("scripts.mts_events")
 local teams        = require("scripts.teams")
+local chat         = require("scripts.chat")
 
 local M = {}
 
@@ -42,7 +43,7 @@ local WARNING =
 local UNLOCKED_NOTE = "[color=0,1,0]Your " .. CORE .. " is now mineable on every "
     .. "base. " .. STAYS_LOCKED .. "[/color]"
 
-local UNLOCKED_PRINT = "[Brave New MTS] Power core unlocked on every base: it can "
+local UNLOCKED_PRINT = chat.PREFIX .. "Power core unlocked on every base: it can "
     .. "now be mined / deconstructed. " .. STAYS_LOCKED
     .. " Be careful not to soft-lock the team."
 
