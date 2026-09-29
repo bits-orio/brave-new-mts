@@ -12,8 +12,10 @@ This is written for the admin, not for players -- player-facing information is
 
 MTS cuts the vanilla radar's power draw from 300 kW to 50 kW while it's set, because
 every team otherwise carpets its territory with full-power radars that chart chunks
-forever. It's a **startup** setting: it can only be set when the save is created and
-can't be flipped mid-run.
+forever. It's a **startup** setting, so changing it needs a full server restart: stop
+the server, change it in the server's mod settings (`mod-settings.dat`), and start the
+same save again. It isn't locked into the save, so a map that started with it off can
+be switched back on.
 
 BNM's starter-base power was measured with this setting on. A starter base's idle
 draw is about **255 kW** (roboport 200 kW, radar 50 kW, lamps and inserter make up
@@ -21,7 +23,8 @@ the rest). Turn it off and idle draw rises to about **505 kW**, and every radar 
 team builds draws 300 kW instead of 50. That extra 250 kW hits Nauvis hardest: its
 spare power drops from about 600 kW to about 350 kW. The tuned Gleba and Fulgora
 bases are designed to sustain at least 1.08 MW, so a quarter of that goes to the
-radar. Leave `mts_passive_radars` at its default before you create the map.
+radar. Leave `mts_passive_radars` at its default. If a map was started with it off,
+turn it back on and restart the server.
 
 ### `allow_blueprint_imports` (MTS admin flag, default off) -- leave it off
 
