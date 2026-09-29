@@ -1,9 +1,15 @@
 -- scripts/remote_player.lua
 -- Parks a team player's CHARACTER in their team's landing-pen cell and puts the
--- player into remote view of their team surface. The character never sets foot
--- on the team surface, so it can't chart or collide with it -- and remote-view
--- placement is naturally ghosts, which robots build. No god controller, no
--- instant-build, no charting hacks.
+-- player into remote view of a team surface. The character never sets foot on
+-- the team surface, so it can't chart or collide with it -- and remote-view
+-- placement is naturally ghosts, which robots build. No instant-build and no
+-- charting hacks; the god controller is used only for a moment, as a fallback
+-- to create a missing character, and the player never plays in it.
+--
+-- Which surface a re-park views, in order: the last own-team surface the
+-- player looked at in remote view (storage.last_view), their home surface
+-- (storage.home_surface, set when they first arrived), then the team's home
+-- base.
 
 local pen_cells    = require("scripts.pen_cells")
 local starter_base = require("scripts.starter_base")
@@ -11,7 +17,31 @@ local starter_base = require("scripts.starter_base")
 local M = {}
 
 local function is_team_force(name)
-    return name:match("^team%-%d+$") ~= nil
+    return name ~= nil and name:match("^team%-%d+$") ~= nil
+end
+
+local function owner_of(surface_name)
+    return remote.call("mts-v1", "get_surface_owner", surface_name)
+end
+
+--- A player's real team force name. A member spectating a rival sits on the
+--- 'spectator' force while MTS remembers their team; mts-v1 resolves that.
+function M.effective_force(player)
+    local iface = remote.interfaces["mts-v1"]
+    if iface and iface.get_effective_force then
+        return remote.call("mts-v1", "get_effective_force", player.index)
+    end
+    return player.force.name
+end
+
+--- True if the player belongs to a team, even while spectating another one.
+function M.on_team(player)
+    return is_team_force(M.effective_force(player))
+end
+
+--- True if BNM has parked this player for their current team membership.
+function M.is_parked(player)
+    return storage.home_surface ~= nil and storage.home_surface[player.index] ~= nil
 end
 
 --- Lowest free slot index within a team's cell for this player (stable once set).
@@ -29,28 +59,71 @@ local function slot_for(force_name, player_index)
     return idx
 end
 
---- Park `player` for their team and view their team surface. `team_surface` is
---- the surface to view; if omitted, the player's remembered home surface is used
---- (so a reconnecting player is re-asserted into remote view).
+--- The named surface, if it exists and `force_name` owns it.
+local function owned_surface(name, force_name)
+    local surface = name and game.surfaces[name]
+    if surface and surface.valid and owner_of(surface.name) == force_name then
+        return surface
+    end
+end
+
+--- The surface name of a team's home (first) base, if one is recorded.
+local function team_home(force_name)
+    for surface_name, base in pairs(storage.bnm_base or {}) do
+        if base.force == force_name and base.home then return surface_name end
+    end
+end
+
+--- The surface a re-park views (see the header for the order).
+local function view_surface(player)
+    local fn = player.force.name
+    local last = storage.last_view and storage.last_view[player.index]
+    local home = storage.home_surface and storage.home_surface[player.index]
+    return owned_surface(last, fn) or owned_surface(home, fn)
+        or owned_surface(team_home(fn), fn)
+end
+
+--- Empty each BODY once, keyed on its unit_number. A fresh body (first spawn,
+--- respawn, the create_character fallback) may carry a loadout; a reconnect
+--- re-parks the same body, whose inventory holds the player's own blueprints
+--- and planners, and those must survive.
+local function empty_once(player)
+    local body = player.character
+    if not (body and body.valid) then return end
+    storage.emptied_body = storage.emptied_body or {}
+    local emptied = storage.emptied_body
+    if emptied[body.unit_number] then return end
+    for number, owner in pairs(emptied) do  -- forget this player's old body
+        if owner == player.index then emptied[number] = nil end
+    end
+    body.clear_items_inside()
+    emptied[body.unit_number] = player.index
+end
+
+--- Park `player` for their team and view a team surface. `team_surface` is the
+--- surface they just arrived on (it becomes their home surface); if omitted,
+--- the view is resolved as the header describes (a reconnect or re-park).
+--- Returns the name of the surface viewed, or nil if nothing was done.
 function M.park(player, team_surface)
-    if not (player and player.valid) then return end
-    if not remote.interfaces["mts-v1"] then return end
+    if not (player and player.valid and player.connected) then return nil end
+    if not remote.interfaces["mts-v1"] then return nil end
+    -- The map editor is observation: never pull an admin out of it.
+    if player.physical_controller_type == defines.controllers.editor then return nil end
 
     local fn = player.force.name
-    if not is_team_force(fn) then return end  -- not on a team (e.g. in the pen)
+    if not is_team_force(fn) then return nil end  -- not on a team (pen, spectating)
 
     storage.home_surface = storage.home_surface or {}
     if team_surface and team_surface.valid then
         storage.home_surface[player.index] = team_surface.name
     else
-        local name = storage.home_surface[player.index]
-        team_surface = name and game.surfaces[name]
+        team_surface = view_surface(player)
     end
-    if not (team_surface and team_surface.valid) then return end
+    if not (team_surface and team_surface.valid) then return nil end
 
     pen_cells.ensure_built()
     local pen = game.surfaces["landing-pen"]
-    if not (pen and pen.valid) then return end
+    if not (pen and pen.valid) then return nil end
 
     -- Ensure a character exists to park (MTS provides one on spawn; create as a
     -- fallback for any path that doesn't).
@@ -58,12 +131,10 @@ function M.park(player, team_surface)
         player.set_controller{ type = defines.controllers.god }
         player.create_character()
     end
-    -- The parked body is purely a placeholder -- an overseer carries nothing.
-    -- Empty it so no starting loadout lingers on the character in the pen.
-    if player.character then player.character.clear_items_inside() end
+    empty_once(player)
 
     local pos = pen_cells.park_position(fn, slot_for(fn, player.index))
-    if not pos then return end
+    if not pos then return nil end
 
     player.teleport(pos, pen)
     if player.character then player.character.destructible = false end
@@ -74,10 +145,38 @@ function M.park(player, team_surface)
     }
     log("[brave-new-mts] parked " .. player.name .. " in " .. fn
         .. " cell; viewing " .. team_surface.name)
+    return team_surface.name
 end
 
---- Release a player's parked slot and home surface (on leaving a team). MTS's
---- return_to_pen moves the body back to the selection ring; we just free state.
+--- Re-park a player whose view was left off their team's surfaces (MTS's
+--- spectate exit restores the camera onto the pen cell), but keep a view MTS
+--- restored onto their own team's ground (a GPS-ping spectate).
+function M.repark_if_away(player)
+    if not (player and player.valid and player.connected) then return end
+    if not remote.interfaces["mts-v1"] then return end
+    local fn = player.force.name
+    if not is_team_force(fn) or M.effective_force(player) ~= fn then return end
+    if player.controller_type == defines.controllers.remote
+            and owned_surface(player.surface.name, fn) then
+        return
+    end
+    M.park(player)
+end
+
+--- Remember the surface a remote-view player is looking at, if it is their own
+--- team's ground (platforms excluded: the view is centred on a base origin).
+function M.remember_view(player)
+    local surface = player.surface
+    if not (surface and surface.valid) or surface.platform then return end
+    if owner_of(surface.name) ~= player.force.name then return end
+    storage.last_view = storage.last_view or {}
+    storage.last_view[player.index] = surface.name
+end
+
+--- Release a player's parked slot and view state (on really leaving a team).
+--- MTS's return_to_pen moves a CONNECTED player's body back to the selection
+--- ring; an offline member's body leaves the cell when the team's slot is
+--- released (pen_cells.evict_cell).
 function M.unpark(player)
     if not (player and player.valid) then return end
     if storage.park_index then
@@ -85,9 +184,8 @@ function M.unpark(player)
             team[player.index] = nil
         end
     end
-    if storage.home_surface then
-        storage.home_surface[player.index] = nil
-    end
+    if storage.home_surface then storage.home_surface[player.index] = nil end
+    if storage.last_view    then storage.last_view[player.index]    = nil end
 end
 
 --- Drop a whole team's parked-slot bookkeeping when its slot is released, so a
@@ -95,6 +193,19 @@ end
 --- of inheriting the previous occupants' (now meaningless) assignments.
 function M.cleanup_force(force_name)
     if storage.park_index then storage.park_index[force_name] = nil end
+end
+
+--- Migration (on_configuration_changed): mark every body already parked in a
+--- cell as emptied, so the first reconnect after updating from a version that
+--- emptied on every park keeps what the player stored since. Offline players'
+--- bodies have no player attached, so they are found in the cells.
+function M.migrate()
+    storage.emptied_body = storage.emptied_body or {}
+    for _, body in pairs(pen_cells.parked_characters()) do
+        if body.unit_number and not storage.emptied_body[body.unit_number] then
+            storage.emptied_body[body.unit_number] = body.player and body.player.index or true
+        end
+    end
 end
 
 return M

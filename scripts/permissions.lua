@@ -8,8 +8,10 @@
 -- keeps team players in.
 --
 -- NOTE: we deliberately do NOT block start_walking. It also drives remote-view
--- camera panning, so blocking it freezes remote view entirely. Roaming/charting
--- on foot is handled separately by the charted-area clamp (scripts/movement_clamp.lua).
+-- camera panning, so blocking it freezes remote view entirely. Walking reaches
+-- nothing anyway: each team player's character is parked inside a walled cell
+-- on the landing-pen surface (scripts/pen_cells.lua) and never stands on a team
+-- surface, so it cannot roam or chart there.
 
 local M = {}
 
