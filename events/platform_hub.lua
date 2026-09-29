@@ -102,18 +102,15 @@ local function evaluate(force, hub)
     return ready, reasons, planet
 end
 
---- The base planet of an MTS team variant: "mts-vulcanus-3" -> "vulcanus".
-local function base_planet(planet_name)
-    return planet_name:match("^mts%-(.+)%-%d+$") or planet_name
-end
-
 --- Tell MTS a team founded its first base on a planet, for its first-to-reach
---- announcement and the Awards records. MTS dedupes repeat reports, so a
---- re-founded outpost is not announced twice.
-local function report_milestone(force, planet_name)
+--- announcement and the Awards records. The planet is the base of the
+--- surface's profile, the one the outpost's kit, sign and power were chosen
+--- by. MTS dedupes repeat reports, so a re-founded outpost is not announced
+--- twice.
+local function report_milestone(force, surface)
     local iface = remote.interfaces["mts-v1"]
     if not (iface and iface.report_milestone) then return end
-    local base     = base_planet(planet_name)
+    local base     = starter_base.profile_for(surface).base
     local category = "bnm-base-" .. base
     if iface.register_milestone then  -- idempotent: overwrites the same entry
         remote.call("mts-v1", "register_milestone", {
@@ -152,7 +149,7 @@ function M.establish_for(force, hub)
     if not (quality and inv.remove{ name = CLONE, quality = quality, count = 1 } == 1) then
         log("[brave-new-mts] outpost on " .. surface.name .. " placed, but no clone was left to consume")
     end
-    report_milestone(force, planet.name)
+    report_milestone(force, surface)
     log("[brave-new-mts] " .. force.name .. " established an outpost on " .. surface.name)
     return true, nil, surface.name
 end
