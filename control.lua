@@ -57,6 +57,12 @@ local function init_events()
     end)
 end
 
+-- Storage keys where earlier builds cached mts-v1 event ids.
+local STALE_EVENT_ID_KEYS = {
+    "bnm_tab_event_id", "bnm_hub_event_id", "bnm_starter_items_event_id",
+    "bnm_team_released_event_id", "bnm_team_renamed_event_id",
+}
+
 local function init_storage()
     storage.bases_placed = storage.bases_placed or {}  -- surface name -> base placed
     storage.bnm_base     = storage.bnm_base     or {}  -- surface name -> { force, roboport, home/outpost, ... }
@@ -66,16 +72,17 @@ local function init_storage()
     storage.emptied_body = storage.emptied_body or {}  -- character unit_number -> player_index (emptied once)
     -- storage.bnm_repark: player_index -> tick, re-parks pending after a spectate
     -- (nil when empty; see events/player_lifecycle.lua).
-    -- storage.bnm_tab_event_id / bnm_hub_event_id: cached mts-v1 custom event ids
-    -- (set in on_init/on_configuration_changed via the modules' setup()).
+    -- mts-v1 event ids are never stored: they shift with the mod set
+    -- (scripts/mts_events.lua). Earlier versions cached them; drop those keys.
+    for _, key in ipairs(STALE_EVENT_ID_KEYS) do storage[key] = nil end
 end
 
+-- Registrations MTS keeps in its own storage: on_init / on_configuration_changed
+-- only. The matching event handlers are attached by init_events().
 local function setup_mts_extensions()
     ev_team_tab.setup()
     ev_platform_hub.setup()
     ev_starter_items.setup()
-    ev_team_cleanup.setup()
-    ev_team_rename.setup()
 end
 
 -- ─── Lifecycle ─────────────────────────────────────────────────────────
@@ -85,16 +92,14 @@ script.on_init(function()
     init_storage()
     permissions.apply()
     init_events()
-    -- remote.call is legal here (all interfaces are registered before on_init):
-    -- register our MTS UI extensions and cache their custom event ids.
     setup_mts_extensions()
 end)
 
 script.on_load(function()
-    -- on_load must NOT write to storage and must NOT remote.call. Event
-    -- registrations don't persist, so re-register them -- deterministically,
-    -- using the event ids and queues cached in storage (see team_tab.lua and
-    -- player_lifecycle.lua).
+    -- on_load must NOT write to storage (or to MTS's, so no setup here). Event
+    -- registrations don't persist, so re-register them deterministically: from
+    -- the queues in storage (player_lifecycle.lua) and this session's mts-v1
+    -- event ids, a pure lookup that is legal here (scripts/mts_events.lua).
     init_events()
 end)
 
@@ -103,8 +108,6 @@ script.on_configuration_changed(function()
     init_storage()
     permissions.apply()
     init_events()
-    -- Re-register the MTS UI extensions and refresh their cached event ids (they
-    -- can change if the mod set changed, which is exactly when this fires).
     setup_mts_extensions()
     -- Bring older saves up to date: base records (home / outpost, chest lists),
     -- and bodies already parked, so the first reconnect after the update does

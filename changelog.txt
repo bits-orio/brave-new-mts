@@ -68,6 +68,9 @@ Date: 2026-09-28
       their provider chests are recorded, so the outpost-loss and admin-command behaviour works
       on an upgraded save without a fresh map, and existing players' parked bodies are not swept
       as if they'd just spawned.
+    - After a mod was added or removed, the server could refuse every joining player ("mod event
+      handlers are not identical") until a second restart, or fail to load the save at all.
+      Multi-Team Support's event ids are now looked up each session instead of kept in the save.
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.3
 Date: 2026-06-05

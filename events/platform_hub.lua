@@ -17,6 +17,7 @@
 -- one handler for it), so M.register only wires the custom event handler.
 
 local starter_base = require("scripts.starter_base")
+local mts_events   = require("scripts.mts_events")
 
 local M = {}
 
@@ -231,31 +232,24 @@ function M.on_gui_click(event)
     establish(player, hub)
 end
 
---- Deterministic handler registration (MP-safe): the event id is read from
---- storage, cached by M.setup() during on_init / on_configuration_changed.
+--- Deterministic handler registration (MP-safe): the event id is looked up
+--- this session (scripts/mts_events.lua), never cached.
 function M.register()
-    local id = storage.bnm_hub_event_id
+    local id = mts_events.id("on_platform_hub_gui_built")
     if id then script.on_event(id, on_widget_built) end
 end
 
---- Side-effecting setup that needs remote.call: register the hub widget with
---- MTS (persisted in its storage) and cache the on_platform_hub_gui_built event
---- id. Safe only in on_init / on_configuration_changed -- never on_load. `mod`
---- lets MTS drop the registration if BNM is removed from the save.
+--- Register the hub widget with MTS. It is persisted in MTS's storage, so this
+--- runs in on_init / on_configuration_changed only, never on_load. `mod` lets
+--- MTS drop the registration if BNM is removed from the save.
 function M.setup()
     local iface = remote.interfaces["mts-v1"]
-    if not iface then return end
-    if iface.register_platform_hub_widget then
+    if iface and iface.register_platform_hub_widget then
         remote.call("mts-v1", "register_platform_hub_widget", {
             name = WIDGET_NAME, caption = "Brave New MTS", order = "z",
             position = "right", mod = script.mod_name,
         })
     end
-    if iface.get_event_id then
-        storage.bnm_hub_event_id =
-            remote.call("mts-v1", "get_event_id", "on_platform_hub_gui_built")
-    end
-    M.register()
 end
 
 return M

@@ -5,6 +5,7 @@
 -- power core of every base minable (except the permanent roboports).
 
 local starter_base = require("scripts.starter_base")
+local mts_events   = require("scripts.mts_events")
 
 local M = {}
 
@@ -92,36 +93,28 @@ local function on_tab_built(e)
 end
 
 --- Register handlers DETERMINISTICALLY. Called from on_init, on_load AND
---- on_configuration_changed, so it must be identical on every peer and must NOT
---- remote.call (illegal in on_load). The on_team_tab_built event id is read from
---- storage, where M.setup() cached it during on_init / on_configuration_changed.
+--- on_configuration_changed, so it must be identical on every peer. The
+--- on_team_tab_built id is looked up this session (scripts/mts_events.lua),
+--- never cached: a cached id goes stale when the mod set changes.
 --- Registering lazily (e.g. on a one-shot tick) is NOT multiplayer-safe: a client
 --- joining mid-game hasn't run that tick yet, so its handler set differs from the
 --- long-running server's and the join is rejected ("event handlers not identical").
 -- on_gui_click is dispatched centrally from control.lua (only one handler may
 -- be registered for it), so M.register only wires the custom event handler.
 function M.register()
-    local id = storage.bnm_tab_event_id
+    local id = mts_events.id("on_team_tab_built")
     if id then script.on_event(id, on_tab_built) end
 end
 
---- Side-effecting setup that needs remote.call: register our tab with MTS (it
---- persists the spec in its own storage) and cache the on_team_tab_built event
---- id. Safe only in on_init / on_configuration_changed -- never on_load. Re-runs
---- M.register() so the freshly-cached id is attached this session too. `mod`
---- lets MTS drop the tab if BNM is removed from the save.
+--- Register our tab with MTS. It persists the spec in its own storage, so this
+--- runs in on_init / on_configuration_changed only, never on_load. `mod` lets
+--- MTS drop the tab if BNM is removed from the save.
 function M.setup()
     local iface = remote.interfaces["mts-v1"]
-    if not iface then return end
-    if iface.register_team_tab then
+    if iface and iface.register_team_tab then
         remote.call("mts-v1", "register_team_tab",
             { name = TAB_NAME, caption = "Brave New MTS", order = "z", mod = script.mod_name })
     end
-    if iface.get_event_id then
-        storage.bnm_tab_event_id =
-            remote.call("mts-v1", "get_event_id", "on_team_tab_built")
-    end
-    M.register()
 end
 
 return M

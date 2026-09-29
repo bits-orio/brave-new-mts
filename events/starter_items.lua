@@ -9,11 +9,13 @@
 --     on_starter_items_added and we top up every placed base here.
 -- Together those two paths give every team the full admin list.
 --
--- Registration mirrors the multiplayer-safe pattern in team_tab.lua: the remote
--- call (and event-id caching) happens only in setup() (on_init / on_config), and
--- register() re-attaches the handler each session from the cached id.
+-- Registration mirrors the multiplayer-safe pattern in team_tab.lua: the
+-- delivery override is registered only in setup() (on_init / on_config), and
+-- register() attaches the handler each session, with the event id looked up
+-- that session (scripts/mts_events.lua).
 
 local starter_base = require("scripts.starter_base")
+local mts_events   = require("scripts.mts_events")
 
 local M = {}
 
@@ -21,26 +23,20 @@ local function on_items_added(e)
     starter_base.add_items_to_spawned_bases(e.items)
 end
 
---- Attach the event handler from the cached id. Safe in on_init/on_load/on_config
---- (no remote.call); identical on every peer.
+--- Attach the event handler. Safe in on_init/on_load/on_config; identical on
+--- every peer.
 function M.register()
-    local id = storage.bnm_starter_items_event_id
+    local id = mts_events.id("on_starter_items_added")
     if id then script.on_event(id, on_items_added) end
 end
 
---- Register the delivery override with MTS and cache the on_starter_items_added
---- event id. Needs remote.call, so on_init / on_configuration_changed only.
+--- Register the delivery override with MTS. It writes MTS's storage, so
+--- on_init / on_configuration_changed only.
 function M.setup()
     local iface = remote.interfaces["mts-v1"]
-    if not iface then return end
-    if iface.register_starter_item_delivery then
+    if iface and iface.register_starter_item_delivery then
         remote.call("mts-v1", "register_starter_item_delivery", "brave-new-mts")
     end
-    if iface.get_event_id then
-        storage.bnm_starter_items_event_id =
-            remote.call("mts-v1", "get_event_id", "on_starter_items_added")
-    end
-    M.register()
 end
 
 return M
