@@ -10,7 +10,8 @@ Date: 2026-09-28
       collector and tuned accumulators instead of the sun.
     - Admin commands (server console or admin only): /bnm-status to inspect a team's bases,
       /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to clear a
-      broken base's bookkeeping so it can be re-founded.
+      broken outpost's bookkeeping so it can be re-founded. It refuses a home base, which can
+      never be re-founded; /mts-disband ends that team instead.
     - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
       credit for reaching a planet.
   Changes:

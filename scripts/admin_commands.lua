@@ -6,7 +6,7 @@
 --
 --   /bnm-status [team-N]         bases, roboports and parked players (read-only)
 --   /bnm-repark <player>         put a player back in remote view of their team
---   /bnm-forget-base <surface>   drop a dead base's record so it can be founded again
+--   /bnm-forget-base <surface>   drop a dead outpost's record so it can be founded again
 --
 -- M.register() adds the commands. It must run ONCE per Lua state, from
 -- control.lua's main chunk: init_events runs in on_load and again in
@@ -166,6 +166,15 @@ local function forget_base(cmd)
         return
     end
     local base = starter_base.base_for(name)
+    -- Never a home: whatever founds a base there next (a clone, or a new
+    -- member arriving) records an outpost while the team has any other base,
+    -- and a team with no home base can never be eliminated.
+    if base and base.home then
+        reply(cmd, PREFIX .. name .. " is " .. base.force .. "'s home base, and a home base "
+            .. "cannot be re-founded. To end that team, an admin runs /mts-disband "
+            .. base.force .. " in game.")
+        return
+    end
     if base and base.roboport and base.roboport.valid then
         reply(cmd, PREFIX .. name .. " still has a live roboport; refusing, so a "
             .. "standing base is never founded twice.")
@@ -184,7 +193,7 @@ function M.register()
     commands.add_command("bnm-repark",
         "<player> - put a player back in remote view of their team (admin).", repark)
     commands.add_command("bnm-forget-base",
-        "<surface> - drop a dead base's record so it can be founded again (admin).", forget_base)
+        "<surface> - drop a dead outpost's record so it can be founded again (admin).", forget_base)
 end
 
 return M

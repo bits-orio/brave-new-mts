@@ -17,6 +17,7 @@ a real game client), `ask` (author decides before it ships).
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
 | Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester chests out (see step 7 below): the author to confirm. |
+| Forgetting a home | `/bnm-forget-base` refuses a home base: a home cannot be re-founded, and `/mts-disband` is the way to end that team. |
 | Clone tech | Prerequisite `rocket-silo` only, red/green/blue science. |
 | Off-world kit | A cargo landing pad plus a short planet-specific kit. Nauvis-only items dropped off-world. |
 | Landing pad spot | Below the south wall, centred under the roboport, with a 3-tile gap between wall and pad. |
@@ -215,6 +216,7 @@ match what the code does, so only E2 needed updating.
 | C8 | medium | Admin commands (admin or server console only): `/bnm-status`, `/bnm-repark`, `/bnm-forget-base` | done |
 | C9 | low | `on_pre_surface_deleted` forgets base state for that surface | done |
 | C10 | medium | `control.lua` wiring; call `starter_base.migrate`; record current parked bodies so the first reconnect after the update does not empty them | done |
+| C11 | medium | `/bnm-forget-base` refuses a home base and points at `/mts-disband`; `docs/HOSTING.md` no longer says an arriving player re-founds a home | done |
 
 ### D. Docs and portal
 
