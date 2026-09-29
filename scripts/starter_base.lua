@@ -40,8 +40,9 @@ M.STARTER_ITEMS = kits.STARTER_ITEMS
 
 -- Founding: place(force_name, surface, opts) -> true when a base with a live
 -- roboport was built. opts.outpost = true marks an off-world base.
-M.place       = founding.place
-M.profile_for = profiles.profile_for
+M.place          = founding.place
+M.profile_for    = profiles.profile_for
+M.is_home_planet = profiles.is_home_planet
 
 -- Records: look up, forget, lose and unlock bases.
 M.base_for       = records.base_for

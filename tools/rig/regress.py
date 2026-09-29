@@ -1074,6 +1074,30 @@ def check_home_refound(ctx, c):
         home, again))
     c.expect(bases == {home: "home", outpost: "outpost"}, "the team has one home and its outpost (%s)" % bases)
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+    check_home_refound_by_clone(ctx, c)
+
+
+def check_home_refound_by_clone(ctx, c):
+    """The same deletion, then a clone shipped back above the home planet: with
+    no home left, Establish base re-founds the home rather than an outpost."""
+    rig, force = ctx.rig, "team-19"
+    home, outpost, platform = "mts-nauvis-19", "mts-vulcanus-19", "P-home19"
+    bnm(rig, 'REG.place("%s", "%s")' % (force, home))
+    bnm(rig, 'REG.place("%s", "%s", true)' % (force, outpost))
+    rig.sc('game.delete_surface("%s")' % home)
+    run_ticks(rig, 10, 1)
+    ctx.main.take_log()
+    p = bnm(rig, 'REG.make_platform("%s", "%s", "%s")' % (force, home, platform))
+    c.expect(p["location"] == home and not p["planet_surface"],
+             "platform parked above %s with no surface yet (%s)" % (home, p))
+    bnm(rig, 'REG.hub_insert("%s", "%s", {name = "%s", count = 1})' % (force, platform, CLONE))
+    res = bnm(rig, 'REG.establish("%s", "%s")' % (force, platform))
+    bases, lines = bases_of(rig, force), ctx.main.take_log()
+    c.note("clone above %s with no home: %s; %s bases %s" % (home, res, force, bases))
+    c.expect(res.get("ok") and res.get("home"), "Establish base re-founded the home (%s)" % res)
+    c.expect(bases == {home: "home", outpost: "outpost"}, "the team has one home and its outpost (%s)" % bases)
+    c.expect(bnm(rig, 'REG.clones("%s", "%s")' % (force, platform)) == 0, "the clone was consumed")
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
 
 
 # ─── 16. Migration from 0.1.3 ──────────────────────────────────────────────

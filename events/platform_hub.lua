@@ -8,8 +8,11 @@
 -- The core, M.establish_for(force, hub), needs no player (so it can be tested
 -- headless): it creates the planet's surface if it doesn't exist yet, founds an
 -- OUTPOST there (starter_base.place with { outpost = true }), and only then
--- consumes one clone. The click handler wraps it for the player: it moves their
--- remote view down to the new base and tells the team.
+-- consumes one clone. The one exception: a team whose home surface was deleted
+-- outside a disband has no home, and a clone that lands back on its home
+-- planet re-founds the HOME, so every team keeps exactly one base whose loss
+-- eliminates it. The click handler wraps the core for the player: it moves
+-- their remote view down to the new base and tells the team.
 --
 -- The widget polls evaluate(), which must never create a surface.
 --
@@ -31,6 +34,13 @@ local REASONS = {
     not_team_planet = "this platform isn't above one of your team's planets",
     no_mts          = "Multi-Team Support isn't running",
 }
+
+local OUTPOST_TIP = "Consume one [item=" .. CLONE .. "] and found an outpost on "
+    .. "this planet. If its roboport is destroyed, only this outpost is lost; "
+    .. "your home base is safe, and another clone re-founds it."
+local HOME_TIP = "Consume one [item=" .. CLONE .. "] and re-found your home base "
+    .. "on this planet. Your team has no home base, so this one becomes it: if "
+    .. "its roboport is destroyed, your team is eliminated."
 
 --- The planet this hub's platform is parked at, or nil plus a reason code.
 --- `space_location` is set only while parked. Do NOT test `speed`: it is still
@@ -124,8 +134,17 @@ local function report_milestone(force, surface)
     remote.call("mts-v1", "report_milestone", force.name, category, 1)
 end
 
---- Found an outpost for `force` from `hub`. Returns ok, reason (when not ok),
---- and the new base's surface name. The clone is consumed only once the base
+--- True if a clone landing on `planet` should re-found `force`'s home rather
+--- than an outpost: the team has no home (its home surface was deleted
+--- outside a disband) and this is its home planet.
+local function founds_home(force, planet)
+    return starter_base.home_of(force.name) == nil
+        and starter_base.is_home_planet(planet.name)
+end
+
+--- Found a base for `force` from `hub`: an outpost, or the team's home again
+--- (see founds_home). Returns ok, reason (when not ok), the new base's surface
+--- name, and whether it is the home. The clone is consumed only once the base
 --- stands, so a failed placement costs nothing.
 function M.establish_for(force, hub)
     if not (hub and hub.valid and hub.type == "space-platform-hub") then
@@ -141,18 +160,20 @@ function M.establish_for(force, hub)
         return false, REASONS.not_team_planet
     end
 
-    if not starter_base.place(force.name, surface, { outpost = true }) then
+    local home = founds_home(force, planet)
+    if not starter_base.place(force.name, surface, { outpost = not home }) then
         return false, "the starter base could not be placed here (your clone was kept)"
     end
 
     local inv = hub_inventory(hub)
     local quality = clone_quality(inv)
     if not (quality and inv.remove{ name = CLONE, quality = quality, count = 1 } == 1) then
-        log("[brave-new-mts] outpost on " .. surface.name .. " placed, but no clone was left to consume")
+        log("[brave-new-mts] base on " .. surface.name .. " placed, but no clone was left to consume")
     end
-    report_milestone(force, surface)
-    log("[brave-new-mts] " .. force.name .. " established an outpost on " .. surface.name)
-    return true, nil, surface.name
+    if not home then report_milestone(force, surface) end
+    log("[brave-new-mts] " .. force.name .. " established " .. (home and "its home base" or "an outpost")
+        .. " on " .. surface.name)
+    return true, nil, surface.name, home
 end
 
 -- Make the button big and bold; assigning a style resets it, so size after.
@@ -171,7 +192,7 @@ local function build_widget(player, element, hub)
     if not (player and player.valid and element and element.valid
             and hub and hub.valid) then return end
 
-    local ready, reasons = evaluate(player.force, hub)
+    local ready, reasons, planet = evaluate(player.force, hub)
 
     local btn = element[ESTABLISH_BUTTON]
     if not (btn and btn.valid) then
@@ -181,9 +202,7 @@ local function build_widget(player, element, hub)
     apply_button_style(btn, ready and "green_button" or "red_button")
 
     if ready then
-        btn.tooltip = "Consume one [item=" .. CLONE .. "] and found an outpost on "
-            .. "this planet. If its roboport is destroyed, only this outpost is "
-            .. "lost; your home base is safe, and another clone re-founds it."
+        btn.tooltip = founds_home(player.force, planet) and HOME_TIP or OUTPOST_TIP
     else
         btn.tooltip = "Can't establish a base here yet:\n• " .. table.concat(reasons, "\n• ")
     end
@@ -192,7 +211,7 @@ end
 --- The click, for a player: establish, then drop their remote view onto the
 --- new base (the character stays parked in the pen) and tell the team.
 local function establish(player, hub)
-    local ok, reason, surface_name = M.establish_for(player.force, hub)
+    local ok, reason, surface_name, home = M.establish_for(player.force, hub)
     if not ok then
         player.print("Can't establish a base: " .. reason .. ".")
         return
@@ -203,6 +222,11 @@ local function establish(player, hub)
         surface  = surface,
         position = starter_base.BASE_ORIGIN,
     }
+    if home then
+        player.force.print({ "", chat.PREFIX, player.name, " re-founded your home base on ",
+            chat.planet_label(surface), ". If its roboport is destroyed, your team is eliminated." })
+        return
+    end
     player.force.print({ "", chat.PREFIX, player.name, " founded an outpost on ",
         chat.planet_label(surface), ". If its roboport is destroyed, only this outpost ",
         "is lost, and another clone re-founds it." })

@@ -56,9 +56,9 @@ end
 
 --- The Establish-base core, exactly as the hub button calls it.
 function R.establish(force_name, name)
-    local ok, reason, surface = R.module("events/platform_hub").establish_for(
+    local ok, reason, surface, home = R.module("events/platform_hub").establish_for(
         game.forces[force_name], R.hub(force_name, name))
-    return { ok = ok, reason = reason, surface = surface }
+    return { ok = ok, reason = reason, surface = surface, home = home or false }
 end
 
 -- ─── Pad deliveries ──────────────────────────────────────────────────

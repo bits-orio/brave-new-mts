@@ -12,10 +12,18 @@ local PROFILES_MOD_DATA = "bnm-planet-profiles"
 -- The planet whose profile a surface with no planet gets.
 local DEFAULT_PLANET = "nauvis"
 
+-- The planet MTS spawns every team on, so the planet a team's home base is on.
+M.HOME_PLANET = "nauvis"
+
 --- "mts-gleba-3" -> "gleba": MTS names each team's planet copy
 --- mts-<base>-<slot>. Any other name is its own base.
 function M.base_planet_name(name)
     return name:match("^mts%-(.+)%-%d+$") or name
+end
+
+--- True if the named planet (e.g. "mts-nauvis-3") is a copy of the home planet.
+function M.is_home_planet(planet_name)
+    return M.base_planet_name(planet_name) == M.HOME_PLANET
 end
 
 --- The data stage's profile for a planet, or nil when the mod-data or the

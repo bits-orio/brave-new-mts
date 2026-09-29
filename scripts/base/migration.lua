@@ -11,7 +11,7 @@ local records    = require("scripts.base.records")
 local M = {}
 
 -- The planet 0.1.x put every home base on, and built every base's plan for.
-local HOME_PLANET = "nauvis"
+local HOME_PLANET = profiles.HOME_PLANET
 
 --- 0.1.x kept one `provider` chest. Re-find the base's passive provider and
 --- storage chests in its footprint.

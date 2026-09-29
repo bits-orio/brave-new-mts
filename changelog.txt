@@ -22,6 +22,8 @@ Date: 2026-09-28
       then everything the old chests and pad held, and whatever the team built there comes back
       as items, a vehicle with its equipment and a blueprint with its contents. Anything that
       still doesn't fit is spilled beside the roboport, marked for the robots to bring in.
+    - A team always keeps one home base. If its home surface is deleted without disbanding the
+      team, a Character Clone shipped back to its home planet re-founds the home, not an outpost.
     - Off-world surfaces now have their chunks generated before the base is built, so a new
       outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
       the terrain generates later.

@@ -251,7 +251,7 @@ scripts, with no behaviour change.
 | C12 | low | `on_pre_player_left_game` stores the spot a remote-view player was looking at on their own ground; the reconnect's `park` views it once | done |
 | C13 | low | `/bnm-forget-base` wipes a dead outpost as its roboport's death does: the core becomes minable, the record is forgotten | done |
 | C14 | low | A base founded without `outpost` while the team has no home is its home (after a home surface is deleted outside a disband), not another outpost | done |
-| C15 | low | A clone shipped above a team's recreated home planet still founds an outpost there: give that base the home role when the team has none, or warn on the home surface's deletion and point at `/mts-disband` | ask |
+| C15 | low | A clone shipped above a team's recreated home planet still founds an outpost there: give that base the home role when the team has none, or warn on the home surface's deletion and point at `/mts-disband` | done: a clone on the home planet re-founds the home when the team has none (rig check 15) |
 | C16 | low | A founded outpost's milestone is named from `starter_base.profile_for(surface).base`, the profile founding itself used, instead of `platform_hub` re-parsing the `mts-<planet>-<slot>` copy name with its own regex that skipped the data stage's stored base | done |
 | C17 | low | The team tab's warning, unlocked note, tooltip and unlock print build their "what the unlock never frees" wording from one `CORE` / `STAYS_LOCKED` pair instead of four hand-typed copies that had drifted (the warning put the sign inside the power core, the note and tooltip listed it beside the core) | done |
 
