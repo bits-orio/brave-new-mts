@@ -15,12 +15,13 @@ every team otherwise carpets its territory with full-power radars that chart chu
 forever. It's a **startup** setting: it can only be set when the save is created and
 can't be flipped mid-run.
 
-BNM's whole planet power budget is calibrated against the passive-radar figure. A
-starter base's idle draw is about **255 kW** with the setting on (roboport 200 kW,
-radar 50 kW, lamps and inserter make up the rest). Turn it off and idle draw rises to
-about **505 kW** -- roughly Gleba's entire sustained power budget, gone to a radar
-nobody asked for. Leave `mts_passive_radars` at its default before you create the
-map.
+BNM's starter-base power was measured with this setting on. A starter base's idle
+draw is about **255 kW** (roboport 200 kW, radar 50 kW, lamps and inserter make up
+the rest). Turn it off and idle draw rises to about **505 kW**, and every radar a
+team builds draws 300 kW instead of 50. That extra 250 kW hits Nauvis hardest: its
+spare power drops from about 600 kW to about 350 kW. The tuned Gleba and Fulgora
+bases are designed to sustain at least 1.08 MW, so a quarter of that goes to the
+radar. Leave `mts_passive_radars` at its default before you create the map.
 
 ### `allow_blueprint_imports` (MTS admin flag, default off) -- leave it off
 
@@ -59,7 +60,7 @@ players don't mistake dead robots for a bug report.
 2. They load a clone onto a space platform and fly it to that planet.
 3. Once the platform is parked there, a player opens the platform hub and presses
    **Establish base**. That consumes the clone and founds a starter base tuned for
-   the planet, with its own cargo landing pad next to the roboport.
+   the planet, with its own cargo landing pad just outside the base's south wall.
 4. From then on the outpost is a second, independent base: its own roboport, its own
    power, its own kit. Only the team's original (home) base can end the game --
    losing an outpost's roboport wipes just that outpost, and another clone re-founds
