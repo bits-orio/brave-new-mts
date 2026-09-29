@@ -14,7 +14,7 @@ a real game client), `ask` (author decides before it ships).
 |---|---|
 | Planet power | Keep the human-designed Nauvis footprint everywhere. Swap in uncraftable, planet-tuned panels and accumulators in the same slots. Mining one returns an ordinary vanilla item. |
 | Tuned copies and the unlock | Planet-tuned entities (the generated `bnm-*` panels and accumulators, `bnm-radar`, `bnm-inserter`) stay locked even after the team unlocks its power core; only vanilla core entities become minable. |
-| Fulgora | Lightning-based power: one vanilla lightning collector plus tuned accumulators (measured design D1). |
+| Fulgora | Lightning-based power: one vanilla lightning collector (in a panel slot) plus tuned accumulators, vanilla panels kept (measured design D1). |
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
 | Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester chests out (see step 7 below): the author to confirm. |

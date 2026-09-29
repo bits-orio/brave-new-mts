@@ -41,7 +41,7 @@ Space Age is optional, and it's where outposts happen.
 - Research the Character Clone (needs `rocket-silo`, plus red, green and blue science) once you've reached a planet through the normal space-platform tech chain.
 - Load a clone onto a space platform and fly it to the planet. Once the platform is parked there, open the platform hub and press **Establish base** to consume the clone and found an outpost -- the same kind of starter base as home, tuned for that planet.
 - Every outpost gets a cargo landing pad just outside its south wall, so a platform overhead can drop off supplies without a character ever setting foot on the ground.
-- Power is planet-tuned: solar panels and accumulators are swapped for uncraftable, planet-sized versions in the same spots. They can't be mined while their base stands, even after the unlock. Fulgora runs on lightning instead of the sun -- a vanilla lightning collector plus tuned accumulators.
+- Power is planet-tuned. Where the sun is weaker than on Nauvis, the solar panels and accumulators are swapped for uncraftable, planet-sized versions in the same spots, and those can't be mined while their base stands, even after the unlock. Fulgora keeps its ordinary solar panels for the day, swaps one of them for a vanilla lightning collector, and gets tuned accumulators that bank the night's strikes.
 - Only your team's original (home) base can end the game. Losing an outpost's roboport wipes that outpost -- ship another clone to re-found it -- but your home base and the rest of your empire are untouched. Re-founding keeps what the lost outpost held: the new base gets its fresh kit plus the old chests' and pad's contents, and anything you built on the site comes back as items.
 
 ## ⚙️ Requirements

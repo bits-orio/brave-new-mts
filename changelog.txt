@@ -5,9 +5,10 @@ Date: 2026-09-28
     - Space Age outposts: a base founded with a Character Clone is now an outpost, with its own
       cargo landing pad below the south wall, so a platform overhead can drop supplies to it,
       and a short kit for its planet.
-    - Every planet now gets power tuned to it: solar panels and accumulators are swapped for
-      uncraftable, planet-sized versions in the same spots, and Fulgora runs off a lightning
-      collector and tuned accumulators instead of the sun.
+    - Every planet now gets power tuned to it: where the sun is weaker than on Nauvis, solar
+      panels and accumulators are swapped for uncraftable, planet-sized versions in the same
+      spots, and Fulgora adds a lightning collector and tuned accumulators to its ordinary solar
+      panels.
     - Admin commands (server console or admin only): /bnm-status to inspect a team's bases,
       /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to clear a
       broken outpost's bookkeeping so it can be re-founded. It refuses a home base, which can

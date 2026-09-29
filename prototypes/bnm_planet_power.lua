@@ -8,7 +8,7 @@
 -- copy follows):
 --
 --   * solar-power >= 100% (Nauvis, Vulcanus): vanilla panels and accumulators.
---   * Fulgora: lightning, not sun. Vanilla panels, one vanilla lightning
+--   * Fulgora: lightning plus the sun. Vanilla panels, one vanilla lightning
 --     collector in a panel slot (placed by the runtime), and
 --     bnm-accumulator-fulgora to bank the strikes and carry the base through
 --     the day, when no lightning falls.

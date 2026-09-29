@@ -36,14 +36,17 @@ for anything BNM does.
 
 ## Fulgora: lightning power and flying robots
 
-Fulgora's starter base runs on a vanilla lightning collector plus tuned
-accumulators instead of solar. Two things to expect, both measured on the headless
-rig, not guessed:
+Fulgora's starter base keeps its ordinary solar panels and adds a vanilla lightning
+collector (in one panel slot) plus tuned accumulators that bank the night's strikes.
+If a team unlocks its core, it should keep the panels: they carry part of the
+strike-free day, which is when the accumulators run lowest. Two things to expect,
+both measured on the headless rig, not guessed:
 
-- Lightning only strikes between dusk and dawn. The base's buffer is sized to carry
-  it through the strike-free daytime stretch, so a healthy base shouldn't blackout
-  under normal (non-saturated) load. A base running its factory at or near the
-  design ceiling can still see a rare blackout night; that's expected, not a bug.
+- Lightning only strikes between dusk and dawn. The base's buffer, together with the
+  panels, is sized to carry it through the strike-free daytime stretch, so a healthy
+  base shouldn't blackout under normal (non-saturated) load. A base running its
+  factory at or near the design ceiling can still see a rare blackout night; that's
+  expected, not a bug.
 - Construction robots that fly outside the collector's protection radius get struck.
   Measured at roughly 33 robot deaths per game hour of continuous flying beyond
   cover. This mostly matters for a team running bots on a long supply line at night;
