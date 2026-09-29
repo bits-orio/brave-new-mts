@@ -12,19 +12,23 @@
 --      cliffs and ocean into the base.
 --   2. Clear the site: enemies inside the roboport's construction area
 --      (worms outrange the footprint and shoot down robots), cargo moved aside
---      (it holds the team's items), leftovers of a lost base swept with their
---      inventories pooled, then obstacles and resources.
+--      (it holds the team's items), leftovers of a lost base swept into a
+--      salvage pool (their contents, and what the team built there as items),
+--      then obstacles and resources.
 --   3. Build the blueprint (scripts/blueprints.lua, swapped per planet) as
 --      REAL entities centred on its roboport, each with its own blueprint
 --      settings. There are no bots or materials yet to build ghosts.
 --   4. Outposts get a cargo landing pad below the south wall: without one,
 --      nothing a platform carries reaches the ground.
---   5. Stock the chests. Home: the Nauvis kit, crash-site loot and MTS admin
---      items. Outpost: a short planet kit.
+--   5. Stock the chests. The kit goes in first (home: the Nauvis kit and MTS
+--      admin items; outpost: a short planet kit), then the salvage pool
+--      (crash-site loot at home), so salvage never crowds out the kit. What
+--      no chest can hold is spilled for the robots (scripts/item_delivery.lua).
 --   6. Lock the power core (unless the team already unlocked it) and record
 --      the base in storage.bnm_base.
 
-local blueprints = require("scripts.blueprints")
+local blueprints    = require("scripts.blueprints")
+local item_delivery = require("scripts.item_delivery")
 
 local M = {}
 
@@ -215,37 +219,18 @@ end
 
 -- ─── Item delivery ───────────────────────────────────────────────────
 
---- Insert one {name, count, quality} stack across `chests` in order, then the
---- logistic network. Returns how many did not fit.
-local function insert_stack(stack, chests, network)
-    if not (stack.count and stack.count > 0) then return 0 end
-    if not prototypes.item[stack.name] then
-        log("[brave-new-mts] item '" .. tostring(stack.name) .. "' is not a known item -- skipping")
-        return 0
-    end
-    local left = stack.count
-    for _, chest in ipairs(chests) do
-        if left == 0 then return 0 end
-        if chest.valid then
-            left = left - chest.insert{ name = stack.name, count = left, quality = stack.quality }
-        end
-    end
-    if left > 0 and network and network.valid then
-        left = left - network.insert{ name = stack.name, count = left, quality = stack.quality }
-    end
-    return left
-end
+-- Salvage fills the chests robots take from, storage chests first, then the
+-- landing pad. Requester chests are left out: nothing takes an unrequested
+-- item back out of one, and salvage in the roboport's feeder would crowd out
+-- the robots it requests.
+local SALVAGE_MODES = { "storage", "passive-provider", "active-provider", "buffer" }
 
---- Deliver an item list (or name-keyed pool) across `chests`, then the
---- network; log whatever is left over rather than dropping it silently.
+--- Deliver an item list (or pool) across `chests`, then the network; log
+--- whatever is left over rather than dropping it silently.
 local function deliver(items, chests, network)
-    local lost = {}
-    for _, stack in pairs(items) do
-        local left = insert_stack(stack, chests, network)
-        if left > 0 then lost[#lost + 1] = left .. "x " .. stack.name end
-    end
-    if #lost > 0 then
-        log("[brave-new-mts] no room in the base's chests for: " .. table.concat(lost, ", "))
+    local left = item_delivery.deliver(items, chests, network)
+    if #left > 0 then
+        log("[brave-new-mts] no room in the base's chests for: " .. item_delivery.describe(left))
     end
 end
 
@@ -255,12 +240,35 @@ local function network_of(record)
     return roboport and roboport.valid and roboport.logistic_network or nil
 end
 
---- Kits go to passive providers first; salvage goes to storage chests first.
+--- Kits go to passive providers first, then storage chests.
 local function kit_chests(record)
     return joined(record.providers, record.storage_chests)
 end
-local function salvage_chests(record)
-    return joined(record.storage_chests, record.providers)
+
+--- Everything salvage may fill, in order (see SALVAGE_MODES).
+local function salvage_targets(built)
+    local targets = {}
+    for _, mode in ipairs(SALVAGE_MODES) do
+        for _, chest in ipairs(built.chests) do
+            if chest.valid and chest.prototype.logistic_mode == mode then
+                targets[#targets + 1] = chest
+            end
+        end
+    end
+    local pad = built.pad and built.pad.valid
+        and built.pad.get_inventory(defines.inventory.cargo_landing_pad_main)
+    if pad then targets[#targets + 1] = pad end
+    return targets
+end
+
+--- Deliver the salvage pool into the new base; spill what no chest or pad
+--- can hold around the roboport, for the robots to bring in.
+local function deliver_salvage(pool, built, force, surface)
+    local left = item_delivery.deliver(pool, salvage_targets(built), network_of(built))
+    if #left == 0 then return end
+    item_delivery.spill(left, { surface = surface, position = M.BASE_ORIGIN, force = force })
+    log("[brave-new-mts] spilled salvage for the robots to bring in on " .. surface.name
+        .. ": " .. item_delivery.describe(left))
 end
 
 --- The admin-configured starter items tracked by MTS. With BNM loaded these are
@@ -288,22 +296,6 @@ local function stock_kits(built, profile, home)
 end
 
 -- ─── Site preparation ────────────────────────────────────────────────
-
---- Add every item in `entity`'s inventories to `pool` (keyed by name and
---- quality, each value a {name, quality, count} stack).
-local function pool_inventories(entity, pool)
-    for i = 1, entity.get_max_inventory_index() do
-        local inv = entity.get_inventory(i)
-        if inv and inv.valid then
-            for _, c in pairs(inv.get_contents()) do
-                local key   = c.name .. "/" .. c.quality
-                local stack = pool[key] or { name = c.name, quality = c.quality, count = 0 }
-                stack.count = stack.count + c.count
-                pool[key]   = stack
-            end
-        end
-    end
-end
 
 --- Generate the ground under and around the base, synchronously. Generation
 --- is deterministic, so every multiplayer peer builds the same terrain in the
@@ -386,7 +378,7 @@ local function collect_crash_debris(surface, pool)
     local R = CRASH_SEARCH_RADIUS
     for _, e in pairs(surface.find_entities_filtered{ name = names, area = { { -R, -R }, { R, R } } }) do
         if e.valid then
-            pool_inventories(e, pool)
+            item_delivery.pool_contents(e, pool)
             e.destroy()
         end
     end
@@ -400,14 +392,33 @@ local SWEEP_SKIP = {
     ["logistic-robot"]     = true,
 }
 
+--- The entity names a starter base is built from: the blueprint's, after the
+--- planet's swaps, and the landing pad.
+local function base_names(plan)
+    local names = { [PAD_NAME] = true }
+    for _, e in pairs(plan.entities) do names[e.name] = true end
+    return names
+end
+
+--- Pool the item that places `entity`, the one robots would build it from.
+local function pool_placing_item(entity, pool)
+    local items = entity.prototype.items_to_place_this
+    local item  = items and items[1]
+    if item then item_delivery.pool_add(pool, item.name, entity.quality.name, item.count) end
+end
+
 --- A lost outpost being re-founded leaves its entities (unlocked by
---- M.lose_outpost) and their ghosts in the site. Pool their inventories and
---- destroy them, so nothing blocks the new build and no item is lost.
-local function sweep_leftovers(force, surface, area, pool)
+--- M.lose_outpost), their ghosts and whatever the team built around them in
+--- the site. Pool what they hold and destroy them, so nothing blocks the new
+--- build and no item is lost. What the team built also comes back as the item
+--- that places it; the old base's own buildings (`old_base`, a name set) do
+--- not, since the new base replaces them.
+local function sweep_leftovers(force, surface, area, pool, old_base)
     local n = 0
     for _, e in pairs(surface.find_entities_filtered{ area = area, force = force }) do
         if e.valid and not SWEEP_SKIP[e.type] then
-            pool_inventories(e, pool)
+            item_delivery.pool_contents(e, pool)
+            if not old_base[e.name] then pool_placing_item(e, pool) end
             e.destroy()
             n = n + 1
         end
@@ -495,7 +506,7 @@ local function prepare_site(force, surface, origin, site, plan, home)
     relocate_cargo(surface, site.area)
     local pool = {}
     if home then collect_crash_debris(surface, pool) end
-    sweep_leftovers(force, surface, site.area, pool)
+    sweep_leftovers(force, surface, site.area, pool, base_names(plan))
     clear_obstacles(surface, site.area)
     return pool
 end
@@ -614,7 +625,10 @@ local function register_created(built, created, e, locked)
         return
     end
     if created.type == "accumulator" then seed_accumulator(created) end
-    if created.type == "logistic-container" then add_chest(built, created) end
+    if created.type == "logistic-container" then
+        add_chest(built, created)
+        built.chests[#built.chests + 1] = created
+    end
     if is_power_core(created) then
         if locked then created.minable_flag = false end
         built.protected[#built.protected + 1] = created
@@ -623,9 +637,10 @@ local function register_created(built, created, e, locked)
 end
 
 --- Build every blueprint entity, origin-centred on the roboport. Returns
---- { roboport, protected, providers, storage_chests }.
+--- { roboport, protected, providers, storage_chests, chests }, where `chests`
+--- is every logistic chest (only salvage uses it, so it is not recorded).
 local function build_base(force, surface, origin, plan, locked)
-    local built = { protected = {}, providers = {}, storage_chests = {} }
+    local built = { protected = {}, providers = {}, storage_chests = {}, chests = {} }
     for _, e in pairs(plan.entities) do
         local created = create_from_blueprint(surface, force, origin, plan, e)
         if created then register_created(built, created, e, locked) end
@@ -731,7 +746,18 @@ local function record_base(force_name, surface_name, built, home, locked)
     storage.bases_placed[surface_name] = true
 end
 
+--- True if the base's roboport stands; logs why the base is not recorded
+--- otherwise.
+local function roboport_stands(built, surface)
+    if built.roboport and built.roboport.valid then return true end
+    log("[brave-new-mts] no roboport was built on " .. surface.name .. " -- base not recorded")
+    return false
+end
+
 --- Build a base and record it. Returns true only when its roboport stands.
+--- The pad and the kit go in before the salvage, so salvage never crowds out
+--- the kit. Salvage is delivered even when no roboport stands: the sweep has
+--- already destroyed what held it.
 local function found_base(force, surface, home)
     local profile = M.profile_for(surface)
     local plan = blueprints.plan_for(profile, home)
@@ -745,13 +771,13 @@ local function found_base(force, surface, home)
     place_tiles(surface, origin, plan)
     local locked = not M.is_unlocked(force.name)
     local built  = build_base(force, surface, origin, plan, locked)
-    deliver(pool, salvage_chests(built), network_of(built))
-    if not (built.roboport and built.roboport.valid) then
-        log("[brave-new-mts] no roboport was built on " .. surface.name .. " -- base not recorded")
-        return false
+    local stands = roboport_stands(built, surface)
+    if stands then
+        built.pad = site.pad and place_landing_pad(force, surface, site.pad) or nil
+        stock_kits(built, profile, home)
     end
-    built.pad = site.pad and place_landing_pad(force, surface, site.pad) or nil
-    stock_kits(built, profile, home)
+    deliver_salvage(pool, built, force, surface)
+    if not stands then return false end
     if profile.base == "nauvis" then place_oil_node(force, surface) end
     chart_base(force, surface, site.footprint)  -- no character stands here to chart it
     record_base(force.name, surface.name, built, home, locked)

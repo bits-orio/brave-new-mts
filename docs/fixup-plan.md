@@ -16,6 +16,7 @@ a real game client), `ask` (author decides before it ships).
 | Fulgora | Lightning-based power: one vanilla lightning collector plus tuned accumulators (measured design D1). |
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
+| Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester chests out (see step 7 below): the author to confirm. |
 | Clone tech | Prerequisite `rocket-silo` only, red/green/blue science. |
 | Off-world kit | A cargo landing pad plus a short planet-specific kit. Nauvis-only items dropped off-world. |
 | Landing pad spot | Below the south wall, centred under the roboport, with a 3-tile gap between wall and pad. |
@@ -105,8 +106,10 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
 2. Clear enemies (force `enemy`) inside the roboport's construction area (a
    square of half-width `construction_radius`, not a circle).
 3. Sweep leftovers of the same force in the footprint and pad area (a lost
-   outpost being re-founded): pool their inventories, destroy them and their
-   ghosts, deliver the pool to the new storage chest.
+   outpost being re-founded): pool what they hold (inventories, belt lanes,
+   inserter hands), destroy them and their ghosts. An entity that is not one
+   of the base's own (a blueprint name after the swaps, or the pad) is also
+   pooled as the item that places it.
 4. Substitute entities per profile (panels, accumulators, Fulgora collector at
    the panel slot (3.5, -1.5) placed at (3, -1), radar, inserter). Compute the
    roboport offset before substituting.
@@ -116,9 +119,18 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
 6. Outposts: place a `cargo-landing-pad` centred under the roboport, its top
    edge 3 tiles below the bottom wall, on refined concrete. It is minable (not
    part of the locked core).
-7. Kits: home gets the Nauvis kit, crash loot and MTS admin items. Outposts get
-   the planet kit only. Delivery spreads over all passive provider chests, then
-   storage chests, then the logistic network, and logs anything left over.
+7. Kits, before any salvage: home gets the Nauvis kit and MTS admin items,
+   outposts the planet kit only. A kit spreads over all passive provider
+   chests, then storage chests, then the logistic network, and logs anything
+   left over. Then the salvage pool (crash loot at home, a lost outpost's
+   leftovers): storage, passive provider, active provider and buffer chests,
+   then the pad's main inventory, then the network. What still does not fit
+   is spilled at the roboport in whole-stack piles, marked for deconstruction
+   by the team, so its robots carry it in as chests free up. Requester chests
+   get no salvage, a deliberate narrowing of the decision: nothing takes an
+   unrequested item back out of one, and the roboport's feeder (the requester
+   asking for 50 + 50 robots) would lose room for the robots it requests. On
+   the ground, the same items reach storage once there is room.
 8. The power core stays locked unless the team already unlocked it.
    Lightning attractors are part of the core.
 9. `storage.bnm_base[surface]` records `home = true` for the first base of a
@@ -187,6 +199,7 @@ match what the code does, so only E2 needed updating.
 | B10 | high | `lose_outpost`, re-found sweep of leftovers, `forget_surface` | done |
 | B11 | low | Bot count fallback 50, matching the setting default | done |
 | B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | done |
+| B13 | high | Re-founding never loses the kit or salvage: pad and kit first, salvage into every chest robots take from and the pad, spill the rest for the robots; player-built entities in the site come back as items (`scripts/item_delivery.lua`) | done |
 
 ### C. Events and lifecycle
 

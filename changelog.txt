@@ -15,8 +15,11 @@ Date: 2026-09-28
       credit for reaching a planet.
   Changes:
     - Only a team's original (home) base can end the game. Losing an outpost's roboport now wipes
-      just that outpost -- leftover entities are swept and its chests' contents recovered --
-      instead of disbanding the whole team; another Character Clone re-founds it.
+      just that outpost instead of disbanding the whole team; another Character Clone re-founds
+      it. Re-founding sweeps the leftovers from the site: the new base gets its full kit first,
+      then everything the old chests and pad held, and whatever the team built there comes back
+      as items. Anything that still doesn't fit is spilled beside the roboport, marked for the
+      robots to bring in.
     - Off-world surfaces now have their chunks generated before the base is built, so a new
       outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
       the terrain generates later.
