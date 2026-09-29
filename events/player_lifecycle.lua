@@ -10,8 +10,10 @@
 -- player.force. On the way back MTS restores the camera AFTER the force change
 -- (onto the pen cell, for a parked player), so the re-park waits one tick, in a
 -- storage queue (storage.bnm_repark: player index -> due tick) drained by an
--- on_tick handler that is attached only while the queue is non-empty. register()
--- re-attaches it from storage, so on_load stays deterministic.
+-- on_tick handler that is attached exactly while the queue is non-empty. Every
+-- write to the queue goes through set_repark, which re-runs attach_tick, so the
+-- server's handlers always match what register() derives from storage in a
+-- joining client's on_load.
 
 local remote_player = require("scripts.remote_player")
 
@@ -26,27 +28,24 @@ local function attach_tick()
     script.on_event(defines.events.on_tick, pending and on_tick_repark or nil)
 end
 
-local function queue_repark(player_index)
-    storage.bnm_repark = storage.bnm_repark or {}
-    storage.bnm_repark[player_index] = game.tick + 1
+--- The only writer of the queue: set (or, with nil, clear) a player's due
+--- tick. An emptied queue becomes nil, never {}, and on_tick follows it.
+local function set_repark(player_index, due_tick)
+    local queue = storage.bnm_repark or {}
+    queue[player_index] = due_tick
+    storage.bnm_repark = next(queue) ~= nil and queue or nil
     attach_tick()
 end
 
-local function dequeue_repark(player_index)
-    if storage.bnm_repark then storage.bnm_repark[player_index] = nil end
-end
-
 on_tick_repark = function(event)
-    local queue = storage.bnm_repark or {}
     local due = {}
-    for index, at in pairs(queue) do
+    for index, at in pairs(storage.bnm_repark or {}) do
         if event.tick >= at then due[#due + 1] = index end
     end
     for _, index in ipairs(due) do
-        queue[index] = nil
+        set_repark(index, nil)
         remote_player.repark_if_away(game.get_player(index))
     end
-    if not next(queue) then storage.bnm_repark = nil end
     attach_tick()
 end
 
@@ -58,7 +57,7 @@ local function on_force_changed(event)
     -- parked slot. A spectate hop keeps the effective force, so it stays parked.
     if not remote_player.on_team(player) then
         remote_player.unpark(player)
-        dequeue_repark(player.index)
+        set_repark(player.index, nil)
         return
     end
 
@@ -68,7 +67,7 @@ local function on_force_changed(event)
     if old and old.valid and old.name == "spectator"
             and player.force.name == remote_player.effective_force(player)
             and remote_player.is_parked(player) then
-        queue_repark(player.index)
+        set_repark(player.index, event.tick + 1)
     end
 end
 

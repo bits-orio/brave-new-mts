@@ -71,6 +71,8 @@ Date: 2026-09-28
     - After a mod was added or removed, the server could refuse every joining player ("mod event
       handlers are not identical") until a second restart, or fail to load the save at all.
       Multi-Team Support's event ids are now looked up each session instead of kept in the save.
+    - A team eliminated while one of its members was spectating a rival no longer leaves a one-tick
+      window in which a joining player is refused.
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.3
 Date: 2026-06-05
