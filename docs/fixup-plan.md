@@ -153,54 +153,54 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 
 | ID | Sev | Task | Status |
 |---|---|---|---|
-| A1 | blocker | `bnm-roboport`: `heating_energy = "0kW"`, no ghost on death, fix the "it is minable" header comment | todo |
-| A2 | blocker | Planet power prototypes and `bnm-planet-profiles` mod-data in `data-final-fixes.lua` | todo |
-| A3 | high | Clone tech: prerequisite `rocket-silo`, red/green/blue, rewrite the tank comment | todo |
-| A4 | medium | `locale/en/locale.cfg`: settings, roboport, clone item and tech, generated entities | todo |
-| A5 | low | `info.json`: require `multi-team-support >= 0.6.6` | todo |
+| A1 | blocker | `bnm-roboport`: `heating_energy = "0kW"`, no ghost on death, fix the "it is minable" header comment | done |
+| A2 | blocker | Planet power prototypes and `bnm-planet-profiles` mod-data in `data-final-fixes.lua` | done |
+| A3 | high | Clone tech: prerequisite `rocket-silo`, red/green/blue, rewrite the tank comment | done |
+| A4 | medium | `locale/en/locale.cfg`: settings, roboport, clone item and tech, generated entities | done |
+| A5 | low | `info.json`: require `multi-team-support >= 0.6.6` | done |
 
 ### B. Starter base (`scripts/starter_base.lua`, `scripts/blueprints.lua`)
 
 | ID | Sev | Task | Status |
 |---|---|---|---|
-| B1 | medium | Profile lookup from mod-data; drop substring planet matching; oil node on the Nauvis profile only | todo |
-| B2 | blocker | Per-planet substitutions (panels, accumulators, Fulgora collector, radar, inserter); remove the lamp-to-rod swap | todo |
-| B3 | high | Force-generate chunks before placing (off-world surfaces start with none) | todo |
-| B4 | blocker | Home and outpost bases; outpost kits; landing pad 3 tiles below the south wall | todo |
-| B5 | medium | MTS admin items to the home base only; delivery with overflow across chests | todo |
-| B6 | medium | A base founded after the unlock is created unlocked | todo |
-| B7 | high | Clear enemy nests and worms within the construction radius at placement | todo |
-| B8 | medium | Pass blueprint entity settings to `create_entity` (the roboport feeder request was lost); per-planet display panel text that is accurate (bots slow to 20%, they do not crash) | todo |
-| B9 | medium | Lightning attractors belong to the locked power core; fix core comments | todo |
-| B10 | high | `lose_outpost`, re-found sweep of leftovers, `forget_surface` | todo |
-| B11 | low | Bot count fallback 50, matching the setting default | todo |
-| B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | todo |
+| B1 | medium | Profile lookup from mod-data; drop substring planet matching; oil node on the Nauvis profile only | done |
+| B2 | blocker | Per-planet substitutions (panels, accumulators, Fulgora collector, radar, inserter); remove the lamp-to-rod swap | done |
+| B3 | high | Force-generate chunks before placing (off-world surfaces start with none) | done |
+| B4 | blocker | Home and outpost bases; outpost kits; landing pad 3 tiles below the south wall | done |
+| B5 | medium | MTS admin items to the home base only; delivery with overflow across chests | done |
+| B6 | medium | A base founded after the unlock is created unlocked | done |
+| B7 | high | Clear enemy nests and worms within the construction radius at placement | done |
+| B8 | medium | Pass blueprint entity settings to `create_entity` (the roboport feeder request was lost); per-planet display panel text that is accurate (bots slow to 20%, they do not crash) | done |
+| B9 | medium | Lightning attractors belong to the locked power core; fix core comments | done |
+| B10 | high | `lose_outpost`, re-found sweep of leftovers, `forget_surface` | done |
+| B11 | low | Bot count fallback 50, matching the setting default | done |
+| B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | done |
 
 ### C. Events and lifecycle
 
 | ID | Sev | Task | Status |
 |---|---|---|---|
-| C1 | blocker | Establish base: resolve the planet via `game.planets`, create the surface on click, drop the `speed ~= 0` test, accept any clone quality, consume the clone only after success, require the hub's force, pass `mod`, report an MTS milestone, clearer reasons | todo |
-| C2 | blocker | Roboport loss: home eliminates the team, outpost calls `lose_outpost` and tells the team | todo |
-| C3 | high | Empty each parked body once, not on every reconnect (blueprints were being deleted); editor guard; header comment | todo |
-| C4 | medium | Force-change handler uses `get_effective_force`, so MTS's spectate hop no longer unparks the player; re-centre the view afterwards | todo |
-| C5 | low | Surface-arrival handler ignores the map editor and other teams' surfaces; remember the last own surface viewed and restore it on reconnect | todo |
-| C6 | low | Pen cells: 12 slots per cell, evict bodies from a released team's cell, reset its label | todo |
-| C7 | low | Team tab: pass `mod`, make the unlock text list what is really locked | todo |
-| C8 | medium | Admin commands (admin or server console only): `/bnm-status`, `/bnm-repark`, `/bnm-forget-base` | todo |
-| C9 | low | `on_pre_surface_deleted` forgets base state for that surface | todo |
-| C10 | medium | `control.lua` wiring; call `starter_base.migrate`; record current parked bodies so the first reconnect after the update does not empty them | todo |
+| C1 | blocker | Establish base: resolve the planet via `game.planets`, create the surface on click, drop the `speed ~= 0` test, accept any clone quality, consume the clone only after success, require the hub's force, pass `mod`, report an MTS milestone, clearer reasons | done |
+| C2 | blocker | Roboport loss: home eliminates the team, outpost calls `lose_outpost` and tells the team | done |
+| C3 | high | Empty each parked body once, not on every reconnect (blueprints were being deleted); editor guard; header comment | done |
+| C4 | medium | Force-change handler uses `get_effective_force`, so MTS's spectate hop no longer unparks the player; re-centre the view afterwards | done |
+| C5 | low | Surface-arrival handler ignores the map editor and other teams' surfaces; remember the last own surface viewed and restore it on reconnect | done |
+| C6 | low | Pen cells: 12 slots per cell, evict bodies from a released team's cell, reset its label | done |
+| C7 | low | Team tab: pass `mod`, make the unlock text list what is really locked | done |
+| C8 | medium | Admin commands (admin or server console only): `/bnm-status`, `/bnm-repark`, `/bnm-forget-base` | done |
+| C9 | low | `on_pre_surface_deleted` forgets base state for that surface | done |
+| C10 | medium | `control.lua` wiring; call `starter_base.migrate`; record current parked bodies so the first reconnect after the update does not empty them | done |
 
 ### D. Docs and portal
 
 | ID | Sev | Task | Status |
 |---|---|---|---|
-| D1 | doc | README: AI sentence to a bottom Development section with the standard wording; fix the minable, every-surface, settings-type, colour and Aquilo claims; describe clones and outposts; GPL-3.0-or-later | todo |
-| D2 | doc | `docs/portal.md`: same fixes, honest Status, clone in Features, MDW described as a separate game mode | todo |
-| D3 | doc | `tools/portal_meta.json`: drop the `Character` tag, keep every summary token and add the missing search words, note why the category is Scenarios | todo |
-| D4 | doc | Changelog 0.2.0 | todo |
-| D5 | doc | `docs/HOSTING.md`: passive radars, blueprint imports, Fulgora lightning and bots, clone flow, admin commands, manual test checklist | todo |
-| D6 | doc | Stale comments (`permissions.lua` movement clamp, `blueprints.lua` header, `remote_player.lua` header) | todo |
+| D1 | doc | README: AI sentence to a bottom Development section with the standard wording; fix the minable, every-surface, settings-type, colour and Aquilo claims; describe clones and outposts; GPL-3.0-or-later | done |
+| D2 | doc | `docs/portal.md`: same fixes, honest Status, clone in Features, MDW described as a separate game mode | done |
+| D3 | doc | `tools/portal_meta.json`: drop the `Character` tag, keep every summary token and add the missing search words, note why the category is Scenarios | done |
+| D4 | doc | Changelog 0.2.0 | done |
+| D5 | doc | `docs/HOSTING.md`: passive radars, blueprint imports, Fulgora lightning and bots, clone flow, admin commands, manual test checklist | done |
+| D6 | doc | Stale comments (`permissions.lua` movement clamp, `blueprints.lua` header, `remote_player.lua` header) | done |
 
 ### E. Verification
 
