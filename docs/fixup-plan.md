@@ -13,6 +13,7 @@ a real game client), `ask` (author decides before it ships).
 | Topic | Decision |
 |---|---|
 | Planet power | Keep the human-designed Nauvis footprint everywhere. Swap in uncraftable, planet-tuned panels and accumulators in the same slots. Mining one returns an ordinary vanilla item. |
+| Tuned copies and the unlock | Planet-tuned entities (the generated `bnm-*` panels and accumulators, `bnm-radar`, `bnm-inserter`) stay locked even after the team unlocks its power core; only vanilla core entities become minable. |
 | Fulgora | Lightning-based power: one vanilla lightning collector plus tuned accumulators (measured design D1). |
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
@@ -133,7 +134,9 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
    asking for 50 + 50 robots) would lose room for the robots it requests. On
    the ground, the same items reach storage once there is room.
 8. The power core stays locked unless the team already unlocked it.
-   Lightning attractors are part of the core.
+   Lightning attractors are part of the core. Planet-tuned copies (no item
+   places them) are locked on every base, unlocked or not; only losing their
+   outpost frees them for salvage.
 9. `storage.bnm_base[surface]` records `home = true` for the first base of a
    force, `outpost = true` otherwise.
 
@@ -201,6 +204,7 @@ match what the code does, so only E2 needed updating.
 | B11 | low | Bot count fallback 50, matching the setting default | done |
 | B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | done |
 | B13 | high | Re-founding never loses the kit or salvage: pad and kit first, salvage into every chest robots take from and the pad, spill the rest for the robots; player-built entities in the site come back as items (`scripts/item_delivery.lua`) | done |
+| B14 | medium | Planet-tuned copies stay locked after the unlock; the team tab, README, portal, locale and changelog say so | done |
 
 ### C. Events and lifecycle
 

@@ -29,10 +29,10 @@ Join the Discord: https://discord.gg/tWz4FT74pH
 - ✋ Handcrafting, hand-mining (ore, rocks, trees), and manual ctrl-click transfer to/from chests are all blocked via a permission group, so humans can't shortcut the economy. Inserters, machines, and bots move everything.
 
 ### 🏰 The base is permanent
-- 🔒 **Power core locked by default**. Solar panels, accumulators, substations, the lights, the warning sign and Fulgora's lightning collector stay non-minable until your team unlocks them. Everything else in the base -- walls, chests, the radar, the inserter -- is already minable, so a stray click can't kill your power but you're free to redesign the rest.
+- 🔒 **Power core locked by default**. Solar panels, accumulators, substations, the lights, the warning sign and Fulgora's lightning collector stay non-minable until your team unlocks them. The green-tinted, planet-tuned panels, accumulators, radar and inserter stay locked even after that, because nothing can place one again. Everything else in the base -- walls, chests, and on most planets the radar and the inserter -- is already minable, so a stray click can't kill your power but you're free to redesign the rest.
 - 🆔 **Self-contained roboport**: a custom, **uncraftable** `bnm-roboport` (recoloured with a bright green glow) anchors every base. It has no recipe and can never be built, copied, or made minable. The only ones that exist are the ones this mod places.
 - 💀 **Lose your home roboport, lose the game**. If biters (or anything else) destroy the `bnm-roboport` at your team's original base, your team is eliminated and disbanded. An outpost's roboport isn't as fragile: losing one only wipes that outpost, and another Character Clone re-founds it.
-- 🔓 **"I know what I am doing"**. A **Brave New MTS** tab in the MTS team-settings panel gives the team leader a one-time button to unlock the rest of the power core (the roboport always stays locked). For players who want to relocate or rebuild on their own terms.
+- 🔓 **"I know what I am doing"**. A **Brave New MTS** tab in the MTS team-settings panel gives the team leader a one-time button to unlock the rest of the power core (the roboport and the planet-tuned buildings always stay locked). For players who want to relocate or rebuild on their own terms.
 
 ## 🪐 Space Age
 
@@ -41,7 +41,7 @@ Space Age is optional, and it's where outposts happen.
 - Research the Character Clone (needs `rocket-silo`, plus red, green and blue science) once you've reached a planet through the normal space-platform tech chain.
 - Load a clone onto a space platform and fly it to the planet. Once the platform is parked there, open the platform hub and press **Establish base** to consume the clone and found an outpost -- the same kind of starter base as home, tuned for that planet.
 - Every outpost gets a cargo landing pad just outside its south wall, so a platform overhead can drop off supplies without a character ever setting foot on the ground.
-- Power is planet-tuned: solar panels and accumulators are swapped for uncraftable, planet-sized versions in the same spots (mining one still returns the ordinary vanilla item). Fulgora runs on lightning instead of the sun -- a vanilla lightning collector plus tuned accumulators.
+- Power is planet-tuned: solar panels and accumulators are swapped for uncraftable, planet-sized versions in the same spots. They can't be mined while their base stands, even after the unlock. Fulgora runs on lightning instead of the sun -- a vanilla lightning collector plus tuned accumulators.
 - Only your team's original (home) base can end the game. Losing an outpost's roboport wipes that outpost -- ship another clone to re-found it -- but your home base and the rest of your empire are untouched. Re-founding keeps what the lost outpost held: the new base gets its fresh kit plus the old chests' and pad's contents, and anything you built on the site comes back as items.
 
 ## ⚙️ Requirements

@@ -10,7 +10,9 @@
 --     items through blueprints.
 --   * not-blueprintable, and no ghost when it dies.
 --   * mining returns the ordinary vanilla item, so a team that tears one down
---     gets a normal building back, never a tuned one.
+--     gets a normal building back, never a tuned one. The runtime keeps every
+--     copy non-minable while its base stands, even after the team unlocks its
+--     power core (starter_base.lua, is_tuned): mining one could not be undone.
 --   * no next_upgrade, so an upgrade planner can't turn it into anything.
 --   * a light green tint, from the roboport's colour family, so players can
 --     tell the tuned base buildings from their own.

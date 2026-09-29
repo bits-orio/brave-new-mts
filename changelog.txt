@@ -45,6 +45,9 @@ Date: 2026-09-28
       top of another player; a released team's cell is emptied and its label reset.
     - The team-settings tab's unlock warning now lists everything the power core actually locks,
       including Fulgora's lightning collector and the warning sign.
+    - The planet-tuned solar panels, accumulators, radar and inserter stay non-minable even after
+      a team unlocks its power core, because nothing can place one again. The unlock now frees
+      only the ordinary power core.
     - The team-settings tab and the platform hub's Establish-base widget are now removed
       automatically from a save if Brave New MTS is ever taken out of it.
     - Now requires Multi-Team Support 0.6.6 or newer.

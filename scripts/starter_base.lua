@@ -24,8 +24,8 @@
 --      admin items; outpost: a short planet kit), then the salvage pool
 --      (crash-site loot at home), so salvage never crowds out the kit. What
 --      no chest can hold is spilled for the robots (scripts/item_delivery.lua).
---   6. Lock the power core (unless the team already unlocked it) and record
---      the base in storage.bnm_base.
+--   6. Lock the power core (unless the team already unlocked it; planet-tuned
+--      copies are locked for good) and record the base in storage.bnm_base.
 
 local blueprints    = require("scripts.blueprints")
 local item_delivery = require("scripts.item_delivery")
@@ -561,9 +561,9 @@ end
 -- doing": losing any of it would strand the base. It is the power generation
 -- and storage, the lightning attractors that shield it (and the Fulgora
 -- collector that is its night power), the substations and main poles, the
--- lights and the sign. Everything else is minable from the start, so a team
--- can freely redesign the base. The central roboport is never minable and is
--- handled separately.
+-- lights and the sign. Planet-tuned copies are locked for good (is_tuned).
+-- Everything else is minable from the start, so a team can freely redesign
+-- the base. The central roboport is never minable and is handled separately.
 local PROTECTED_TYPES = {
     ["solar-panel"]         = true,
     ["accumulator"]         = true,
@@ -577,6 +577,16 @@ local PROTECTED_NAMES = {
 }
 local function is_power_core(entity)
     return PROTECTED_TYPES[entity.type] or PROTECTED_NAMES[entity.name] or false
+end
+
+--- A planet-tuned copy (prototypes/bnm_variant.lua: bnm-solar-panel-gleba,
+--- bnm-radar, ...). It stays non-minable even once the team unlocks its core:
+--- no item can place one again, and mining one returns an ordinary building
+--- that gives far less power (or freezes) on that planet. Having no placing
+--- item is what makes that loss permanent, so it is also the test.
+local function is_tuned(entity)
+    local items = entity.prototype.items_to_place_this
+    return not (items and items[1])
 end
 
 -- Blueprint entity fields that are not create_entity parameters. Everything
@@ -615,6 +625,15 @@ local function check_requests(e, created)
     log("[brave-new-mts] '" .. e.name .. "' lost its blueprint logistic request")
 end
 
+--- Lock a power core entity (unless the team unlocked it) or a tuned copy
+--- (always), and list it in built.protected.
+local function lock(built, created, locked)
+    local tuned = is_tuned(created)
+    if not (tuned or is_power_core(created)) then return end
+    if locked or tuned then created.minable_flag = false end
+    built.protected[#built.protected + 1] = created
+end
+
 --- Seed, file and lock one created entity. The FIRST roboport is the base's
 --- heart: never minable, whatever the team has unlocked.
 local function register_created(built, created, e, locked)
@@ -629,10 +648,7 @@ local function register_created(built, created, e, locked)
         add_chest(built, created)
         built.chests[#built.chests + 1] = created
     end
-    if is_power_core(created) then
-        if locked then created.minable_flag = false end
-        built.protected[#built.protected + 1] = created
-    end
+    lock(built, created, locked)
     check_requests(e, created)
 end
 
@@ -872,10 +888,11 @@ function M.forget_surface(surface_name)
     if storage.bases_placed then storage.bases_placed[surface_name] = nil end
 end
 
---- Wipe an outpost whose roboport was lost: its locked core becomes minable,
---- so the team's bots can salvage it, and the surface is forgotten, so a clone
---- can re-found it (M.place then sweeps what is left in the site). A home base
---- is never wiped here. Returns true if an outpost was wiped.
+--- Wipe an outpost whose roboport was lost: its locked core, tuned copies
+--- included, becomes minable, so the team's bots can salvage it, and the
+--- surface is forgotten, so a clone can re-found it (M.place then sweeps what
+--- is left in the site). A home base is never wiped here. Returns true if an
+--- outpost was wiped.
 function M.lose_outpost(surface_name)
     local base = M.base_for(surface_name)
     if not (base and base.outpost) then return false end
@@ -898,15 +915,16 @@ function M.add_items_to_spawned_bases(items)
 end
 
 --- Unlock the team's power core so it can be mined too, opt-in once the team
---- accepts the soft-lock risk. The roboport always stays non-minable. Applies
---- to all the team's bases; bases founded later are built unlocked.
+--- accepts the soft-lock risk. The roboport and the planet-tuned copies
+--- (is_tuned) always stay non-minable. Applies to all the team's bases; bases
+--- founded later are built unlocked.
 function M.unlock_minable(force_name)
     if not storage.bnm_base then return end
     for _, base in pairs(storage.bnm_base) do
         if base.force == force_name then
             base.unlocked = true
             for _, e in pairs(base.protected) do
-                if e.valid then e.minable_flag = true end
+                if e.valid and not is_tuned(e) then e.minable_flag = true end
             end
         end
     end

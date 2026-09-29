@@ -2,7 +2,8 @@
 -- Registers a "Brave New MTS" tab in MTS's Team Settings panel (via the
 -- mts-v1 register_team_tab API) and fills it with a soft-lock warning plus a
 -- one-time, leader-only "I know what I am doing" button that makes the locked
--- power core of every base minable (except the permanent roboports).
+-- power core of every base minable (except the permanent roboports and the
+-- planet-tuned copies, which no item can place again).
 
 local starter_base = require("scripts.starter_base")
 local mts_events   = require("scripts.mts_events")
@@ -13,12 +14,15 @@ local TAB_NAME      = "brave-new-mts"
 local UNLOCK_BUTTON = "bnm_unlock_minable"
 
 -- Mirrors starter_base's power core: solar panels, accumulators, substations,
--- lamps, lightning collectors (Fulgora) and the display panel.
+-- lamps, lightning collectors (Fulgora) and the display panel, plus the
+-- planet-tuned copies (is_tuned), which stay locked even after the unlock.
 local WARNING =
-    "You can already mine and redesign most of your bases. Only the power core "
+    "You can already mine and redesign most of your bases. The power core "
     .. "stays locked: solar panels, accumulators, substations, lamps, lightning "
     .. "collectors and the power warning sign, so you can't accidentally kill "
-    .. "your own power and strand your team.\n\n"
+    .. "your own power and strand your team. The green-tinted, planet-tuned "
+    .. "panels, accumulators, radar and inserter stay locked even after you "
+    .. "unlock, because nothing can ever place one again.\n\n"
     .. "Unlocking lets you mine / deconstruct that power core too, on every base "
     .. "your team has or founds later, to rebuild it your way. The central "
     .. "roboports can NEVER be removed.\n\n"
@@ -46,7 +50,8 @@ local function build_tab(player, element)
         local ok = element.add{
             type    = "label",
             caption = "[color=0,1,0]Your power core and warning sign are now "
-                .. "mineable too (except the central roboports).[/color]",
+                .. "mineable too (except the central roboports and the "
+                .. "planet-tuned buildings).[/color]",
         }
         ok.style.single_line  = false
         ok.style.maximal_width = 360
@@ -61,7 +66,9 @@ local function build_tab(player, element)
             name    = UNLOCK_BUTTON,
             caption = "I know what I am doing",
             tooltip = "Make the locked power core and warning sign mineable on "
-                .. "every base (except the roboports). One-way.",
+                .. "every base. The roboports and the green-tinted, planet-tuned "
+                .. "buildings stay locked, because nothing can place one again. "
+                .. "One-way.",
         }
     else
         local note = element.add{
@@ -81,8 +88,8 @@ function M.on_gui_click(event)
 
     starter_base.unlock_minable(player.force.name)
     player.force.print("Power core unlocked on every base: it can now be mined / "
-        .. "deconstructed (except the central roboports). Be careful not to "
-        .. "soft-lock the team.")
+        .. "deconstructed (except the central roboports and the planet-tuned "
+        .. "buildings). Be careful not to soft-lock the team.")
     build_tab(player, el.parent)  -- el.parent is the tab content frame
 end
 
