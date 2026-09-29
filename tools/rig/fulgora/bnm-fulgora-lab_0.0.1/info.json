@@ -1,0 +1,9 @@
+{
+  "name": "bnm-fulgora-lab",
+  "version": "0.0.1",
+  "title": "BNM Fulgora lab (TEST ONLY)",
+  "author": "rig",
+  "factorio_version": "2.0",
+  "dependencies": ["base", "space-age", "brave-new-mts"],
+  "description": "Test-only candidate prototypes for Fulgora starter-base power. Never shipped."
+}
