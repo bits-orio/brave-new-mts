@@ -110,11 +110,51 @@ end
 
 -- ─── Park slots within a box ───────────────────────────────────────────
 
--- Up to 9 teammates per cell, packed inside the 3x3 interior.
-local SLOT_OFFSETS = {
-    { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 },
-    { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
-}
+-- The walls stand on the tiles at c-2 and c+2, so the 3x3 floor inside spans
+-- [c-1, c+2) on each axis, centred on c+0.5. Twelve slots (MTS's buddy-join
+-- limit is 10) in a 4x3 grid at 0.8-tile spacing around that centre: a
+-- character's collision box is +-0.2, so no two touch each other or a wall.
+local SLOT_OFFSETS = {}
+for _, dy in ipairs({ 0.5, -0.3, 1.3 }) do
+    for _, dx in ipairs({ 0.1, 0.9, -0.7, 1.7 }) do
+        SLOT_OFFSETS[#SLOT_OFFSETS + 1] = { dx, dy }
+    end
+end
+
+--- The whole 5x5 box of a cell centred on `c`, walls included.
+local function cell_area(c)
+    return { { c.x - WALL, c.y - WALL }, { c.x + WALL + 1, c.y + WALL + 1 } }
+end
+
+--- Characters standing in a team's cell (empty if the cells aren't built).
+function M.characters_in_cell(force_name)
+    local c = storage.cell_center and storage.cell_center[force_name]
+    local pen = game.surfaces[SURFACE]
+    if not (c and pen and pen.valid) then return {} end
+    return pen.find_entities_filtered{ type = "character", area = cell_area(c) }
+end
+
+--- Every character parked in any team's cell.
+function M.parked_characters()
+    local all = {}
+    for force_name in pairs(storage.cell_center or {}) do
+        for _, body in pairs(M.characters_in_cell(force_name)) do all[#all + 1] = body end
+    end
+    return all
+end
+
+--- Move every body out of a released team's cell onto the pen island. MTS
+--- returns only CONNECTED members to the pen; an offline member's body would
+--- otherwise wait in the dead team's cell, where the next team to claim the
+--- slot is parked too.
+function M.evict_cell(force_name)
+    local pen = game.surfaces[SURFACE]
+    for _, body in pairs(M.characters_in_cell(force_name)) do
+        local pos = pen.find_non_colliding_position("character", { 0, 0 }, 12, 0.5)
+        if pos then body.teleport(pos) end
+        body.destructible = true
+    end
+end
 
 --- Update a team's cell label (e.g. after a rename). No-op if the cells aren't
 --- built yet -- ensure_built will draw the current name when it runs.
@@ -123,7 +163,8 @@ function M.set_label(force_name, label)
     if obj and obj.valid then obj.text = label end
 end
 
---- Parking position inside a team's box for the Nth teammate (0-based).
+--- Parking position inside a team's box for the Nth teammate (0-based). Past
+--- the last slot it wraps: two bodies sharing a spot is only cosmetic.
 function M.park_position(force_name, index_in_team)
     local c = storage.cell_center and storage.cell_center[force_name]
     if not c then return nil end
