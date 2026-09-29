@@ -70,9 +70,8 @@ end
 
 --- The surface name of a team's home (first) base, if one is recorded.
 local function team_home(force_name)
-    for surface_name, base in pairs(storage.bnm_base or {}) do
-        if base.force == force_name and base.home then return surface_name end
-    end
+    local _, surface_name = starter_base.home_of(force_name)
+    return surface_name
 end
 
 --- Where the view on `surface` is centred: the spot the player was looking at

@@ -45,6 +45,7 @@ M.profile_for = profiles.profile_for
 
 -- Records: look up, forget, lose and unlock bases.
 M.base_for       = records.base_for
+M.home_of        = records.home_of
 M.forget_surface = records.forget_surface
 M.lose_outpost   = records.lose_outpost
 M.cleanup_force  = records.cleanup_force

@@ -8,10 +8,11 @@ local power_core = require("scripts.base.power_core")
 
 local M = {}
 
---- The force's home base record, or nil.
+--- The force's home base record and its surface name, or nil. The one rule
+--- for which base is a team's home.
 function M.home_of(force_name)
-    for _, base in pairs(storage.bnm_base or {}) do
-        if base.force == force_name and base.home then return base end
+    for surface_name, base in pairs(storage.bnm_base or {}) do
+        if base.force == force_name and base.home then return base, surface_name end
     end
     return nil
 end

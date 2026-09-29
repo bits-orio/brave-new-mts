@@ -169,7 +169,7 @@ Relay roboports are there because the first research trigger on Vulcanus
 construction radius on one seed.
 
 Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
-`forget_surface`, `cleanup_force`, `profile_for`, `base_for`,
+`forget_surface`, `cleanup_force`, `profile_for`, `base_for`, `home_of`,
 `add_items_to_spawned_bases` (home bases only), `unlock_minable`,
 `is_unlocked`, `migrate`.
 
