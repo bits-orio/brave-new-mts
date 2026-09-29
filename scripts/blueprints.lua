@@ -19,6 +19,9 @@
 -- and the logistic chests, including the requester that feeds robots to the
 -- roboport (its request is part of the blueprint). The chests are empty here;
 -- scripts/base/kits.lua fills them from its kits, so item lists live in code.
+-- The kit items an outpost's sign names come from those kits too.
+
+local kits = require("scripts.base.kits")
 
 local M = {}
 
@@ -50,21 +53,25 @@ local SIGN_ROLE = {
         .. "Your home base is safe.[/color]",
 }
 
+-- Why each planet is different. What the kit brings for it is not typed here:
+-- an outpost's sign names it from its kit (kits.sign_icons).
 local SIGN_PLANET = {
     nauvis   = "Accumulators carry the night. Add power before you outgrow them.",
-    vulcanus = "A spare roboport is in the kit: some resources may lie past this one's reach.",
+    vulcanus = "Some resources may lie past this roboport's reach.",
     fulgora  = "Lightning strikes at night. Robots flying outside the collector's "
-        .. "cover get hit. Lightning rods are in the kit.",
-    gleba    = "Gun turrets and ammo are in the kit, for when the pentapods come.",
-    aquilo   = "This core never freezes. Most machines you build do, without heat. "
-        .. "A heating tower, heat pipes and fuel are in the kit.",
+        .. "cover get hit.",
+    gleba    = "The pentapods will come.",
+    aquilo   = "This core never freezes. Most machines you build do, without heat.",
 }
 
---- The sign's text for a base on `planet_base` (e.g. "gleba").
+--- The sign's text for a base on `planet_base` (e.g. "gleba"). Only an
+--- outpost names kit items: a home gets the home kit, not its planet's.
 local function sign_text(planet_base, home)
     local text = SIGN_HEAD .. SIGN_ROLE[home and "home" or "outpost"]
     local line = SIGN_PLANET[planet_base]
     if line then text = text .. "\n" .. line end
+    local icons = not home and kits.sign_icons(planet_base) or ""
+    if icons ~= "" then text = text .. "\nIn the kit: " .. icons end
     return text
 end
 

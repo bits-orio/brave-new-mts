@@ -40,7 +40,10 @@ M.STARTER_ITEMS = {
 -- placed as an entity, not stocked). Nauvis-only items are left out. The
 -- relay roboports are there because the first research trigger on Vulcanus
 -- (calcite) and Fulgora (ruin vault) measured just outside the 110-tile
--- construction radius on one seed.
+-- construction radius on one seed. `sign = true` marks what the outpost's
+-- sign names (scripts/blueprints.lua), so the sign never promises an item
+-- the kit dropped. docs/fixup-plan.md keeps the design contract's copy of
+-- these tables; retune both together.
 local OUTPOST_KIT_COMMON = {
     { name = "medium-electric-pole", count = 20  },
     { name = "transport-belt",       count = 100 },
@@ -50,7 +53,7 @@ local OUTPOST_KIT_COMMON = {
 local OUTPOST_KITS = {
     vulcanus = {
         { name = "electric-mining-drill", count = 3  },
-        { name = "roboport",              count = 1  },
+        { name = "roboport",              count = 1,  sign = true },
         { name = "construction-robot",    count = 10 },
         { name = "steel-chest",           count = 4  },
     },
@@ -58,19 +61,19 @@ local OUTPOST_KITS = {
         { name = "electric-mining-drill", count = 2  },
         { name = "roboport",              count = 2  },
         { name = "construction-robot",    count = 15 },
-        { name = "lightning-rod",         count = 10 },  -- cover for robots flying at night
+        { name = "lightning-rod",         count = 10, sign = true },  -- cover for robots flying at night
         { name = "steel-chest",           count = 4  },
     },
     gleba = {
-        { name = "gun-turret",         count = 6   },
-        { name = "firearm-magazine",   count = 200 },
+        { name = "gun-turret",         count = 6,   sign = true },
+        { name = "firearm-magazine",   count = 200, sign = true },
         { name = "roboport",           count = 1   },
         { name = "construction-robot", count = 10  },
     },
     aquilo = {
-        { name = "heating-tower",         count = 1  },
-        { name = "heat-pipe",             count = 20 },
-        { name = "solid-fuel",            count = 50 },
+        { name = "heating-tower",         count = 1,  sign = true },
+        { name = "heat-pipe",             count = 20, sign = true },
+        { name = "solid-fuel",            count = 50, sign = true },
         { name = "electric-mining-drill", count = 1  },
     },
 }
@@ -113,10 +116,28 @@ local function mts_starter_items()
     return {}
 end
 
+--- The planet-specific part of an outpost's kit on `planet_base` (e.g. "gleba").
+local function planet_kit(planet_base)
+    return OUTPOST_KITS[planet_base] or OUTPOST_KIT_OTHER
+end
+
 --- What a base's chests start with: the home kit, or the outpost's planet kit.
 local function kit_for(profile, home)
     if home then return M.STARTER_ITEMS end
-    return joined(OUTPOST_KIT_COMMON, OUTPOST_KITS[profile.base] or OUTPOST_KIT_OTHER)
+    return joined(OUTPOST_KIT_COMMON, planet_kit(profile.base))
+end
+
+--- Rich-text icons of the kit items an outpost's sign names on `planet_base`
+--- (e.g. "[item=gun-turret] [item=firearm-magazine]"); "" when it names none.
+--- An item that does not exist is left out, as delivery skips it.
+function M.sign_icons(planet_base)
+    local icons = {}
+    for _, it in ipairs(planet_kit(planet_base)) do
+        if it.sign and prototypes.item[it.name] then
+            icons[#icons + 1] = "[item=" .. it.name .. "]"
+        end
+    end
+    return table.concat(icons, " ")
 end
 
 --- Stock a freshly built base's chests with its kit, and a home base's with
