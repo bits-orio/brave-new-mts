@@ -73,6 +73,8 @@ Date: 2026-09-28
       Multi-Team Support's event ids are now looked up each session instead of kept in the save.
     - A team eliminated while one of its members was spectating a rival no longer leaves a one-tick
       window in which a joining player is refused.
+    - Players who spectated a rival team on 0.1.x get their home surface back on the update, so
+      returning from spectating re-centres their camera on their base again.
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.3
 Date: 2026-06-05

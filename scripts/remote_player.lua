@@ -143,6 +143,11 @@ function M.park(player, team_surface)
         surface  = team_surface,
         position = starter_base.BASE_ORIGIN,  -- centre the view on the base
     }
+    -- Heal a record 0.1.x lost (its spectate hop ran unpark): a player parked
+    -- here is parked for this team, so is_parked and /bnm-status agree.
+    if not storage.home_surface[player.index] then
+        storage.home_surface[player.index] = team_home(fn) or team_surface.name
+    end
     log("[brave-new-mts] parked " .. player.name .. " in " .. fn
         .. " cell; viewing " .. team_surface.name)
     return team_surface.name
@@ -199,11 +204,27 @@ end
 --- cell as emptied, so the first reconnect after updating from a version that
 --- emptied on every park keeps what the player stored since. Offline players'
 --- bodies have no player attached, so they are found in the cells.
+---
+--- Also give every team member a home surface again. 0.1.x cleared it on each
+--- rival spectate (its force check read player.force), and without it
+--- is_parked stays false, so the return from spectating never re-parks them.
+--- park() heals this on reconnect too, but a single-player load raises no
+--- on_player_joined_game. Runs after starter_base.migrate, so team_home sees
+--- the home flags.
 function M.migrate()
     storage.emptied_body = storage.emptied_body or {}
     for _, body in pairs(pen_cells.parked_characters()) do
         if body.unit_number and not storage.emptied_body[body.unit_number] then
             storage.emptied_body[body.unit_number] = body.player and body.player.index or true
+        end
+    end
+
+    storage.home_surface = storage.home_surface or {}
+    if not remote.interfaces["mts-v1"] then return end
+    for _, player in pairs(game.players) do
+        local fn = M.effective_force(player)
+        if is_team_force(fn) and not storage.home_surface[player.index] then
+            storage.home_surface[player.index] = team_home(fn)  -- nil: no home base yet
         end
     end
 end
