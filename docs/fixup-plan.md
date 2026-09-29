@@ -229,6 +229,13 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
   surface exists.
 - The same AI-disclosure wording fix in the MTS, diggy and land-title-registry
   READMEs.
+- `docs/MTS_API.md` ("Subscribing") says `remote.call` is not legal in
+  `on_load` and suggests a one-shot `on_nth_tick(1)`. On 2.0.77 only the main
+  chunk forbids it: `get_event_id` works in `on_load` (measured), and that is
+  the pattern BNM now uses (`scripts/mts_events.lua`). The one-shot tick is not
+  join-safe (a client joining later never runs it), and the note steers
+  consumers toward caching ids in storage, which breaks when the ids shift.
+  mts-expanse caches the ids the same way.
 
 ### Refuted during the audit (no action)
 
