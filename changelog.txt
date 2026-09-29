@@ -1,4 +1,66 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 2026-09-28
+  Features:
+    - Space Age outposts: research the Character Clone (rocket-silo plus red, green and blue
+      science), ship one to a planet on a space platform, and press Establish base in the
+      platform hub to found a starter base there, complete with its own cargo landing pad.
+    - Every planet now gets power tuned to it: solar panels and accumulators are swapped for
+      uncraftable, planet-sized versions in the same spots, and Fulgora runs off a lightning
+      collector and tuned accumulators instead of the sun.
+    - Admin commands (server console or admin only): /bnm-status to inspect a team's bases,
+      /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to clear a
+      broken base's bookkeeping so it can be re-founded.
+    - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
+      credit for reaching a planet.
+  Changes:
+    - Only a team's original (home) base can end the game. Losing an outpost's roboport now wipes
+      just that outpost -- leftover entities are swept and its chests' contents recovered --
+      instead of disbanding the whole team; another Character Clone re-founds it.
+    - Off-world surfaces now have their chunks generated before the base is built, so a new
+      outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
+      the terrain generates later.
+    - Enemy nests and worm turrets near a new base's footprint are cleared before placement.
+    - A base founded after the team has already unlocked its power core is created unlocked,
+      instead of locked and waiting on a second unlock click.
+    - Off-world starter kits are now planet-specific (a heating tower and heat pipes on Aquilo,
+      gun turrets on Gleba, and so on) instead of the Nauvis kit everywhere.
+    - Admin-added starter items are delivered to the home base only, and delivery now spreads
+      across every provider and storage chest instead of overflowing a single one.
+    - Reconnecting no longer snaps a player's remote view back to their home planet if they were
+      looking at an outpost; the view now ignores the map editor and other teams' surfaces and
+      stays where the player left it.
+    - MTS's "Spectate a rival team" button no longer strands a player out of remote view;
+      returning from spectating re-centres their camera on their own base.
+    - Pen cells now hold 12 teammates instead of wrapping around and stacking the 10th member on
+      top of another player; a released team's cell is emptied and its label reset.
+    - The team-settings tab's unlock warning now lists everything the power core actually locks,
+      including Fulgora's lightning collector and rods.
+    - The team-settings tab and the platform hub's Establish-base widget are now removed
+      automatically from a save if Brave New MTS is ever taken out of it.
+    - Now requires Multi-Team Support 0.6.6 or newer.
+  Bugfixes:
+    - The bnm-roboport no longer freezes on Aquilo, so a new Aquilo base has a working
+      construction network from the moment it's placed.
+    - Reconnecting, or a server restart, no longer empties blueprints, blueprint books and
+      planners out of a player's parked body; only a genuine first spawn is cleared.
+    - An admin looking at a team's surface in the map editor no longer triggers a free starter
+      base or changes the admin's own home surface.
+    - The Establish base button now works the moment a platform arrives at a planet, instead of
+      waiting for it to fully stop, and reports the real reason it's unavailable.
+    - A Character Clone of any quality is recognised and consumed, and only after the base is
+      actually built, so a failed placement no longer loses the clone for nothing.
+    - Roboport feeder requests and other per-entity blueprint settings are restored on placement
+      again, and the starter base's display panel text is accurate to what's locked.
+    - Mod settings, the starter roboport, the Character Clone and every planet-generated entity
+      now have proper in-game names and descriptions instead of raw internal keys.
+    - Deleting a team's surface, by an admin or on team disband, now correctly clears Brave New
+      MTS's own bookkeeping for that surface.
+    - Save files from 0.1.x are migrated on load: existing bases are marked home or outpost and
+      their provider chests are recorded, so the outpost-loss and admin-command behaviour works
+      on an upgraded save without a fresh map, and existing players' parked bodies are not swept
+      as if they'd just spawned.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.3
 Date: 2026-06-05
   Features:

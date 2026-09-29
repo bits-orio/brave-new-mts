@@ -8,36 +8,37 @@ Brave New MTS requires [Multi-Team Support](https://mods.factorio.com/mod/multi-
 
 ## Status
 
-Playable and in active development, running on public multiplayer servers. Nauvis and the Space Age planets each get their own starter base. Report anything odd on [Discord](https://discord.gg/tWz4FT74pH) or in the [issue tracker](https://github.com/bits-orio/brave-new-mts/issues).
+Playable and in active development, running on public multiplayer servers. Space Age adds an outpost on every planet: research the Character Clone, ship one to a planet on a space platform, and press Establish base in the platform hub to found a starter base tuned for that planet. Space Age support is newer than the Nauvis-only base, so expect more rough edges there than at home. Only a team's original base can end the game; losing an outpost's roboport only wipes that outpost, and another clone re-founds it. Report anything odd on [Discord](https://discord.gg/tWz4FT74pH) or in the [issue tracker](https://github.com/bits-orio/brave-new-mts/issues).
 
 ## Quick start
 
 1. Install [Multi-Team Support](https://mods.factorio.com/mod/multi-team-support) first. Nothing in this mod runs without it.
 2. Enable Brave New MTS and start or load an MTS game.
 3. Join a team. Your character is placed in your team's cell; open remote view of the team surface.
-4. Stamp a blueprint next to the starter roboport and watch the bots build it.
+4. Ghost a blueprint next to the starter roboport, made from your own copy of part of the base or anything you've built, and watch the bots build it.
+5. With Space Age: research the Character Clone, fly one to a planet on a space platform, and press Establish base in the platform hub to found an outpost there.
 
 ## Features
 
 - Parked character. You are teleported into your team's cell in the landing pen and locked there, playing through remote view. Teammates share a cell.
 - No roaming, no map-peeking: the body never lands on the team surface, so the map opens only as your bot network expands.
 - Self-running starter base: solar, accumulators, substations and a large roboport stocked with construction and logistic robots, pre-charged so the network is alive when you arrive.
-- Blueprints in, factory out. Stamping a blueprint is the only way to place an entity.
+- Blueprints in, factory out. A ghost, from a blueprint or a single entity, is the only way to place something; bots build every one.
 - Hand-work is blocked: no handcrafting, no hand-mining, no manual transfer to or from chests. Inserters, machines and bots move everything.
-- The starter base is non-minable by default, and a team-leader button in the mod's team-settings tab unlocks the rest of it if you want to rebuild on your own terms.
-- The central roboport is a custom, uncraftable entity. Lose it to biters and your team is eliminated.
+- The power core (solar panels, accumulators, substations and the lights) is non-minable by default, and a team-leader button in the mod's team-settings tab unlocks it for a team that wants to rebuild on its own terms. The rest of the base is already minable.
+- The central roboport is a custom, uncraftable entity that can never be made minable. Losing your team's home roboport eliminates the team; losing an outpost's roboport only wipes that outpost.
 - No god mode and no cheat mode; the save is never flagged as cheated, so achievements stay intact.
-- A starter base is placed on every team surface a team reaches, including additional planets under Space Age.
+- Space Age: research and ship a Character Clone to found an outpost on any planet your team has reached, complete with a cargo landing pad and power tuned to that planet.
 - Robot counts per base are tunable from the runtime-global mod settings.
 
 ## Compatibility
 
-Factorio 2.0. Space Age is optional and enables per-planet starter bases. No roboport mod is needed, since the starter roboport is provided by this mod. Built purely against Multi-Team Support's public `mts-v1` remote interface, so it never patches or forks MTS.
+Factorio 2.0. Space Age is optional and enables per-planet outposts. No roboport mod is needed, since the starter roboport is provided by this mod. Built purely against Multi-Team Support's public `mts-v1` remote interface, so it never patches or forks MTS. MTS blocks the blueprint library and pasted blueprint strings by default; that's fine here, since every blueprint you need can be made in game by copying part of your own base.
 
 ## Works with
 
 - [Multi-Team Support](https://mods.factorio.com/mod/multi-team-support) is required. It is the foundation this mod is built on.
-- [MTS Dimension Warp](https://mods.factorio.com/mod/mts-dimension-warp) adds per-team dimension warping. It is another mod built on the same `mts-v1` interface.
+- [MTS Dimension Warp](https://mods.factorio.com/mod/mts-dimension-warp) is a sibling game mode on the same `mts-v1` interface. It is not meant to be combined with Brave New MTS: the warp platform does not carry the starter base.
 
 ## Links
 
@@ -51,4 +52,4 @@ Factorio 2.0. Space Age is optional and enables per-planet starter bases. No rob
 
 Developed with AI coding assistants alongside human review and in-game testing. Issues and pull requests are welcome on [GitHub](https://github.com/bits-orio/brave-new-mts).
 
-License: GPL v3
+License: GPL-3.0-or-later (GNU GPL v3 or any later version)

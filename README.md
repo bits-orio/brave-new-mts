@@ -8,8 +8,6 @@ A Factorio 2.0 mod that turns [Multi-Team Support](https://github.com/bits-orio/
 
 > **Built on `mts-v1`, not on MTS internals.** Inspired by Brave New OARC, but implemented purely against MTS's public remote interface. This mod never patches or forks MTS. The same extension points are open to everyone; anyone can build a similar (or better) experience the same way.
 
-> **Note on tooling:** This mod is developed with AI coding assistants alongside human review and in-game testing. Bug reports, feature requests, and contributions are welcome from everyone.
-
 ## 💬 Community
 
 Join the Discord: https://discord.gg/tWz4FT74pH
@@ -25,24 +23,31 @@ Join the Discord: https://discord.gg/tWz4FT74pH
 ### 🧱 Blueprints in, factory out
 - 🛰️ **Self-running starter base**: each team's spawn is seeded with power (solar + accumulators + substations) and a large roboport stocked with construction and logistic robots. Accumulators and roboport energy are pre-charged so the network is alive the moment you arrive.
 - 📐 **You draw, bots build**. Expand by stamping blueprints. The construction network does the rest; there is no other way to place an entity.
-- 🤖 **Tunable bot count**: startup-global settings (`bnm-construction-robots` / `bnm-logistic-robots`, default 50 each) control how many robots each new base is seeded with.
+- 🤖 **Tunable bot count**: runtime-global map settings (`bnm-construction-robots` / `bnm-logistic-robots`, default 50 each) control how many robots each new base is seeded with. A change mid-run applies to bases placed afterwards; existing bases keep what they have.
 
 ### 🛑 No hand-work
 - ✋ Handcrafting, hand-mining (ore, rocks, trees), and manual ctrl-click transfer to/from chests are all blocked via a permission group, so humans can't shortcut the economy. Inserters, machines, and bots move everything.
 
 ### 🏰 The base is permanent
-- 🔒 **Non-minable by default**. The whole starter base is locked down so a stray click can't dismantle your lifeline.
-- 🆔 **Self-contained roboport**: a custom, **uncraftable** `bnm-roboport` (Google-red tinted) anchors every base. It can't be built, copied, or duplicated. The only ones that exist are the ones this mod places.
-- 💀 **Lose the roboport, lose the game**. If biters destroy your `bnm-roboport`, your team is eliminated and disbanded. It is the heart of the base.
-- 🔓 **"I know what I am doing"**. A **Brave New MTS** tab in the MTS team-settings panel gives the team leader a one-time button to make the rest of the base minable (the roboport always stays). For players who want to relocate or rebuild on their own terms.
+- 🔒 **Power core locked by default**. Solar panels, accumulators, substations, the lights and the warning sign stay non-minable until your team unlocks them. Everything else in the base -- walls, chests, the radar, the inserter -- is already minable, so a stray click can't kill your power but you're free to redesign the rest.
+- 🆔 **Self-contained roboport**: a custom, **uncraftable** `bnm-roboport` (recoloured with a bright green glow) anchors every base. It has no recipe and can never be built, copied, or made minable. The only ones that exist are the ones this mod places.
+- 💀 **Lose your home roboport, lose the game**. If biters (or anything else) destroy the `bnm-roboport` at your team's original base, your team is eliminated and disbanded. An outpost's roboport isn't as fragile: losing one only wipes that outpost, and another Character Clone re-founds it.
+- 🔓 **"I know what I am doing"**. A **Brave New MTS** tab in the MTS team-settings panel gives the team leader a one-time button to unlock the rest of the power core (the roboport always stays locked). For players who want to relocate or rebuild on their own terms.
 
-### 🪐 Every team surface
-- A starter base is placed on each team surface a team reaches, including additional planets under Space Age. (An Aquilo variant with extra solar is planned.)
+## 🪐 Space Age
+
+Space Age is optional, and it's where outposts happen.
+
+- Research the Character Clone (needs `rocket-silo`, plus red, green and blue science) once you've reached a planet through the normal space-platform tech chain.
+- Load a clone onto a space platform and fly it to the planet. Once the platform is parked there, open the platform hub and press **Establish base** to consume the clone and found an outpost -- the same kind of starter base as home, tuned for that planet.
+- Every outpost gets a cargo landing pad next to its roboport, so a platform overhead can drop off supplies without a character ever setting foot on the ground.
+- Power is planet-tuned: solar panels and accumulators are swapped for uncraftable, planet-sized versions in the same spots (mining one still returns the ordinary vanilla item). Fulgora runs on lightning instead of the sun -- a vanilla lightning collector plus tuned accumulators.
+- Only your team's original (home) base can end the game. Losing an outpost's roboport wipes that outpost -- ship another clone to re-found it -- but your home base and the rest of your empire are untouched.
 
 ## ⚙️ Requirements
 
 - [**Multi-Team Support**](https://github.com/bits-orio/multi-team-support) is **required**. It is the foundation this mod is built on.
-- **Space Age** is optional. It enables per-planet starter bases.
+- **Space Age** is optional. It enables per-planet starter bases and outposts.
 
 No roboport mod is needed. The starter roboport is a self-contained, uncraftable entity provided by this mod itself.
 
@@ -52,10 +57,14 @@ Brave New MTS is a pure consumer of MTS's public `mts-v1` interface:
 
 - Detects team surfaces via `get_surface_owner` and seeds the starter base on arrival.
 - Registers its own settings tab through MTS's generic `register_team_tab` API, the same hook any mod can use to add a tab to the team-settings panel.
-- Calls `disband_team` to eliminate a team when its roboport dies.
+- Calls `disband_team` to eliminate a team when its home roboport dies.
 
 If you want to extend the MTS team panel from your own mod, this repo is a working example of the tab-registration contract.
 
+## Development
+
+Developed with AI coding assistants alongside human review and in-game testing. Bug reports, feature requests, and contributions are welcome from everyone.
+
 ## 📄 License
 
-[GNU GPL v3](LICENSE)
+[GPL-3.0-or-later](LICENSE)
