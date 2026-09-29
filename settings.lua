@@ -1,6 +1,7 @@
 -- settings.lua
 -- How many robots each team's starter roboport is seeded with. Runtime-global
 -- so a server admin can tune it; changes apply to bases placed afterwards.
+-- Names and descriptions: locale/en/locale.cfg.
 
 data:extend({
     {
