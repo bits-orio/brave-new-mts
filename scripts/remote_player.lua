@@ -15,12 +15,11 @@
 
 local pen_cells    = require("scripts.pen_cells")
 local starter_base = require("scripts.starter_base")
+local teams        = require("scripts.teams")
 
 local M = {}
 
-local function is_team_force(name)
-    return name ~= nil and name:match("^team%-%d+$") ~= nil
-end
+local is_team_force = teams.is_team_force
 
 local function owner_of(surface_name)
     return remote.call("mts-v1", "get_surface_owner", surface_name)

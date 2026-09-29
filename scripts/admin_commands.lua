@@ -14,6 +14,7 @@
 
 local remote_player = require("scripts.remote_player")
 local starter_base  = require("scripts.starter_base")
+local teams         = require("scripts.teams")
 
 local M = {}
 
@@ -55,10 +56,11 @@ end
 
 -- ─── /bnm-status ───────────────────────────────────────────────────────
 
-local function sorted_keys(t)
+--- The keys of `t`, sorted by `order` (a table.sort comparator), else by name.
+local function sorted_keys(t, order)
     local keys = {}
     for k in pairs(t) do keys[#keys + 1] = k end
-    table.sort(keys)
+    table.sort(keys, order)
     return keys
 end
 
@@ -102,13 +104,9 @@ local function teams_to_show()
     end
     for _, player in pairs(game.players) do
         local fn = remote_player.effective_force(player)
-        if fn and fn:match("^team%-%d+$") then seen[fn] = true end
+        if teams.is_team_force(fn) then seen[fn] = true end
     end
-    local list = sorted_keys(seen)
-    table.sort(list, function(a, b)
-        return (tonumber(a:match("%d+")) or 0) < (tonumber(b:match("%d+")) or 0)
-    end)
-    return list
+    return sorted_keys(seen, teams.by_slot)
 end
 
 local function status(cmd)

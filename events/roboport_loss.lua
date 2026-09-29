@@ -12,6 +12,7 @@
 -- on_entity_died, so there's no re-trigger / double-disband.
 
 local starter_base = require("scripts.starter_base")
+local teams        = require("scripts.teams")
 
 local M = {}
 
@@ -45,7 +46,7 @@ local function on_roboport_died(event)
     if not (e and e.valid and e.name == "bnm-roboport") then return end
 
     local fn = e.force and e.force.name
-    if not (fn and fn:match("^team%-%d+$")) then return end
+    if not teams.is_team_force(fn) then return end
     if not remote.interfaces["mts-v1"] then return end
 
     local base = starter_base.base_for(e.surface.name)

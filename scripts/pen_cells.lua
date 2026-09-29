@@ -10,6 +10,8 @@
 -- beyond the pen island; tiles + walls are laid AFTER chunk generation so MTS's
 -- pen chunk handler (rings + entity-clearing) doesn't wipe them.
 
+local teams = require("scripts.teams")
+
 local SURFACE    = "landing-pen"
 local FLOOR_TILE = "lab-dark-1"   -- distinct shade from the pen's lab-dark-2
 local WALL       = 2              -- wall ring + floor edge at ±2 (5x5 footprint, 3x3 interior)
@@ -26,12 +28,7 @@ local function team_list()
     if not ok or type(list) ~= "table" then return {} end
     -- Sort by the team's numeric slot, not the string name -- otherwise the
     -- cells go team-1, team-10, team-11, ..., team-2 around the ring.
-    table.sort(list, function(a, b)
-        local na = tonumber(a.force_name:match("(%d+)")) or math.huge
-        local nb = tonumber(b.force_name:match("(%d+)")) or math.huge
-        if na ~= nb then return na < nb end
-        return a.force_name < b.force_name
-    end)
+    table.sort(list, function(a, b) return teams.by_slot(a.force_name, b.force_name) end)
     return list
 end
 
