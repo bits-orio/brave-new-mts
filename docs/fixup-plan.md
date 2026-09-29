@@ -179,7 +179,15 @@ Every status below was re-checked against the code on `space-age-fixup` as of
 this pass (2026-09-29): README, `docs/portal.md`, `docs/HOSTING.md`,
 `changelog.txt`, `tools/portal_meta.json` and `locale/en/locale.cfg` all still
 match what the code does. A later review pass added B13, B14, C11 and C12,
-and a second one B15 to B17, C13 to C15 and D7.
+and a second one B15 to B17, C13 to C15 and D7. A third pass split
+`scripts/starter_base.lua` into `scripts/base/` modules and threaded one
+founding context through the pipeline instead of four to six positional
+arguments each (B18); it fixed four follow-up inconsistencies the split and a
+wider DRY sweep surfaced (B19, C16, C17, D8), and along the way deduplicated
+shared lookups that had drifted or risked it -- the team-force test and slot
+order, a team's home base, its mts-v1 info and display name, the chat prefix
+and planet label, and the landing-pen surface name -- across events and
+scripts, with no behaviour change.
 
 ### Spikes (finished)
 
@@ -222,6 +230,8 @@ and a second one B15 to B17, C13 to C15 and D7.
 | B15 | medium | The re-found sweep keeps what items carry: what the team built is mined into a script-inventory pool (a vehicle comes back with its grid, a blueprint set up), the rest is emptied as whole stacks; spider legs skipped; nothing that cannot be destroyed yet (a rail under a train) touched, and retried once | done |
 | B16 | low | Refund what the team built past one base's worth of a base name, or at another quality (a per-name budget, not a name set) | done |
 | B17 | low | Salvage leaves buffer chests out, as it does requesters | done |
+| B18 | low | Split `scripts/starter_base.lua` into `scripts/base/` leaf modules (chunks, geometry, profiles, landing_pad, power_core, migration, oil_node, site_prep, records, founding, builder, kits, salvage), each under the line ceiling; `starter_base.lua` re-exports the public API, and `founding.place` now builds one named context (force, surface, home, profile, plan, origin, site, locked) instead of passing four to six positional arguments through `site_prep`, `builder`, `salvage` and `records` in differing orders | done |
+| B19 | low | An outpost sign names its kit items from `kits.lua` itself (`sign = true` entries in `OUTPOST_KITS`, rendered as item icons by `kits.sign_icons`), instead of a hand-kept copy in `blueprints.lua` that nothing kept in step with the kit | done |
 
 ### C. Events and lifecycle
 
@@ -242,6 +252,8 @@ and a second one B15 to B17, C13 to C15 and D7.
 | C13 | low | `/bnm-forget-base` wipes a dead outpost as its roboport's death does: the core becomes minable, the record is forgotten | done |
 | C14 | low | A base founded without `outpost` while the team has no home is its home (after a home surface is deleted outside a disband), not another outpost | done |
 | C15 | low | A clone shipped above a team's recreated home planet still founds an outpost there: give that base the home role when the team has none, or warn on the home surface's deletion and point at `/mts-disband` | ask |
+| C16 | low | A founded outpost's milestone is named from `starter_base.profile_for(surface).base`, the profile founding itself used, instead of `platform_hub` re-parsing the `mts-<planet>-<slot>` copy name with its own regex that skipped the data stage's stored base | done |
+| C17 | low | The team tab's warning, unlocked note, tooltip and unlock print build their "what the unlock never frees" wording from one `CORE` / `STAYS_LOCKED` pair instead of four hand-typed copies that had drifted (the warning put the sign inside the power core, the note and tooltip listed it beside the core) | done |
 
 ### D. Docs and portal
 
@@ -254,6 +266,7 @@ and a second one B15 to B17, C13 to C15 and D7.
 | D5 | doc | `docs/HOSTING.md`: passive radars, blueprint imports, Fulgora lightning and bots, clone flow, admin commands, manual test checklist | done |
 | D6 | doc | Stale comments (`permissions.lua` movement clamp, `blueprints.lua` header, `remote_player.lua` header) | done |
 | D7 | doc | README, HOSTING and changelog: Fulgora keeps its solar panels beside the collector, and only planets with weaker sun than Nauvis get tuned panels | done |
+| D8 | doc | Changelog notes Fulgora bases no longer turn their outermost lamps into lightning rods (the outpost kit carries 10 instead); `power_core.lua`'s header names the lightning collector, not rods, as the core's Fulgora entry | done |
 
 ### E. Verification
 
@@ -296,9 +309,10 @@ construction-robotics grant; extra portal tags.
 
 `tools/rig/regress.py` (sixteen checks, about 2.5 minutes, driven by the
 `tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 16/16 on
-the final code on `space-age-fixup` (run as `--rig bnm-ap0 --ports
-34350,27350`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
-against the code before those fixes, all four fail. Check 13 guards
+the final code on `space-age-fixup` (run as `--rig bnm-fin --ports
+34349,27349`, after B18, B19, C16, C17 and D8). Checks 9 to 12 were added
+with B13, C11, B14 and C12; run against the code before those fixes, all four
+fail. Check 13 guards
 `place()`'s idempotence. Checks 9, 10, 11 and 13 were also run against a
 staged copy with one fault planted for each (no refund for what a team
 built, no home refusal, an unlock that frees tuned copies plus locked walls,
@@ -312,24 +326,24 @@ for what each check verifies and how the fixtures work.
    Measured: Gleba panel 150 kW / accumulator 9.20 MJ, Aquilo panel 9000 kW /
    accumulator 22.07 MJ, Fulgora accumulator 10 MJ. `bnm-roboport`,
    `bnm-radar` and `bnm-inserter` need no heating.
-2. **Power** (sustained total, idle about 255.5 kW):
+2. **Power** (sustained total, idle about 255.6 kW):
 
    | Planet | Sustained | Next load fails at | Target | Result |
    |---|---|---|---|---|
-   | Nauvis | 848.8 kW | 858.8 kW | about 855 kW (+-2.5%) | PASS |
-   | Vulcanus | 3779.5 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
-   | Gleba | 1089.2 kW | 1097.4 kW | at least 1080 kW | PASS |
-   | Aquilo | 1309.2 kW | 1317.3 kW | at least 1300 kW | PASS |
-   | Fulgora | 2 bases x 20 days at 1090 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 31.5 MJ |
+   | Nauvis | 848.6 kW | 858.8 kW | about 855 kW (+-2.5%) | PASS |
+   | Vulcanus | 3779.4 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
+   | Gleba | 1089.8 kW | 1097.4 kW | at least 1080 kW | PASS |
+   | Aquilo | 1309.0 kW | 1317.4 kW | at least 1300 kW | PASS |
+   | Fulgora | 2 bases x 20 days at 1091 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 53.2 MJ |
 3. **Aquilo:** after 10 game minutes the roboport, `bnm-radar` and
    `bnm-inserter` are all unfrozen, and the roboport has a network with 50
-   bots. A transport-belt ghost 23 tiles out was built after 611 ticks.
+   bots. A transport-belt ghost 22 tiles out was built after 612 ticks.
 4. **Establish:** `mts-vulcanus-1` had no surface before. After
    `establish_for`, the surface exists (owner team-1) with 81 chunks
    generated and 0 out-of-map tiles. The uncommon clone was consumed, the
    outpost was recorded, and the pad sits at (16, 30), 3 tiles below the
    south wall and centred under the roboport.
-5. **Pad delivery:** the pad received 100 iron plate after 1216 ticks, and
+5. **Pad delivery:** the pad received 100 iron plate after 1214 ticks, and
    the hub was left with 0.
 6. **Outpost loss:** team-1's slot stayed occupied and its home was kept.
    The record and `bases_placed` were cleared, and all 47 core entities
@@ -339,7 +353,7 @@ for what each check verifies and how the fixtures work.
    iron-gear-wheel marker. The new core is locked.
 7. **Home loss:** MTS released team-1's slot, both of its surfaces were
    deleted, BNM forgot its bases, and BNM's `on_team_released` handler ran.
-8. **Save and reload:** the reload had 0 errors (tick 256990 before, 257123
+8. **Save and reload:** the reload had 0 errors (tick 258049 before, 258180
    after), and the Gleba outpost survived. After the reload, check 6 passed
    again for team-2 on Gleba (148 swept, pooled exactly), and check 7 also
    repeated: team-2 was disbanded.
