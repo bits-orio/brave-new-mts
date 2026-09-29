@@ -14,7 +14,7 @@ Playable and in active development, running on public multiplayer servers. With 
 
 1. Install [Multi-Team Support](https://mods.factorio.com/mod/multi-team-support) first. Nothing in this mod runs without it.
 2. Enable Brave New MTS and start or load an MTS game.
-3. Join a team. Your character is placed in your team's cell; open remote view of the team surface.
+3. Join a team. Your character is parked in your team's cell and you start in remote view of your team's base.
 4. Ghost a blueprint next to the starter roboport, made from your own copy of part of the base or anything you've built, and watch the bots build it.
 5. With Space Age: research the Character Clone, fly one to a planet on a space platform, and press Establish base in the platform hub to found an outpost there.
 
