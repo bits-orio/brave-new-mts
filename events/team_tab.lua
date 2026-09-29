@@ -31,54 +31,58 @@ local WARNING =
     .. "replacements are running, your team can be soft-locked with no way to "
     .. "recover. This is one-way."
 
+local UNLOCKED_NOTE =
+    "[color=0,1,0]Your power core and warning sign are now "
+    .. "mineable too (except the central roboports and the "
+    .. "planet-tuned buildings).[/color]"
+
+local LEADER_ONLY_NOTE = "[color=1,0.65,0]Only your team leader can change this.[/color]"
+
+local UNLOCK_TOOLTIP =
+    "Make the locked power core and warning sign mineable on "
+    .. "every base. The roboports and the green-tinted, planet-tuned "
+    .. "buildings stay locked, because nothing can place one again. "
+    .. "One-way."
+
+local LABEL_WIDTH = 360
+
 local function is_leader(player)
     if not remote.interfaces["mts-v1"] then return false end
     local info = remote.call("mts-v1", "get_team_info", player.force.name)
     return info ~= nil and info.leader_player_index == player.index
 end
 
+--- A label that wraps at the tab's width.
+local function wrapped_label(parent, caption)
+    local label = parent.add{ type = "label", caption = caption }
+    label.style.single_line   = false
+    label.style.maximal_width = LABEL_WIDTH
+    return label
+end
+
+--- The unlock button for the leader, a note for anyone else. The button must
+--- stay a DIRECT child of `element`: on_gui_click rebuilds through el.parent.
+local function build_unlock_control(player, element)
+    element.add{ type = "line" }
+    if not is_leader(player) then
+        wrapped_label(element, LEADER_ONLY_NOTE)
+        return
+    end
+    element.add{ type = "button", name = UNLOCK_BUTTON,
+        caption = "I know what I am doing", tooltip = UNLOCK_TOOLTIP }
+end
+
 --- Fill the tab content frame for `player`.
 local function build_tab(player, element)
     if not (player and player.valid and element and element.valid) then return end
     element.clear()
-
-    local warn = element.add{ type = "label", caption = WARNING }
-    warn.style.single_line   = false
-    warn.style.maximal_width = 360
-    warn.style.bottom_margin = 8
-
+    local warn = wrapped_label(element, WARNING)
+    warn.style.bottom_margin = 8  -- space before the note or the line below
     if starter_base.is_unlocked(player.force.name) then
-        local ok = element.add{
-            type    = "label",
-            caption = "[color=0,1,0]Your power core and warning sign are now "
-                .. "mineable too (except the central roboports and the "
-                .. "planet-tuned buildings).[/color]",
-        }
-        ok.style.single_line  = false
-        ok.style.maximal_width = 360
+        wrapped_label(element, UNLOCKED_NOTE)
         return
     end
-
-    element.add{ type = "line" }
-
-    if is_leader(player) then
-        element.add{
-            type    = "button",
-            name    = UNLOCK_BUTTON,
-            caption = "I know what I am doing",
-            tooltip = "Make the locked power core and warning sign mineable on "
-                .. "every base. The roboports and the green-tinted, planet-tuned "
-                .. "buildings stay locked, because nothing can place one again. "
-                .. "One-way.",
-        }
-    else
-        local note = element.add{
-            type    = "label",
-            caption = "[color=1,0.65,0]Only your team leader can change this.[/color]",
-        }
-        note.style.single_line  = false
-        note.style.maximal_width = 360
-    end
+    build_unlock_control(player, element)
 end
 
 function M.on_gui_click(event)
