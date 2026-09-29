@@ -69,7 +69,11 @@ def linspace(lo, hi, n):
 def setup_run(rig, planet, slot, load_kw, cycles, **extra):
     force = "team-%d" % slot
     sname = rig.eval('RIG.create_surface("%s", %d)' % (planet, slot))
-    rig.sc('%s.place("%s", game.surfaces["%s"])' % (bnm_mod("scripts.starter_base"), force, sname), state="bnm")
+    # A team's home is on Nauvis; a base anywhere else is an outpost, founded
+    # with a clone in play (it gets the landing pad and the planet kit).
+    outpost = "" if planet == "nauvis" else ", { outpost = true }"
+    rig.sc('%s.place("%s", game.surfaces["%s"]%s)' % (bnm_mod("scripts.starter_base"), force, sname, outpost),
+           state="bnm")
     opts = {"force": force, "planet": planet, "slot": slot, "load_kw": load_kw, "cycles": cycles}
     opts.update(extra)
     lua_opts = "{" + ",".join("%s=%s" % (k, json.dumps(v)) for k, v in opts.items()) + "}"
@@ -127,7 +131,7 @@ def evaluate(rep):
 
 def placement_failures(logfile):
     """[brave-new-mts] failed to place ... lines, attributed to the surface whose
-    'starter base placed ... on <surface>' line follows them."""
+    'starter home base|outpost placed ... on <surface>' line follows them."""
     out, pending = {}, []
     if not os.path.exists(logfile):
         return out
@@ -136,7 +140,7 @@ def placement_failures(logfile):
         if m:
             pending.append(m.group(1))
             continue
-        m = re.search(r"\[brave-new-mts\] starter base placed for \S+ on (\S+)", line)
+        m = re.search(r"\[brave-new-mts\] starter (?:home base|outpost) placed for \S+ on (\S+)", line)
         if m:
             if pending:
                 out[m.group(1)] = pending
