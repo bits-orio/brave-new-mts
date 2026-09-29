@@ -17,7 +17,7 @@ a real game client), `ask` (author decides before it ships).
 | Fulgora | Lightning-based power: one vanilla lightning collector (in a panel slot) plus tuned accumulators, vanilla panels kept (measured design D1). |
 | Power margin | Sustained total (idle included): Nauvis ~855 kW measured, Gleba and Fulgora at least 1.08 MW, Aquilo at least 1.30 MW. Vulcanus keeps vanilla panels (~3.8 MW). |
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
-| Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester chests out (see step 7 below): the author to confirm. |
+| Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester and buffer chests out (see step 7 below): the author to confirm. |
 | Forgetting a home | `/bnm-forget-base` refuses a home base: a home cannot be re-founded, and `/mts-disband` is the way to end that team. |
 | Reconnect view | A reconnect returns the remote view to the spot the player was looking at on their team's own (non-platform) surface, not only to the same surface. |
 | Clone tech | Prerequisite `rocket-silo` only, red/green/blue science. |
@@ -126,12 +126,13 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
    outposts the planet kit only. A kit spreads over all passive provider
    chests, then storage chests, then the logistic network, and logs anything
    left over. Then the salvage pool (crash loot at home, a lost outpost's
-   leftovers): storage, passive provider, active provider and buffer chests,
-   then the pad's main inventory, then the network. What still does not fit
-   is spilled at the roboport in whole-stack piles, marked for deconstruction
-   by the team, so its robots carry it in as chests free up. Requester chests
-   get no salvage, a deliberate narrowing of the decision: nothing takes an
-   unrequested item back out of one, and the roboport's feeder (the requester
+   leftovers): storage, passive provider and active provider chests, then
+   the pad's main inventory, then the network. What still does not fit is
+   spilled at the roboport in whole-stack piles, marked for deconstruction by
+   the team, so its robots carry it in as chests free up. Requester and
+   buffer chests get no salvage, a deliberate narrowing of the decision:
+   nothing takes an unrequested item back out of either (a requester takes
+   from a buffer only when set to), and the roboport's feeder (the requester
    asking for 50 + 50 robots) would lose room for the robots it requests. On
    the ground, the same items reach storage once there is room.
 8. The power core stays locked unless the team already unlocked it.
@@ -204,7 +205,7 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | B10 | high | `lose_outpost`, re-found sweep of leftovers, `forget_surface` | done |
 | B11 | low | Bot count fallback 50, matching the setting default | done |
 | B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | done |
-| B13 | high | Re-founding never loses the kit or salvage: pad and kit first, salvage into every chest robots take from and the pad, spill the rest for the robots; player-built entities in the site come back as items (`scripts/item_delivery.lua`) | done |
+| B13 | high | Re-founding never loses the kit or salvage: pad and kit first, salvage into every storage and provider chest and the pad, spill the rest for the robots; player-built entities in the site come back as items (`scripts/item_delivery.lua`) | done |
 | B14 | medium | Planet-tuned copies stay locked after the unlock; the team tab, README, portal, locale and changelog say so | done |
 
 ### C. Events and lifecycle

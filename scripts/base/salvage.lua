@@ -26,11 +26,12 @@ local SWEEP_SKIP = {
     ["logistic-robot"]     = true,
 }
 
--- Salvage fills the chests robots take from, storage chests first, then the
--- landing pad. Requester chests are left out: nothing takes an unrequested
--- item back out of one, and salvage in the roboport's feeder would crowd out
--- the robots it requests.
-local SALVAGE_MODES = { "storage", "passive-provider", "active-provider", "buffer" }
+-- Salvage fills the chests robots empty on their own, storage chests first,
+-- then the landing pad. Requester and buffer chests are left out: no robot
+-- takes an unrequested item back out of either (a requester draws on a
+-- buffer only when set to), and salvage in the roboport's feeder would crowd
+-- out the robots it requests.
+local SALVAGE_MODES = { "storage", "passive-provider", "active-provider" }
 
 -- ─── Gathering ───────────────────────────────────────────────────────
 
