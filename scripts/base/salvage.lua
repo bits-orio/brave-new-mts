@@ -8,7 +8,6 @@
 -- (scripts/item_delivery.lua).
 
 local item_delivery = require("scripts.item_delivery")
-local geometry      = require("scripts.base.geometry")
 local landing_pad   = require("scripts.base.landing_pad")
 local records       = require("scripts.base.records")
 
@@ -133,17 +132,19 @@ end
 --- back as the item that places it. Up to one base's worth of the base's own
 --- buildings (base_counts of `plan`) does not, since the new base replaces
 --- them. What could not go on the first pass (a rail under a train) is tried
---- once more, after what stood on it.
-function M.sweep_leftovers(force, surface, area, pool, plan)
-    local budget, jobs = base_counts(plan), {}
-    for _, e in pairs(surface.find_entities_filtered{ area = area, force = force }) do
+--- once more, after what stood on it. `ctx` is the founding context
+--- (scripts/base/founding.lua): its force's entities in its site are swept.
+function M.sweep_leftovers(ctx, pool)
+    local budget, jobs = base_counts(ctx.plan), {}
+    local found = ctx.surface.find_entities_filtered{ area = ctx.site.area, force = ctx.force }
+    for _, e in pairs(found) do
         if e.valid and not SWEEP_SKIP[e.type] then
             local refund = not take_base_part(e, budget) and has_placing_item(e)
             jobs[#jobs + 1] = { entity = e, refund = refund }
         end
     end
     local stuck = sweep(sweep(jobs, pool), pool)
-    log_sweep(surface, #jobs - #stuck, stuck)
+    log_sweep(ctx.surface, #jobs - #stuck, stuck)
 end
 
 -- ─── Delivering ──────────────────────────────────────────────────────
@@ -164,14 +165,15 @@ local function salvage_targets(built)
     return targets
 end
 
---- Deliver the salvage pool into the new base; spill what no chest or pad
---- can hold around the roboport, for the robots to bring in. Frees the pool.
-function M.deliver(pool, built, force, surface)
+--- Deliver the salvage pool into the base `built` for the founding context
+--- `ctx`; spill what no chest or pad can hold around the roboport, for the
+--- robots to bring in. Frees the pool.
+function M.deliver(ctx, pool, built)
     item_delivery.deliver_pool(pool, salvage_targets(built), records.network_of(built))
     if not pool.is_empty() then
         local left = pool.get_contents()
-        item_delivery.spill_pool(pool, { surface = surface, position = geometry.BASE_ORIGIN, force = force })
-        log("[brave-new-mts] spilled salvage for the robots to bring in on " .. surface.name
+        item_delivery.spill_pool(pool, { surface = ctx.surface, position = ctx.origin, force = ctx.force })
+        log("[brave-new-mts] spilled salvage for the robots to bring in on " .. ctx.surface.name
             .. ": " .. item_delivery.describe(left))
     end
     pool.destroy()

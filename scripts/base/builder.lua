@@ -78,7 +78,7 @@ function M.place_tiles(surface, origin, plan)
 end
 
 --- Create one blueprint entity as a real entity, with its blueprint settings.
-local function create_from_blueprint(surface, force, origin, plan, e)
+local function create_from_blueprint(ctx, e)
     if not prototypes.entity[e.name] then
         log("[brave-new-mts] blueprint references unknown entity '" .. tostring(e.name) .. "' -- skipping")
         return nil
@@ -87,10 +87,10 @@ local function create_from_blueprint(surface, force, origin, plan, e)
     for k, v in pairs(e) do
         if not NOT_PARAMS[k] then params[k] = v end
     end
-    params.position    = world_position(origin, plan, e.position)
-    params.force       = force
+    params.position    = world_position(ctx.origin, ctx.plan, e.position)
+    params.force       = ctx.force
     params.raise_built = true
-    local created = surface.create_entity(params)
+    local created = ctx.surface.create_entity(params)
     if not created then log("[brave-new-mts] failed to place '" .. e.name .. "' (collision?)") end
     return created
 end
@@ -126,14 +126,15 @@ local function register_created(built, created, e, locked)
     check_requests(e, created)
 end
 
---- Build every blueprint entity, origin-centred on the roboport. Returns
+--- Build every blueprint entity of a founding context (scripts/base/founding.lua),
+--- origin-centred on the roboport. Returns
 --- { roboport, protected, providers, storage_chests, chests }, where `chests`
 --- is every logistic chest (only salvage uses it, so it is not recorded).
-function M.build(force, surface, origin, plan, locked)
+function M.build(ctx)
     local built = { protected = {}, providers = {}, storage_chests = {}, chests = {} }
-    for _, e in pairs(plan.entities) do
-        local created = create_from_blueprint(surface, force, origin, plan, e)
-        if created then register_created(built, created, e, locked) end
+    for _, e in pairs(ctx.plan.entities) do
+        local created = create_from_blueprint(ctx, e)
+        if created then register_created(built, created, e, ctx.locked) end
     end
     return built
 end

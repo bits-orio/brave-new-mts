@@ -50,33 +50,46 @@ local function roboport_stands(built, surface)
     return false
 end
 
+--- The founding context: everything fixed for one founding, by name, so no
+--- call can swap two same-typed arguments. site_prep, builder, salvage and
+--- records take it whole; only what founding produces (the salvage pool, the
+--- built entities) travels beside it. Nil when the blueprint has no roboport.
+--- `locked` is read before the site is cleared: nothing there writes a record.
+local function founding_context(force, surface, home)
+    local profile = profiles.profile_for(surface)
+    local plan = blueprints.plan_for(profile, home)
+    if not plan then return nil end
+    local origin = geometry.BASE_ORIGIN
+    return {
+        force = force, surface = surface, home = home, profile = profile, plan = plan,
+        origin = origin, site = geometry.site_for(origin, plan, not home),
+        locked = not records.is_unlocked(force.name),
+    }
+end
+
 --- Build a base and record it. Returns true only when its roboport stands.
 --- The pad and the kit go in before the salvage, so salvage never crowds out
 --- the kit. Salvage is delivered even when no roboport stands: the sweep has
 --- already destroyed what held it.
 local function found_base(force, surface, home)
-    local profile = profiles.profile_for(surface)
-    local plan = blueprints.plan_for(profile, home)
-    if not plan then
+    local ctx = founding_context(force, surface, home)
+    if not ctx then
         log("[brave-new-mts] the starter blueprint has no roboport -- no base on " .. surface.name)
         return false
     end
-    local origin = geometry.BASE_ORIGIN
-    local site   = geometry.site_for(origin, plan, not home)
-    local pool   = site_prep.prepare(force, surface, origin, site, plan, home)
-    builder.place_tiles(surface, origin, plan)
-    local locked = not records.is_unlocked(force.name)
-    local built  = builder.build(force, surface, origin, plan, locked)
+    local pool = site_prep.prepare(ctx)
+    builder.place_tiles(surface, ctx.origin, ctx.plan)
+    local built  = builder.build(ctx)
     local stands = roboport_stands(built, surface)
     if stands then
-        built.pad = site.pad and landing_pad.place(force, surface, site.pad) or nil
-        kits.stock(built, profile, home)
+        built.pad = ctx.site.pad and landing_pad.place(force, surface, ctx.site.pad) or nil
+        kits.stock(built, ctx.profile, home)
     end
-    salvage.deliver(pool, built, force, surface)
+    salvage.deliver(ctx, pool, built)
     if not stands then return false end
-    if profile.base == "nauvis" then oil_node.place(force, surface) end
-    chunks.chart(force, surface, site.footprint)  -- no character stands here to chart it
-    records.record(force.name, surface.name, built, home, locked)
+    if ctx.profile.base == "nauvis" then oil_node.place(force, surface) end
+    chunks.chart(force, surface, ctx.site.footprint)  -- no character stands here to chart it
+    records.record(ctx, built)
     return true
 end
 

@@ -39,21 +39,23 @@ function M.network_of(record)
     return roboport and roboport.valid and roboport.logistic_network or nil
 end
 
---- Track the base per surface, so the minable toggle, the roboport-loss
---- handler and admin item grants can find it. `protected` is the power core;
+--- Track the base `built` for a founding context (scripts/base/founding.lua)
+--- per surface, so the minable toggle, the roboport-loss handler and admin
+--- item grants can find it. `protected` is the power core;
 --- `providers` / `storage_chests` receive later deliveries.
-function M.record(force_name, surface_name, built, home, locked)
+function M.record(ctx, built)
+    local surface_name = ctx.surface.name
     storage.bnm_base = storage.bnm_base or {}
     storage.bnm_base[surface_name] = {
-        force          = force_name,
-        home           = home,
-        outpost        = not home,
+        force          = ctx.force.name,
+        home           = ctx.home,
+        outpost        = not ctx.home,
         roboport       = built.roboport,
         protected      = built.protected,
         providers      = built.providers,
         storage_chests = built.storage_chests,
         pad            = built.pad,
-        unlocked       = not locked,
+        unlocked       = not ctx.locked,
     }
     storage.bases_placed[surface_name] = true
 end
