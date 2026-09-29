@@ -1,6 +1,6 @@
 -- prototypes/bnm_clone.lua
--- The "character clone": a token you ship to another planet to found your
--- overseer base there. It does nothing on its own -- it's purely a carry-along
+-- The "character clone": a token you ship to another planet to found an
+-- outpost base there. It does nothing on its own -- it's purely a carry-along
 -- proof that you've brought yourself to that world. It weighs exactly one
 -- rocket's lift capacity, so a rocket carries one clone and nothing else:
 -- shipping yourself somewhere is a dedicated launch.
@@ -25,11 +25,7 @@ data:extend({
     {
         type                  = "item",
         name                  = CLONE,
-        localised_name        = { "", "Character Clone" },
-        localised_description  = { "",
-            "Ship one to a planet your team's space platform has reached, then "
-            .. "press \"Establish base\" in the platform hub to found your "
-            .. "overseer base there. Weighs a full rocket on its own." },
+        -- Name and description: locale/en/locale.cfg.
         -- Radioactive uranium-green clone: a green-tinted character icon, plus
         -- an additive glow layer so it actually radiates when on the ground/belt.
         icons = {
@@ -84,11 +80,12 @@ data:extend({
         },
         results         = { { type = "item", name = CLONE, amount = 1 } },
     },
-    -- A dedicated technology that unlocks the clone. Requiring BOTH rocket-silo
-    -- (you can't ship a clone until you can launch rockets) AND tank (a military
-    -- gate) means the recipe only appears once both are researched -- two
-    -- separate unlock effects would be an OR, so one shared tech is the way to
-    -- AND them. Space-Age-only: see the guard at the top of this file.
+    -- A dedicated technology that unlocks the clone. Its only prerequisite is
+    -- rocket-silo, because a clone is useless before the team can launch
+    -- rockets, and it takes only red, green and blue science, the same packs
+    -- Space Age's rocket-silo takes, so it adds no new science to the path
+    -- off-world. Name and description: locale/en/locale.cfg. Space-Age-only:
+    -- see the guard at the top of this file.
     {
         type          = "technology",
         name          = CLONE,
@@ -100,17 +97,14 @@ data:extend({
                 tint      = CLONE_TINT,
             },
         },
-        prerequisites = { "rocket-silo", "tank" },
+        prerequisites = { "rocket-silo" },
         effects       = { { type = "unlock-recipe", recipe = CLONE } },
         unit = {
-            count = 300,
+            count = 200,
             ingredients = {
                 { "automation-science-pack", 1 },
                 { "logistic-science-pack",   1 },
-                { "military-science-pack",   1 },
                 { "chemical-science-pack",   1 },
-                { "production-science-pack", 1 },
-                { "utility-science-pack",    1 },
             },
             time = 30,
         },
