@@ -7,9 +7,9 @@
 --   1. Park each spawned team player's character in their team's walled cell in
 --      the landing pen, and put the player in remote view of their team surface
 --      (events/player_surface.lua, events/player_lifecycle.lua,
---      scripts/remote_player.lua, scripts/pen_cells.lua). The body never touches
---      the team surface -- so no charting, no collisions, and placement is
---      naturally ghosts that robots build.
+--      scripts/remote_player.lua, scripts/remote_view.lua, scripts/pen_cells.lua).
+--      The body never touches the team surface -- so no charting, no
+--      collisions, and placement is naturally ghosts that robots build.
 --   2. Seed a self-running home base on each team's first surface
 --      (events/player_surface.lua + scripts/starter_base.lua), and an outpost
 --      wherever the team ships a Character Clone (events/platform_hub.lua).
