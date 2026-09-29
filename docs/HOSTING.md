@@ -107,6 +107,12 @@ that touches parking, remote view or the platform hub:
   of that surface from a fresh client session (or after a reconnect) and confirm it
   loads correctly and stays where you left it, rather than snapping back to your
   home planet.
+- **Kicked, or team ended, while offline.** With a second member offline, have the
+  leader kick them (`/mts-kick` or the Teams panel), then reconnect as that member.
+  Confirm they come back in the open pen with its GUI, not walled inside the team's
+  cell. Repeat with a team that ends while a member is offline (its home roboport
+  destroyed). The headless rig cannot tell whether a reconnect keeps remote view,
+  which decides this.
 
 ## Development
 

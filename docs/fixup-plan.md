@@ -212,7 +212,7 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
 | E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors | todo |
-| E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost | manual |
+| E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
 
