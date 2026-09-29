@@ -2,7 +2,7 @@
 -- The base records, per surface name: storage.bnm_base (the owning force,
 -- home or outpost, the roboport, the locked core, the chests, the pad, the
 -- unlock) and storage.bases_placed, which makes placement idempotent. A
--- team's first base is its HOME; any later one is an OUTPOST.
+-- team has at most one HOME; every other base is an OUTPOST.
 
 local power_core = require("scripts.base.power_core")
 
@@ -14,14 +14,6 @@ function M.home_of(force_name)
         if base.force == force_name and base.home then return base end
     end
     return nil
-end
-
---- True if the force has any base recorded. Its first base is its home.
-function M.has_base(force_name)
-    for _, base in pairs(storage.bnm_base or {}) do
-        if base.force == force_name then return true end
-    end
-    return false
 end
 
 --- True if a base was placed on the surface and not forgotten since.

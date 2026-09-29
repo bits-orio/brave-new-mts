@@ -161,9 +161,8 @@ end
 --- Why /bnm-forget-base must leave the base on `name` alone, or nil.
 local function forget_refusal(name, base)
     if not base then return nil end
-    -- Never a home: whatever founds a base there next (a clone, or a new
-    -- member arriving) records an outpost while the team has any other base,
-    -- and a team with no home base can never be eliminated.
+    -- Never a home: a clone founding it again records an outpost, and a
+    -- team with no home base can never be eliminated.
     if base.home then
         return name .. " is " .. base.force .. "'s home base, and a home base cannot be "
             .. "re-founded. To end that team, an admin runs /mts-disband " .. base.force .. " in game."

@@ -1,7 +1,8 @@
 -- scripts/base/founding.lua
--- Founds a starter base on a team surface. A team's first base is its HOME;
--- a base founded later with a Character Clone is an OUTPOST. Placement is
--- idempotent per surface (storage.bases_placed[surface.name]).
+-- Founds a starter base on a team surface. The base founded while the team
+-- has no home is its HOME (its first, or one after its home surface was
+-- deleted outside a disband); a base founded with a Character Clone is an
+-- OUTPOST. Placement is idempotent per surface (storage.bases_placed[surface.name]).
 --
 -- M.place, in order:
 --   1. Generate the ground. Off-world surfaces start with no generated chunks,
@@ -88,17 +89,17 @@ local function grant_construction_robotics(force)
     end
 end
 
---- Place a starter base for `force_name` on `surface` (idempotent). The
---- force's first base is its home; opts.outpost = true marks an off-world
---- base founded with a clone. Returns true only when a base with a live
---- roboport was built in this call.
+--- Place a starter base for `force_name` on `surface` (idempotent). Without
+--- opts.outpost it is the force's home, unless the force already has one;
+--- opts.outpost = true marks an off-world base founded with a clone. Returns
+--- true only when a base with a live roboport was built in this call.
 function M.place(force_name, surface, opts)
     if not (surface and surface.valid) then return false end
     if records.is_placed(surface.name) then return false end
     local force = game.forces[force_name]
     if not (force and force.valid) then return false end
 
-    local home = not (opts and opts.outpost) and not records.has_base(force_name)
+    local home = not (opts and opts.outpost) and records.home_of(force_name) == nil
     if not found_base(force, surface, home) then return false end
     grant_construction_robotics(force)
     log("[brave-new-mts] starter " .. (home and "home base" or "outpost") .. " placed for "

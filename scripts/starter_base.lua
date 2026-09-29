@@ -1,10 +1,11 @@
 -- scripts/starter_base.lua
 -- Seeds a self-running starter base on a team surface, so a character-free,
--- cheat-free team can bootstrap a bot factory. A team's first base is its
--- HOME: losing its roboport eliminates the team. A base founded later with a
--- Character Clone is an OUTPOST: losing its roboport wipes only that outpost
--- (M.lose_outpost), and another clone re-founds it. Placement is idempotent
--- per surface (storage.bases_placed[surface.name]).
+-- cheat-free team can bootstrap a bot factory. The base founded while the
+-- team has no home (its first) is its HOME: losing its roboport eliminates
+-- the team. A base founded with a Character Clone is an OUTPOST: losing its
+-- roboport wipes only that outpost (M.lose_outpost), and another clone
+-- re-founds it. Placement is idempotent per surface
+-- (storage.bases_placed[surface.name]).
 --
 -- This file is the public face the events and commands use. The work lives
 -- in scripts/base/, one concern per file:

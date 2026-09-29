@@ -41,7 +41,10 @@ check does not stop the suite. Every server it starts is stopped at the end.
      armor and a blueprint in a team's chest and a base chest keep theirs, a
      train and its rails come back once each, and a spider parked outside
      with a leg in the site is left alone
- 15  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
+ 15  a team whose home surface is deleted outside a disband keeps its
+     outpost, and the base founded on the recreated surface (place() with no
+     opts, as a member arriving) is its home again, not an outpost
+ 16  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
 Checks 5 and 6 build on 4, which is added when either is asked for.
@@ -1044,7 +1047,36 @@ def check_salvage_data(ctx, c):
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
 
 
-# ─── 15. Migration from 0.1.3 ──────────────────────────────────────────────
+# ─── 15. A home founded again after its surface was deleted ────────────────
+
+def check_home_refound(ctx, c):
+    rig, force = ctx.rig, "team-18"
+    home, outpost = "mts-nauvis-18", "mts-vulcanus-18"
+    h = bnm(rig, 'REG.place("%s", "%s")' % (force, home))
+    o = bnm(rig, 'REG.place("%s", "%s", true)' % (force, outpost))
+    if not c.expect(h["ok"] and h["home"] and o["ok"] and o["outpost"], "a home and an outpost placed (%s, %s)"
+                    % (h, o)):
+        return
+    ctx.main.take_log()
+    # Deleted outside a disband, as an admin's delete_surface would: MTS keeps the team.
+    rig.sc('game.delete_surface("%s")' % home)
+    run_ticks(rig, 10, 1)   # the engine deletes a surface at the end of the tick
+    exists, left = rig.eval('game.surfaces["%s"] ~= nil' % home), bases_of(rig, force)
+    c.note("%s deleted: surface still there %s; %s bases left %s" % (home, exists, force, left))
+    c.expect(not exists and left == {outpost: "outpost"}, "deleting %s forgot its home record and kept the "
+             "outpost (%s)" % (home, left))
+    # place() without opts, as a member arriving on the recreated surface calls it.
+    again = bnm(rig, 'REG.place("%s", "%s")' % (force, home))
+    bases = bases_of(rig, force)
+    lines = ctx.main.take_log()
+    c.note("%s recreated and founded again: %s; %s bases %s" % (home, again, force, bases))
+    c.expect(again["ok"] and again["home"], "the team had no home, so the new base on %s is its home (%s)" % (
+        home, again))
+    c.expect(bases == {home: "home", outpost: "outpost"}, "the team has one home and its outpost (%s)" % bases)
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+
+
+# ─── 16. Migration from 0.1.3 ──────────────────────────────────────────────
 
 OLD_PLACE_LUA = """
 local sb = package.loaded["__brave-new-mts__/scripts/starter_base.lua"]
@@ -1133,10 +1165,11 @@ CHECKS = [
     (12, "a reconnect views the spot the player left (simulated player)", check_reconnect_view),
     (13, "placing twice on a surface builds once", check_idempotent),
     (14, "a re-found keeps vehicles' equipment and items' data", check_salvage_data),
-    (15, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
+    (15, "a home founded again after its surface was deleted is a home", check_home_refound),
+    (16, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
 ]
 NEEDS = {5: [4], 6: [4]}
-MIGRATION_CHECK = 15   # runs in its own world, after the main server stops
+MIGRATION_CHECK = 16   # runs in its own world, after the main server stops
 
 
 def set_rig(name, ports):

@@ -4,7 +4,7 @@
 --   * an OUTPOST's roboport: that outpost is lost (starter_base.lose_outpost),
 --     the rest of the team plays on, and another Character Clone shipped to a
 --     platform above the planet re-founds it;
---   * the HOME (first) base's roboport, or one BNM has no record of: the team
+--   * the HOME base's roboport, or one BNM has no record of: the team
 --     has lost. Announce the elimination and disband the team via the mts-v1
 --     disband_team API (members back to the pen, slot freed, surfaces wiped).
 --

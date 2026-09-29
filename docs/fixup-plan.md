@@ -148,8 +148,10 @@ with a live roboport was built. `opts.outpost = true` marks an off-world base.
    Lightning attractors are part of the core. Planet-tuned copies (no item
    places them) are locked on every base, unlocked or not; only losing their
    outpost frees them for salvage.
-9. `storage.bnm_base[surface]` records `home = true` for the first base of a
-   force, `outpost = true` otherwise.
+9. `storage.bnm_base[surface]` records `home = true` for a base founded
+   without `opts.outpost` while the force has no home (its first, or one
+   after its home surface was deleted outside a disband), `outpost = true`
+   otherwise.
 
 Outpost kits (chest contents; the pad is placed as an entity):
 
@@ -250,7 +252,7 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | ID | Task | Status |
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
-| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 15/15 checks pass; see Results below |
+| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data; a home founded again after its surface was deleted is a home | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 16/16 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
@@ -284,8 +286,8 @@ construction-robotics grant; extra portal tags.
 
 ## Results
 
-`tools/rig/regress.py` (fifteen checks, about 2.5 minutes, driven by the
-`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 15/15 on
+`tools/rig/regress.py` (sixteen checks, about 2.5 minutes, driven by the
+`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 16/16 on
 the final code on `space-age-fixup` (run as `--rig bnm-reg2 --ports
 34343,27343`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
 against the code before those fixes, all four fail. Check 13 guards
@@ -389,7 +391,13 @@ for what each check verifies and how the fixtures work.
     the tank and the chest's spidertron flattened to plain items, the armor
     emptied, the blueprint blank, the parked spider deleted, and one rail
     still standing under the refunded locomotive.
-15. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
+15. **Home founded again:** team-18 had a Nauvis home and a Vulcanus
+    outpost. `game.delete_surface` on the home, outside a disband, dropped
+    its record and kept the outpost's. `place()` without options on the
+    recreated surface recorded a home, so the team again had one home and
+    its outpost. On the code before this fix the same call recorded a second
+    outpost, leaving a team that could never be eliminated.
+16. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
    `provider` record ran `on_configuration_changed` with 0 errors. The
    record now has `home = true`, `outpost = false`, 4 valid providers and 4
    storage chests. The old key and the cached event ids are gone.
