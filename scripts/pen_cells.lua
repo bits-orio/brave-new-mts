@@ -12,6 +12,8 @@
 
 local teams = require("scripts.teams")
 
+-- MTS creates and names the pen surface, and has no remote API that returns
+-- the name: this is BNM's one copy of it. Read the surface via M.surface().
 local SURFACE    = "landing-pen"
 local FLOOR_TILE = "lab-dark-1"   -- distinct shade from the pen's lab-dark-2
 local WALL       = 2              -- wall ring + floor edge at ±2 (5x5 footprint, 3x3 interior)
@@ -19,6 +21,12 @@ local RING_MIN   = 26             -- minimum ring radius from pen centre
 local BOX_ARC    = 6              -- arc length reserved per box (tiles)
 
 local M = {}
+
+--- The landing pen surface, or nil before MTS has created it.
+function M.surface()
+    local s = game.surfaces[SURFACE]
+    return (s and s.valid) and s or nil
+end
 
 -- ─── Team list + ring geometry ─────────────────────────────────────────
 
@@ -82,11 +90,11 @@ end
 --- Build all team cells once. Safe to call repeatedly (no-op after first build).
 function M.ensure_built()
     if storage.cells_built then return end
-    local surface = game.surfaces[SURFACE]
-    if not (surface and surface.valid) then return end
+    local surface = M.surface()
+    if not surface then return end
 
-    local teams = team_list()
-    local n = #teams
+    local list = team_list()
+    local n = #list
     if n == 0 then return end
 
     local r = ring_radius(n)
@@ -95,7 +103,7 @@ function M.ensure_built()
 
     storage.cell_center = {}
     storage.cell_label  = {}
-    for i, team in ipairs(teams) do
+    for i, team in ipairs(list) do
         local c = box_center(i, n)
         storage.cell_center[team.force_name] = c
         storage.cell_label[team.force_name] =
@@ -126,8 +134,8 @@ end
 --- Characters standing in a team's cell (empty if the cells aren't built).
 function M.characters_in_cell(force_name)
     local c = storage.cell_center and storage.cell_center[force_name]
-    local pen = game.surfaces[SURFACE]
-    if not (c and pen and pen.valid) then return {} end
+    local pen = M.surface()
+    if not (c and pen) then return {} end
     return pen.find_entities_filtered{ type = "character", area = cell_area(c) }
 end
 
@@ -145,7 +153,7 @@ end
 --- otherwise wait in the dead team's cell, where the next team to claim the
 --- slot is parked too.
 function M.evict_cell(force_name)
-    local pen = game.surfaces[SURFACE]
+    local pen = M.surface()
     for _, body in pairs(M.characters_in_cell(force_name)) do
         local pos = pen.find_non_colliding_position("character", { 0, 0 }, 12, 0.5)
         if pos then body.teleport(pos) end

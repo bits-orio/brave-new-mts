@@ -101,8 +101,7 @@ end
 --- The landing pen, its team cells built, or nil.
 local function landing_pen()
     pen_cells.ensure_built()
-    local pen = game.surfaces["landing-pen"]
-    return (pen and pen.valid) and pen or nil
+    return pen_cells.surface()
 end
 
 --- Give the player an emptied body to park. MTS provides one on spawn; a
