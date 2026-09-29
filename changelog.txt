@@ -20,8 +20,8 @@ Date: 2026-09-28
     - Off-world surfaces now have their chunks generated before the base is built, so a new
       outpost can no longer be stranded on unrevealed terrain or have its floor overwritten when
       the terrain generates later.
-    - Enemy nests and worm turrets within the roboport's 110-tile reach are cleared before a new
-      base is placed.
+    - Enemy nests and worm turrets inside the roboport's 220x220 construction area are cleared
+      before a new base is placed.
     - The Character Clone technology now needs only rocket-silo and red, green and blue science
       (it needed tank and all six science packs).
     - The bnm-roboport leaves no ghost when it is destroyed: a lost outpost is re-founded with a

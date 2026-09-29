@@ -10,7 +10,7 @@
 --   1. Generate the ground. Off-world surfaces start with no generated chunks,
 --      and generating them after the build overwrites the floor and drops
 --      cliffs and ocean into the base.
---   2. Clear the site: enemies within the roboport's construction radius
+--   2. Clear the site: enemies inside the roboport's construction area
 --      (worms outrange the footprint and shoot down robots), cargo moved aside
 --      (it holds the team's items), leftovers of a lost base swept with their
 --      inventories pooled, then obstacles and resources.
@@ -127,8 +127,8 @@ local CLEAR_MARGIN = 3
 local CHART_CHUNK_MARGIN = 3
 
 -- Chunks generated around the base before anything is placed: one more than
--- the chart margin, so it covers the whole reveal and the 110-tile
--- construction radius the enemy sweep reads.
+-- the chart margin, so it covers the whole reveal and the 220x220
+-- construction area the enemy sweep clears.
 local GENERATE_RADIUS = CHART_CHUNK_MARGIN + 1
 
 -- The outpost landing pad: centred under the roboport, its top edge PAD_GAP
@@ -314,14 +314,19 @@ local function generate_ground(surface, origin)
     surface.force_generate_chunk_requests()
 end
 
---- Remove enemies within the roboport's construction radius. MTS clones main
---- Nauvis into each team's copy, so biters that expanded into the empty
---- starting area arrive with the surface; worms outrange the base and shoot
---- down its robots. Destroyed rather than killed: no loot, kill statistics
---- or pollution-driven evolution.
+--- Remove enemies inside the roboport's construction area. That area is a
+--- SQUARE of half-width construction_radius around the roboport, not a circle:
+--- a radius query would miss its corners (about a fifth of the area). MTS
+--- clones main Nauvis into each team's copy, so biters that expanded into the
+--- empty starting area arrive with the surface; worms outrange the base and
+--- shoot down its robots. Destroyed rather than killed: no loot, kill
+--- statistics or pollution-driven evolution.
 local function clear_enemies(surface, origin, radius)
     local n = 0
-    local found = surface.find_entities_filtered{ position = origin, radius = radius, force = "enemy" }
+    local found = surface.find_entities_filtered{
+        area  = { { origin.x - radius, origin.y - radius }, { origin.x + radius, origin.y + radius } },
+        force = "enemy",
+    }
     for _, e in pairs(found) do
         if e.valid then
             e.destroy()

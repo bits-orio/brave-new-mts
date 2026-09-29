@@ -96,7 +96,8 @@ the roboport, locale name with the planet name as a parameter.
 with a live roboport was built. `opts.outpost = true` marks an off-world base.
 
 1. Force-generate chunks around the base (`CHART_CHUNK_MARGIN + 1`).
-2. Clear enemies (force `enemy`) within the roboport's construction radius.
+2. Clear enemies (force `enemy`) inside the roboport's construction area (a
+   square of half-width `construction_radius`, not a circle).
 3. Sweep leftovers of the same force in the footprint and pad area (a lost
    outpost being re-founded): pool their inventories, destroy them and their
    ghosts, deliver the pool to the new storage chest.
