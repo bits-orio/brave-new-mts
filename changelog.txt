@@ -36,9 +36,9 @@ Date: 2026-09-28
       gun turrets on Gleba, and so on) instead of the Nauvis kit everywhere.
     - Admin-added starter items are delivered to the home base only, and delivery now spreads
       across every provider and storage chest instead of overflowing a single one.
-    - Reconnecting no longer snaps a player's remote view back to their home planet if they were
-      looking at an outpost; the view now ignores the map editor and other teams' surfaces and
-      stays where the player left it.
+    - Reconnecting no longer snaps a player's remote view back to their home planet or the base's
+      roboport: it returns to the spot the player was looking at on their team's own ground. The
+      view ignores the map editor, other teams' surfaces and platforms.
     - MTS's "Spectate a rival team" button no longer strands a player out of remote view;
       returning from spectating re-centres their camera on their own base.
     - Pen cells now hold 12 teammates instead of wrapping around and stacking the 10th member on

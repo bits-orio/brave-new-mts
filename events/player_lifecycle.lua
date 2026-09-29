@@ -3,7 +3,8 @@
 -- player viewed, else their home surface), and release the parked slot when a
 -- player really leaves their team. The primary parking trigger is arrival on a
 -- team surface (events/player_surface.lua); these cover reconnects, respawns
--- and the return from spectating a rival team.
+-- and the return from spectating a rival team. A player disconnecting has the
+-- spot they were looking at remembered, so the reconnect's park returns there.
 --
 -- Spectating is a force hop: MTS moves the player to the 'spectator' force and
 -- back again, so the team is judged by mts-v1 get_effective_force, never by
@@ -80,6 +81,9 @@ function M.register()
     script.on_event(defines.events.on_player_joined_game, reassert)
     script.on_event(defines.events.on_player_respawned,   reassert)
     script.on_event(defines.events.on_player_changed_force, on_force_changed)
+    script.on_event(defines.events.on_pre_player_left_game, function(event)
+        remote_player.remember_view_spot(game.get_player(event.player_index))
+    end)
     attach_tick()
 end
 

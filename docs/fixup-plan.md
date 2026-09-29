@@ -19,6 +19,7 @@ a real game client), `ask` (author decides before it ships).
 | Outpost loss | Only the home (first) base's roboport eliminates the team. Losing an outpost roboport wipes that outpost; another clone re-founds it. |
 | Re-founding | Never lose the fresh planet kit or salvage: place the pad before any delivery, stock the kit first, then deliver the salvage into every logistic chest the base built plus the pad's inventory, and spill what still does not fit near the roboport for the robots. Player-built entities swept from the site come back as their placing item; the old base's own entities (blueprint names after substitution, and the pad) do not. The code leaves requester chests out (see step 7 below): the author to confirm. |
 | Forgetting a home | `/bnm-forget-base` refuses a home base: a home cannot be re-founded, and `/mts-disband` is the way to end that team. |
+| Reconnect view | A reconnect returns the remote view to the spot the player was looking at on their team's own (non-platform) surface, not only to the same surface. |
 | Clone tech | Prerequisite `rocket-silo` only, red/green/blue science. |
 | Off-world kit | A cargo landing pad plus a short planet-specific kit. Nauvis-only items dropped off-world. |
 | Landing pad spot | Below the south wall, centred under the roboport, with a 3-tile gap between wall and pad. |
@@ -221,6 +222,7 @@ match what the code does, so only E2 needed updating.
 | C9 | low | `on_pre_surface_deleted` forgets base state for that surface | done |
 | C10 | medium | `control.lua` wiring; call `starter_base.migrate`; record current parked bodies so the first reconnect after the update does not empty them | done |
 | C11 | medium | `/bnm-forget-base` refuses a home base and points at `/mts-disband`; `docs/HOSTING.md` no longer says an arriving player re-founds a home | done |
+| C12 | low | `on_pre_player_left_game` stores the spot a remote-view player was looking at on their own ground; the reconnect's `park` views it once | done |
 
 ### D. Docs and portal
 
@@ -239,7 +241,7 @@ match what the code does, so only E2 needed updating.
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
 | E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors | done — `tools/rig/regress.py` + `tools/rig/lua/regress.lua`, 9/9 checks pass; see Results below |
-| E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
+| E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
 

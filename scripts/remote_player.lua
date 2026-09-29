@@ -9,7 +9,9 @@
 -- Which surface a re-park views, in order: the last own-team surface the
 -- player looked at in remote view (storage.last_view), their home surface
 -- (storage.home_surface, set when they first arrived), then the team's home
--- base.
+-- base. The view is centred on the base's roboport, except on a reconnect:
+-- a player who left while looking at their own team's ground gets that spot
+-- back (storage.last_view_pos, used once).
 
 local pen_cells    = require("scripts.pen_cells")
 local starter_base = require("scripts.starter_base")
@@ -72,6 +74,19 @@ local function team_home(force_name)
     for surface_name, base in pairs(storage.bnm_base or {}) do
         if base.force == force_name and base.home then return surface_name end
     end
+end
+
+--- Where the view on `surface` is centred: the spot the player was looking at
+--- when they left, if that was on this surface, else the base's roboport. The
+--- spot is used once, so a later re-park (a spectate's return, /bnm-repark)
+--- centres on the base again.
+local function view_position(player, surface)
+    local spots = storage.last_view_pos
+    local spot  = spots and spots[player.index]
+    if not spot then return starter_base.BASE_ORIGIN end
+    spots[player.index] = nil
+    if spot.surface ~= surface.name then return starter_base.BASE_ORIGIN end
+    return { x = spot.x, y = spot.y }
 end
 
 --- The surface a re-park views (see the header for the order).
@@ -141,7 +156,7 @@ function M.park(player, team_surface)
     player.set_controller{
         type     = defines.controllers.remote,
         surface  = team_surface,
-        position = starter_base.BASE_ORIGIN,  -- centre the view on the base
+        position = view_position(player, team_surface),
     }
     -- Heal a record 0.1.x lost (its spectate hop ran unpark): a player parked
     -- here is parked for this team, so is_parked and /bnm-status agree.
@@ -168,14 +183,39 @@ function M.repark_if_away(player)
     M.park(player)
 end
 
---- Remember the surface a remote-view player is looking at, if it is their own
---- team's ground (platforms excluded: the view is centred on a base origin).
-function M.remember_view(player)
+--- The surface a player is looking at, if it is their own team's ground
+--- (platforms excluded: a re-park centres the view on a base origin).
+local function viewed_own_ground(player)
     local surface = player.surface
-    if not (surface and surface.valid) or surface.platform then return end
-    if owner_of(surface.name) ~= player.force.name then return end
+    if not (surface and surface.valid) or surface.platform then return nil end
+    if owner_of(surface.name) ~= player.force.name then return nil end
+    return surface
+end
+
+--- Remember the surface a remote-view player is looking at, if it is their own
+--- team's ground. Returns that surface, or nil.
+function M.remember_view(player)
+    local surface = viewed_own_ground(player)
+    if not surface then return nil end
     storage.last_view = storage.last_view or {}
     storage.last_view[player.index] = surface.name
+    return surface
+end
+
+--- A player is leaving: if they are in remote view of their own team's ground
+--- (not from the map editor), remember the surface and the spot, so their
+--- reconnect's park() puts the view back there.
+function M.remember_view_spot(player)
+    if not (player and player.valid) then return end
+    if not remote.interfaces["mts-v1"] then return end
+    if player.controller_type ~= defines.controllers.remote then return end
+    if player.physical_controller_type == defines.controllers.editor then return end
+    local surface = M.remember_view(player)
+    if not surface then return end
+    storage.last_view_pos = storage.last_view_pos or {}
+    storage.last_view_pos[player.index] = {
+        surface = surface.name, x = player.position.x, y = player.position.y,
+    }
 end
 
 --- Release a player's parked slot and view state (on really leaving a team).
@@ -189,8 +229,9 @@ function M.unpark(player)
             team[player.index] = nil
         end
     end
-    if storage.home_surface then storage.home_surface[player.index] = nil end
-    if storage.last_view    then storage.last_view[player.index]    = nil end
+    if storage.home_surface  then storage.home_surface[player.index]  = nil end
+    if storage.last_view     then storage.last_view[player.index]     = nil end
+    if storage.last_view_pos then storage.last_view_pos[player.index] = nil end
 end
 
 --- Drop a whole team's parked-slot bookkeeping when its slot is released, so a

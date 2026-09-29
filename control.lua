@@ -64,12 +64,13 @@ local STALE_EVENT_ID_KEYS = {
 }
 
 local function init_storage()
-    storage.bases_placed = storage.bases_placed or {}  -- surface name -> base placed
-    storage.bnm_base     = storage.bnm_base     or {}  -- surface name -> { force, roboport, home/outpost, ... }
-    storage.park_index   = storage.park_index   or {}  -- force -> player_index -> slot
-    storage.home_surface = storage.home_surface or {}  -- player_index -> team surface first arrived on
-    storage.last_view    = storage.last_view    or {}  -- player_index -> own-team surface last viewed
-    storage.emptied_body = storage.emptied_body or {}  -- character unit_number -> player_index (emptied once)
+    storage.bases_placed  = storage.bases_placed  or {}  -- surface name -> base placed
+    storage.bnm_base      = storage.bnm_base      or {}  -- surface name -> { force, roboport, home/outpost, ... }
+    storage.park_index    = storage.park_index    or {}  -- force -> player_index -> slot
+    storage.home_surface  = storage.home_surface  or {}  -- player_index -> team surface first arrived on
+    storage.last_view     = storage.last_view     or {}  -- player_index -> own-team surface last viewed
+    storage.last_view_pos = storage.last_view_pos or {}  -- player_index -> { surface, x, y } viewed on leaving
+    storage.emptied_body  = storage.emptied_body  or {}  -- character unit_number -> player_index (emptied once)
     -- storage.bnm_repark: player_index -> tick, re-parks pending after a spectate
     -- (nil when empty; see events/player_lifecycle.lua).
     -- mts-v1 event ids are never stored: they shift with the mod set

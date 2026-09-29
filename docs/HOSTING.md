@@ -105,8 +105,12 @@ that touches parking, remote view or the platform hub:
   that the clone is only consumed once the base is actually built.
 - **Remote view of a new outpost.** After establishing an outpost, open remote view
   of that surface from a fresh client session (or after a reconnect) and confirm it
-  loads correctly and stays where you left it, rather than snapping back to your
-  home planet.
+  loads correctly, rather than snapping back to your home planet.
+- **Reconnect returns to the spot you were looking at.** In remote view, look at a
+  spot on one of your team's planets well away from its roboport, then disconnect
+  and reconnect. Confirm the view comes back on that planet at that spot, not
+  re-centred on the roboport. Then spectate a rival and come back: that return
+  should centre on the base again.
 - **Kicked, or team ended, while offline.** With a second member offline, have the
   leader kick them (`/mts-kick` or the Teams panel), then reconnect as that member.
   Confirm they come back in the open pen with its GUI, not walled inside the team's
