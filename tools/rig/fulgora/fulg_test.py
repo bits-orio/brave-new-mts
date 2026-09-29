@@ -92,9 +92,12 @@ def summarize(reps):
         cyc = r["cycles"]; n = len(cyc)
         if not n:
             print(sname, "no cycles"); continue
-        isacc = lambda k: k == "accumulator" or k.startswith("lab-acc") or k.startswith("bnm-fulgora-acc")
+        isacc = lambda k: (k == "accumulator" or k.startswith("lab-acc") or k.startswith("bnm-fulgora-acc")
+                           or k.startswith("bnm-accumulator"))
         total = sum(sum(x for k, x in c["cons"].items() if not isacc(k)) for c in cyc) / n
-        att = sum(sum(x for k, x in c["prod"].items() if k in ("lightning-rod", "lightning-collector") or k.startswith("lab-col") or k.startswith("lab-rod") or k.startswith("bnm-")) for c in cyc) / n
+        att = sum(sum(x for k, x in c["prod"].items() if not isacc(k) and (
+            k in ("lightning-rod", "lightning-collector") or k.startswith("lab-col")
+            or k.startswith("lab-rod") or k.startswith("bnm-"))) for c in cyc) / n
         emptied = sum(1 for c in cyc if c["empty_samples"] > 0)
         strikes = sum(c.get("strikes", 0) for c in cyc) / n
         dmg = {k: v for k, v in (r.get("damage") or {}).items()}

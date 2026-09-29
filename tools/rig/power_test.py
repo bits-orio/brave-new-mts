@@ -45,7 +45,17 @@ PLANETS = {
 SWEEP_SLOTS = list(range(2, 10))
 SAT_SLOT, BUSY_SLOT = 10, 11
 SAT_KW = 100000
-NON_LOAD = ("accumulator", "bnm-rig-load")
+TEST_LOAD = "bnm-rig-load"
+
+
+def is_acc(name):
+    """Vanilla or planet-tuned accumulator (bnm-accumulator-<planet>). Their
+    charging shows up as consumption and must not count as load."""
+    return name == "accumulator" or name.startswith("bnm-accumulator")
+
+
+def is_solar(name):
+    return name == "solar-panel" or name.startswith("bnm-solar-panel")
 
 
 def log(msg):
@@ -87,13 +97,13 @@ def evaluate(rep):
     n = len(cyc)
     if n == 0:
         return {"ok": False, "why": "no complete cycle"}
-    total = sum(sum(v for k, v in c["cons"].items() if k != "accumulator") for c in cyc) / n
-    idle = sum(sum(v for k, v in c["cons"].items() if k not in NON_LOAD) for c in cyc) / n
-    load_got = sum(c["cons"].get("bnm-rig-load", 0) for c in cyc) / n
+    total = sum(sum(v for k, v in c["cons"].items() if not is_acc(k)) for c in cyc) / n
+    idle = sum(sum(v for k, v in c["cons"].items() if not is_acc(k) and k != TEST_LOAD) for c in cyc) / n
+    load_got = sum(c["cons"].get(TEST_LOAD, 0) for c in cyc) / n
     prod = {}
     for c in cyc:
         for k, v in c["prod"].items():
-            if k != "accumulator":
+            if not is_acc(k):
                 prod[k] = prod.get(k, 0) + v / n
     why = []
     emptied = sum(1 for c in cyc if c["empty_samples"] > 0)
@@ -154,8 +164,8 @@ def summarize(reports):
         best = max(ok) if ok else None
         bad = [r["eval"]["total_kw"] for r in runs if not r["eval"]["ok"] and (best is None or r["eval"]["total_kw"] > best)]
         sat = [r["eval"]["prod_kw"] for r in reps if r["label"] == "saturate"]
-        solar = sat[-1].get("solar-panel", 0) if sat else 0
-        rod = sat[-1].get("lightning-rod", 0) if sat else 0
+        solar = sum(v for k, v in sat[-1].items() if is_solar(k)) if sat else 0
+        rod = sum(v for k, v in sat[-1].items() if k.startswith("lightning-")) if sat else 0
         fmt = lambda v: "%9.1f" % v if v is not None else "%9s" % "-"
         lines.append("%-9s %7.1f %s %s %s %s" % (p, idle[-1] if idle else 0, fmt(best),
                      fmt(min(bad) if bad else None), fmt(solar), fmt(rod)))

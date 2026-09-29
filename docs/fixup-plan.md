@@ -29,6 +29,9 @@ a real game client), `ask` (author decides before it ships).
   server turns `mts_passive_radars` off.
 - Sustained totals of today's base: Nauvis 855 kW, Vulcanus 3807 kW, Gleba
   504 kW, Fulgora about 450 kW (lightning is random), Aquilo 10 kW.
+- Tuned bases (3% buffer margin, 6 cycles, 3 rounds): Gleba 1091 kW, Aquilo
+  1313 kW sustained, idle 256 kW on both. Solar averages 1260 and 1512 kW, so
+  both are storage-bound, as modelled.
 - On Aquilo the roboport, radar and inserter freeze on the tick they are
   placed. A frozen roboport has no logistic network, so nothing can ever be
   built there.
@@ -81,9 +84,9 @@ in ticks, Nauvis `d0 = 25200`):
     and output flow `300 kW * m`. The extra 3% covers the lamps' night draw,
     which does not scale with `m`: without it the model gives Gleba 1071 kW and
     Aquilo 1288 kW, just short of the targets.
-  - Gleba: 150 kW panels, 9.20 MJ accumulators (model about 1092 kW). Aquilo:
-    9 MW panels (90 kW in Aquilo's 1% sun), 22.07 MJ accumulators (model about
-    1313 kW).
+  - Gleba: 150 kW panels, 9.20 MJ accumulators (measured 1091 kW sustained).
+    Aquilo: 9 MW panels (90 kW in Aquilo's 1% sun), 22.07 MJ accumulators
+    (measured 1313 kW).
 - Freezing planets: `bnm-radar` and `bnm-inserter`, copies with
   `heating_energy = "0kW"`.
 - `bnm-roboport`: `heating_energy = "0kW"` on every planet.
