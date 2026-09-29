@@ -1,7 +1,7 @@
 {
   "mod": "brave-new-mts",
   "title": "Brave New MTS",
-  "summary": "Requires Multi-Team Support. Brave New World-style multiplayer for MTS: no character, bots only. Your character never leaves its cell, so teams play remote-only through remote view and construction robots build everything from the blueprints you place. No handcrafting, no hand-mining, no god mode. A starter base on every team surface. Inspired by Brave New OARC.",
+  "summary": "Requires Multi-Team Support. Brave New World-style multiplayer for MTS: no character, bots only. Your character never leaves its cell, so teams play remote-only through remote view and construction robots build everything from the blueprints you place. No handcrafting, no hand-mining, no god mode. A starter base on your team surface at spawn, and Character Clone outposts on Space Age planets. Inspired by Brave New OARC.",
   "category": "scenarios",
   "category_note": "scenarios on purpose: Brave New World family peers (brave-new-world, brave-new-oarc, brave-new-world-for-2-0) all live there. See 5060c7e; the overhaul case is in 05f0465.",
   "tags": [

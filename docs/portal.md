@@ -8,7 +8,7 @@ Brave New MTS requires [Multi-Team Support](https://mods.factorio.com/mod/multi-
 
 ## Status
 
-Playable and in active development, running on public multiplayer servers. Space Age adds an outpost on every planet: research the Character Clone, ship one to a planet on a space platform, and press Establish base in the platform hub to found a starter base tuned for that planet. Space Age support is newer than the Nauvis-only base, so expect more rough edges there than at home. Only a team's original base can end the game; losing an outpost's roboport only wipes that outpost, and another clone re-founds it. Report anything odd on [Discord](https://discord.gg/tWz4FT74pH) or in the [issue tracker](https://github.com/bits-orio/brave-new-mts/issues).
+Playable and in active development, running on public multiplayer servers. With Space Age a team can found an outpost on any planet it reaches: research the Character Clone, ship one to a planet on a space platform, and press Establish base in the platform hub to found a starter base tuned for that planet. Space Age support is newer than the Nauvis-only base, so expect more rough edges there than at home. Only a team's original base can end the game; losing an outpost's roboport only wipes that outpost, and another clone re-founds it. Report anything odd on [Discord](https://discord.gg/tWz4FT74pH) or in the [issue tracker](https://github.com/bits-orio/brave-new-mts/issues).
 
 ## Quick start
 
