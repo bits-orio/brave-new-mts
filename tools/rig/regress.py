@@ -23,14 +23,20 @@ check does not stop the suite. Every server it starts is stopped at the end.
   8  save and reload, then check 6 again on Gleba (team-2), and 7 again
   9  re-found an outpost whose chests and pad are full, with things the team
      built in the site: the fresh kit is all there, nothing held or built
-     there is lost (what no chest holds is spilled, marked for the robots)
- 10  /bnm-forget-base refuses a home base whose roboport is gone, and still
-     forgets an outpost's
- 11  unlocking the power core leaves the planet-tuned copies locked, on bases
-     founded before and after the unlock
+     there is lost (what no chest holds is spilled, marked for the robots),
+     and what the team built came back as items
+ 10  /bnm-forget-base over RCON refuses a home base, standing or not, and
+     changes no record; it refuses a standing outpost, and forgets a lost
+     one, which can then be founded again
+ 11  unlocking the power core leaves the planet-tuned copies (every bnm-*
+     entity, the roboport included) locked and makes the vanilla core
+     minable, on bases founded before and after the unlock; walls are never
+     locked
  12  reconnect view: a simulated player's leave and reconnect put the view
      back on the spot they were looking at, once
- 13  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
+ 13  placing twice: a second place() on a surface with a base (home or
+     outpost) returns false and builds, removes and restocks nothing
+ 14  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
 Checks 5 and 6 build on 4, which is added when either is asked for.
@@ -68,6 +74,9 @@ OLD_REV = "0ad9363"   # 0.1.3, the last release before the fix-up
 
 CLONE = "bnm-character-clone"
 GAME_MINUTE = 3600    # ticks
+# Loaded into BNM's state on every server start, the shared core first.
+LUA_HELPERS = ("regress.lua", "regress_platform.lua", "regress_site.lua", "regress_records.lua",
+               "regress_player.lua")
 
 # ── Check 2: power targets (sustained total, idle included, kW) ─────────────
 # "about": the highest passing total is within POWER_TOL of the target (the
@@ -137,7 +146,8 @@ class Server:
         if r.returncode != 0:
             raise RuntimeError("%s did not start: %s%s" % (self.name, r.stdout, r.stderr))
         self.rig = Rig(RCON_PORT, timeout=900)
-        self.rig.run_file(os.path.join(HERE, "lua", "regress.lua"), state="bnm")
+        for name in LUA_HELPERS:
+            self.rig.run_file(os.path.join(HERE, "lua", name), state="bnm")
 
     def stop(self):
         """Stop (stop-server.sh), then wait for the process to exit: on the
@@ -729,13 +739,22 @@ def check_full_refound(ctx, c):
     lines = ctx.main.take_log()
     held, now = as_dict(left.get("site_contents")), as_dict(new.get("site_contents"))
     on_ground = as_dict(ground.get("items"))
-    want = added(held, REFUNDS, ON_BELTS, kit)
+    kept = added(held, ON_BELTS, kit)   # everything but the extras' own items
+    want = added(kept, REFUNDS)
     got = added(now, on_ground)
+    # What the ground and the new base gained beyond what was held is what
+    # the team's extras came back as.
+    returned = {x["name"]: got.get(x["name"], 0) - kept.get(x["name"], 0) for x in EXTRAS}
     spilled = [ln for ln in lines if "spilled salvage for the robots to bring in on %s:" % surface in ln]
     c.note("leftovers held %d items; re-found %s; the new base holds %d, %d on the ground in %d piles (%d marked)" % (
         sum(held.values()), res.get("ok"), sum(now.values()), sum(on_ground.values()), ground.get("piles", 0),
         ground.get("marked", 0)))
+    c.note("totals: %d held + %d on belts + %d refunds + %d fresh kit = %d before; %d in the base + %d on the "
+           "ground = %d after" % (sum(held.values()), sum(ON_BELTS.values()), sum(REFUNDS.values()),
+                                  sum(kit.values()), sum(want.values()), sum(now.values()),
+                                  sum(on_ground.values()), sum(got.values())))
     c.note("on the ground: %s" % contents_str(on_ground))
+    c.note("the extras came back as: %s" % contents_str(returned))
     if not c.expect(res.get("ok") and new.get("outpost"), "re-founded (%s)" % res):
         return
     c.expect(as_dict(new.get("counts")) == as_dict(fresh.get("counts")), "the site holds exactly one fresh base "
@@ -744,6 +763,11 @@ def check_full_refound(ctx, c):
     c.expect(not short, "the whole kit is in the new chests (short: %s)" % short)
     c.expect(got == want, "every item held or built in the site is in the new base or on the ground, and "
              "nothing else (want, got: %s)" % diff(want, got))
+    c.expect(sum(got.values()) == sum(want.values()), "no item count lost: %d before, %d after" % (
+        sum(want.values()), sum(got.values())))
+    c.expect(returned == dict({x["name"]: 0 for x in EXTRAS}, **REFUNDS), "each thing the team built came back "
+             "as its placing item, the stone wall (a base building) excepted (want, got: %s)" % diff(
+                 dict({x["name"]: 0 for x in EXTRAS}, **REFUNDS), returned))
     c.expect(spilled and ground.get("piles", 0) > 0, "the overflow was spilled and logged (%d log lines)" % len(spilled))
     c.expect(ground.get("marked") == ground.get("piles"), "every pile is marked for the robots (%s of %s)" % (
         ground.get("marked"), ground.get("piles")))
@@ -756,29 +780,95 @@ DESTROY_ROBOPORT = ('local rp = game.surfaces["%s"].find_entities_filtered{name 
                     'if not rp then return false end rp.destroy() return true')
 
 
+def records_and_site(rig, surface, force):
+    """BNM's base records, and what the command must not touch in the world:
+    the site's entity counts and how much of its core is locked."""
+    b = bnm(rig, 'REG.base("%s", "%s")' % (surface, force))
+    return {"records": as_dict(bnm(rig, "REG.records()")),
+            "site": {"counts": as_dict(b.get("counts")), "core": b.get("core"), "core_locked": b.get("core_locked")}}
+
+
+def forget(rig, surface, force):
+    """/bnm-forget-base over RCON, as the server console runs it. Returns its
+    reply, and the records and the site just before and just after."""
+    before = records_and_site(rig, surface, force)
+    said = rig.cmd("/bnm-forget-base %s" % surface)
+    return said, before, records_and_site(rig, surface, force)
+
+
+def changes(before, after):
+    """What differs between two records_and_site() reads: the changed fields
+    of each record, and the site's changed entity counts and core locks."""
+    out = {}
+    rb, ra = before["records"], after["records"]
+    for name in sorted(set(rb) | set(ra)):
+        b, a = rb.get(name), ra.get(name)
+        if a != b:
+            out[name] = "gone" if a is None else "new" if b is None else sorted(
+                k for k in set(a) | set(b) if a.get(k) != b.get(k))
+    sb, sa = before["site"], after["site"]
+    out.update(diff(dict(sb["counts"], core_locked=sb["core_locked"]),
+                    dict(sa["counts"], core_locked=sa["core_locked"])))
+    return out
+
+
+def expect_refused(c, surface, when, reply, refusal):
+    said, before, after = reply
+    c.note("/bnm-forget-base %s (%s): %s" % (surface, when, said))
+    c.expect(all(r in said for r in refusal), "%s, %s: refused, saying %s" % (surface, when, refusal))
+    c.expect(before["records"].get(surface) and after == before,
+             "%s, %s: no record, placed flag or entity changed (%s)" % (surface, when, changes(before, after)))
+
+
 def check_forget_home(ctx, c):
     rig, force = ctx.rig, "team-13"
     home, outpost = "mts-nauvis-13", "mts-vulcanus-13"
+    home_refusal = ("is %s's home base" % force, "cannot be re-founded", "/mts-disband %s" % force)
     h = bnm(rig, 'REG.place("%s", "%s")' % (force, home))
     o = bnm(rig, 'REG.place("%s", "%s", true)' % (force, outpost))
     c.expect(h["ok"] and h["home"] and o["ok"] and o["outpost"], "a home and an outpost placed (%s, %s)" % (h, o))
+    expect_refused(c, home, "roboport standing", forget(rig, home, force), home_refusal)
+    expect_refused(c, outpost, "roboport standing", forget(rig, outpost, force), ("still has a live roboport",))
     # destroy() raises no on_entity_died: the base is gone, the team is not eliminated.
     gone = [rig.eval(DESTROY_ROBOPORT % (s, force)) for s in (home, outpost)]
     c.expect(all(gone), "both roboports destroyed without a death event (%s)" % gone)
-    said_home = rig.cmd("/bnm-forget-base %s" % home)
-    said_outpost = rig.cmd("/bnm-forget-base %s" % outpost)
-    bases = bases_of(rig, force)
-    placed = bnm(rig, 'storage.bases_placed["%s"] == true' % home)
-    c.note("/bnm-forget-base %s: %s" % (home, said_home))
-    c.note("/bnm-forget-base %s: %s" % (outpost, said_outpost))
-    c.expect("cannot be re-founded" in said_home and "/mts-disband %s" % force in said_home,
-             "the home is refused, pointing at /mts-disband %s" % force)
-    c.expect(bases.get(home) == "home" and placed, "the home record and its placed flag are kept (%s)" % bases)
-    c.expect("forgot the base record for %s" % outpost in said_outpost and outpost not in bases,
-             "the outpost is still forgotten (%s)" % bases)
+    expect_refused(c, home, "roboport gone", forget(rig, home, force), home_refusal)
+    said, before, after = forget(rig, outpost, force)
+    c.note("/bnm-forget-base %s (roboport gone): %s" % (outpost, said))
+    kept = {k: v for k, v in before["records"].items() if k != outpost}
+    c.expect("forgot the base record for %s" % outpost in said and outpost in before["records"]
+             and after["records"] == kept, "the lost outpost's record and placed flag are forgotten, and no other "
+             "record changed (%s)" % changes(dict(before, records=kept), after))
+    c.expect(after["site"] == before["site"], "the lost outpost's site is untouched until it is founded again")
+    again = bnm(rig, 'REG.place("%s", "%s", true)' % (force, outpost))
+    rp = bnm(rig, 'REG.base("%s")' % outpost).get("roboport") or {}
+    c.note("founded %s again after the forget: %s, roboport unit %s" % (outpost, again, rp.get("unit")))
+    c.expect(again["ok"] and again["outpost"] and rp.get("is_record"),
+             "the forgotten outpost can be founded again, with a new roboport")
 
 
 # ─── 11. Unlock keeps the tuned copies locked ──────────────────────────────
+
+def lock_line(lk):
+    return "tuned %d (%d minable), bnm-* %d (%d minable), vanilla core %d (%d minable), walls %d (%d minable)" % (
+        lk["tuned"], lk["tuned_minable"], lk["bnm"], lk["bnm_minable"], lk["core"], lk["core_minable"],
+        lk["walls"], lk["walls_minable"])
+
+
+def expect_locks_after(c, surface, lk):
+    """After the unlock: every bnm-* entity (the roboport too) and every tuned
+    copy stays locked, the vanilla core and the walls are minable. BNM tells a
+    tuned copy by its having no placing item; the name prefix checks that."""
+    tuned, bnm_names = set(as_dict(lk.get("tuned_names"))), set(as_dict(lk.get("bnm_names")))
+    c.expect(lk["tuned"] > 0 and lk["tuned_minable"] == 0, "%s: every tuned copy stays locked" % surface)
+    c.expect(lk["bnm"] > 0 and lk["bnm_minable"] == 0, "%s: every bnm-* entity, the roboport included, stays "
+             "locked (%d of %d minable)" % (surface, lk["bnm_minable"], lk["bnm"]))
+    c.expect(bnm_names - {"bnm-roboport"} == tuned and lk["bnm"] == lk["tuned"] + 1,
+             "%s: the tuned copies are exactly the bnm-* entities but the roboport (tuned %s, bnm-* %s)" % (
+                 surface, sorted(tuned), sorted(bnm_names)))
+    c.expect(lk["core"] > 0 and lk["core_minable"] == lk["core"], "%s: the vanilla core is minable" % surface)
+    c.expect(lk["walls"] > 0 and lk["walls_minable"] == lk["walls"], "%s: the walls are minable" % surface)
+
 
 def check_unlock(ctx, c):
     rig, force = ctx.rig, "team-14"
@@ -788,19 +878,20 @@ def check_unlock(ctx, c):
         c.expect(r["ok"], "outpost placed on mts-%s-14 (%s)" % (planet, r))
     locks = {p: bnm(rig, 'REG.locks("mts-%s-14", "%s")' % (p, force)) for p in before_planets}
     for p, lk in locks.items():
-        c.expect(lk["tuned"] > 0 and lk["core"] > 0 and lk["tuned_minable"] == 0 and lk["core_minable"] == 0,
-                 "mts-%s-14 before the unlock: tuned %d (%d minable), core %d (%d minable)" % (
-                     p, lk["tuned"], lk["tuned_minable"], lk["core"], lk["core_minable"]))
+        c.note("mts-%s-14 before the unlock: %s" % (p, lock_line(lk)))
+        c.expect(lk["tuned"] > 0 and lk["core"] > 0 and lk["tuned_minable"] == 0 and lk["core_minable"] == 0
+                 and lk["bnm_minable"] == 0, "mts-%s-14 before the unlock: the core and every bnm-* entity locked"
+                 % p)
+        c.expect(lk["walls"] > 0 and lk["walls_minable"] == lk["walls"],
+                 "mts-%s-14 before the unlock: the walls were never locked" % p)
     bnm(rig, 'local sb = %s sb.unlock_minable("%s") return true' % (bnm_mod("scripts.starter_base"), force))
     r = bnm(rig, 'REG.place("%s", "mts-%s-14", true)' % (force, after_planet))
     c.expect(r["ok"], "outpost founded after the unlock on mts-%s-14 (%s)" % (after_planet, r))
     for p in before_planets + (after_planet,):
         lk = bnm(rig, 'REG.locks("mts-%s-14", "%s")' % (p, force))
         names = sorted(as_dict(lk.get("tuned_names")))
-        c.note("mts-%s-14 after the unlock: tuned %d, %d minable (%s); vanilla core %d, %d minable" % (
-            p, lk["tuned"], lk["tuned_minable"], ", ".join(names), lk["core"], lk["core_minable"]))
-        c.expect(lk["tuned"] > 0 and lk["tuned_minable"] == 0, "mts-%s-14: every tuned copy stays locked" % p)
-        c.expect(lk["core"] > 0 and lk["core_minable"] == lk["core"], "mts-%s-14: the vanilla core is minable" % p)
+        c.note("mts-%s-14 after the unlock: %s; tuned: %s" % (p, lock_line(lk), ", ".join(names)))
+        expect_locks_after(c, "mts-%s-14" % p, lk)
         if p == "aquilo":
             c.expect({"bnm-radar", "bnm-inserter"} <= set(names), "Aquilo's bnm-radar and bnm-inserter are tuned "
                      "copies (%s)" % names)
@@ -835,7 +926,51 @@ def check_reconnect_view(ctx, c):
              "a spot on another surface is dropped, and the view centres on the base (%s)" % r["moved"])
 
 
-# ─── 13. Migration from 0.1.3 ──────────────────────────────────────────────
+# ─── 13. Placing twice builds once ─────────────────────────────────────────
+
+IDEM_FORCE = "team-16"
+IDEM_BASES = [("mts-nauvis-16", False), ("mts-vulcanus-16", True)]   # its home first, then an outpost
+
+
+def place_twice(ctx, c, surface, outpost):
+    """place() on a new surface, then twice more in the same tick (same opts,
+    then the other kind). Returns the footprint after the first call."""
+    kind, other = ("an outpost", "a home") if outpost else ("a home", "an outpost")
+    r = bnm(ctx.rig, 'REG.place_twice("%s", "%s", %s)' % (IDEM_FORCE, surface, "true" if outpost else "false"))
+    once, again = r["once"], r["again"]
+    fp = once["footprint"]
+    c.note("%s: first place() %s (%s, %d entities, roboport %s); again as %s: %s; asking for %s: %s" % (
+        surface, r["first"], kind, fp["entities"], fp["roboport"], kind, r["second"], other, r["other"]))
+    c.expect(r["first"] is True and r["home"] is (not outpost) and fp["roboport"],
+             "the first place() on %s built %s with a roboport" % (surface, kind))
+    c.expect(r["second"] is False and r["other"] is False, "the repeat place() calls on %s returned false (%s, %s)"
+             % (surface, r["second"], r["other"]))
+    c.expect(again == once, "the repeat calls built, removed and restocked nothing on %s (once, after: %s)" % (
+        surface, diff(once, again)))
+    c.expect(r["same_record"], "%s keeps the record the first call made" % surface)
+    return fp
+
+
+def check_idempotent(ctx, c):
+    rig = ctx.rig
+    ctx.main.take_log()
+    first = {s: place_twice(ctx, c, s, outpost) for s, outpost in IDEM_BASES}
+    run_ticks(rig, 60, 1)
+    for surface, _ in IDEM_BASES:
+        later = bnm(rig, 'REG.place_again("%s", "%s")' % (IDEM_FORCE, surface))
+        c.note("%s, 60 ticks later: place() %s, %d entities" % (surface, later["ok"], later["footprint"]["entities"]))
+        c.expect(later["ok"] is False and later["footprint"] == first[surface],
+                 "a later place() on %s returned false and changed nothing (%s)" % (
+                     surface, diff(first[surface], later["footprint"])))
+    lines = ctx.main.take_log()
+    for surface, outpost in IDEM_BASES:
+        text = "starter %s placed for %s on %s" % ("outpost" if outpost else "home base", IDEM_FORCE, surface)
+        n = sum(1 for ln in lines if ln.rstrip().endswith(text))
+        c.expect(n == 1, "'%s' logged once (%d)" % (text, n))
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+
+
+# ─── 14. Migration from 0.1.3 ──────────────────────────────────────────────
 
 OLD_PLACE_LUA = """
 local sb = package.loaded["__brave-new-mts__/scripts/starter_base.lua"]
@@ -919,13 +1054,14 @@ CHECKS = [
     (7, "home loss disbands the team", check_home_loss),
     (8, "save and reload, then outpost loss and home loss again", check_reload),
     (9, "re-found an outpost whose chests are full: kit whole, nothing lost", check_full_refound),
-    (10, "/bnm-forget-base refuses a home base", check_forget_home),
-    (11, "unlocking keeps the planet-tuned copies locked", check_unlock),
+    (10, "/bnm-forget-base refuses a home base, forgets a lost outpost", check_forget_home),
+    (11, "unlocking keeps the planet-tuned copies locked, frees the vanilla core", check_unlock),
     (12, "a reconnect views the spot the player left (simulated player)", check_reconnect_view),
-    (13, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
+    (13, "placing twice on a surface builds once", check_idempotent),
+    (14, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
 ]
 NEEDS = {5: [4], 6: [4]}
-MIGRATION_CHECK = 13   # runs in its own world, after the main server stops
+MIGRATION_CHECK = 14   # runs in its own world, after the main server stops
 
 
 def set_rig(name, ports):

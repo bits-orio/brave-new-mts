@@ -13,8 +13,12 @@ folder is ever written into the repo's mod code.
 | `probe.py` | RCON helper (library and CLI) that runs Lua in the level, BNM or MTS state |
 | `lua/power_rig.lua` | In-game power sampler, loaded into the level state by `power_test.py` |
 | `power_test.py` | Measures the starter base's sustainable power on every planet |
-| `regress.py` | The regression suite: thirteen PASS/FAIL checks on a fresh server of its own |
-| `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state: place, establish, inspect a base, fill its chests, read its locks, drive a simulated player |
+| `regress.py` | The regression suite: fourteen PASS/FAIL checks on a fresh server of its own |
+| `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state (this core first): place a base and read it back |
+| `lua/regress_platform.lua` | Platforms made by script, the Establish core, pad deliveries |
+| `lua/regress_site.lua` | What the checks do in a site: a ghost, full chests, what a team built, the ground, the locks |
+| `lua/regress_records.lua` | BNM's base records as plain values, and placing a base twice |
+| `lua/regress_player.lua` | A simulated player's leave and reconnect |
 
 ## Quick start
 
@@ -148,7 +152,7 @@ surface.
 ## regress.py: the regression suite
 
 ```sh
-tools/rig/regress.py                      # all thirteen checks, about 3 minutes
+tools/rig/regress.py                      # all fourteen checks, about 3 minutes
 tools/rig/regress.py --checks 4,6         # a subset (5 and 6 pull in 4)
 tools/rig/regress.py --out /tmp/reg.json  # also write every check's numbers as JSON
 tools/rig/regress.py --rig bnm-f4 --ports 34341,27341   # a second suite beside the first
@@ -173,16 +177,17 @@ the staged mods dir.
 | 6 | Outpost loss | `die()` on the outpost roboport: team-1 is not disbanded, the outpost is forgotten, its core became minable. A new clone re-founds it: the site holds exactly one fresh base, every leftover was swept, and the new storage chests hold exactly what the leftovers held |
 | 7 | Home loss | `die()` on the home roboport: MTS disbands the team, deletes its surfaces, BNM forgets its bases and its `on_team_released` handler ran |
 | 8 | Save and reload | Team-2 founds a Gleba outpost, the server restarts on its save with no error, then checks 6 and 7 again, which proves the handlers came back in `on_load` |
-| 9 | Re-found over full chests | Team-3 founds a Fulgora outpost; every logistic chest is filled with stone and the pad with coal, and a few things are built in the gap above the pad (chests with items, a belt carrying plates, a pole, a stone wall). After the roboport dies and the outpost is re-founded: the site holds one fresh base, the whole fresh kit is in its chests, and what is in the new base plus what lies on the ground equals what the site held, plus the fresh kit, plus one placing item per extra except the stone wall (a base building). Every pile on the ground is marked for deconstruction |
-| 10 | Forget a home | Team-13's home and outpost lose their roboports to `destroy()` (no death event). `/bnm-forget-base` over RCON refuses the home, naming `/mts-disband team-13`, and keeps its record; it still forgets the outpost |
-| 11 | Unlock | Team-14 founds Gleba and Fulgora outposts, unlocks its power core, then founds Aquilo. On all three the planet-tuned copies (no item places them; Aquilo's include `bnm-radar` and `bnm-inserter`) stay non-minable, and the vanilla core entities are minable |
+| 9 | Re-found over full chests | Team-3 founds a Fulgora outpost; every logistic chest is filled with stone and the pad with coal, and a few things are built in the gap above the pad (chests with items, a belt carrying plates, a pole, a stone wall). After the roboport dies and the outpost is re-founded: the site holds one fresh base, the whole fresh kit is in its chests, and what is in the new base plus what lies on the ground equals what the site held, plus the fresh kit, plus one placing item per extra except the stone wall (a base building): item by item, and in total. The ground and the base gained exactly one of each extra's item. Every pile on the ground is marked for deconstruction |
+| 10 | Forget a home | Team-13 has a home and an outpost. `/bnm-forget-base` over RCON refuses the home, naming `/mts-disband team-13`, both while its roboport stands and after it is lost to `destroy()` (no death event); it refuses the outpost while its roboport stands. None of those change any record, placed flag, entity or core lock. With its roboport gone, the outpost is forgotten (only its record and flag), and `place()` can then found it again |
+| 11 | Unlock | Team-14 founds Gleba and Fulgora outposts, unlocks its power core, then founds Aquilo. On all three the planet-tuned copies (no item places them; Aquilo's include `bnm-radar` and `bnm-inserter`) and every `bnm-*` entity, the roboport included, stay non-minable, and the tuned copies are exactly the `bnm-*` entities but the roboport. The vanilla core entities are minable. The walls, never part of the core, are minable before and after |
 | 12 | Reconnect view | A stand-in player table on team-14 (a real player needs a client) goes through `remember_view_spot` and `park`: the spot it left on is stored and viewed once, the next re-park centres on the base, nothing is stored on a rival's surface or outside remote view, and a spot on another surface is dropped |
-| 13 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
+| 13 | Placing twice | Team-16 gets a home on Nauvis and an outpost on Vulcanus from `place()`, each followed in the same tick by `place()` again with the same options and with the other kind. The repeats return false, and the entity count, the sum of unit numbers (never reused), the roboport, the site's contents and the record table are unchanged. A third call 60 ticks later also returns false and changes nothing, and each base is logged as placed once |
+| 14 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
 
 How it gets there:
 
-- Checks 3 to 9 use teams 1 to 3 (`mts-<planet>-1` .. `-3`), checks 10 to 12 teams 13
-  to 15; the power runs use slots 4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
+- Checks 3 to 9 use teams 1 to 3 (`mts-<planet>-1` .. `-3`), checks 10 to 13 teams 13
+  to 16; the power runs use slots 4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
   (Nauvis as a home, everywhere else as an outpost). Slot 4 is the idle run; the
   others carry test loads that bracket the target, 8 in parallel.
 - Establishing goes through the real core, `platform_hub.establish_for(force, hub)`,
@@ -197,7 +202,7 @@ How it gets there:
   give the team an empty `storage.park_index` entry in BNM, which only BNM's
   `on_team_released` handler clears. This is test state in a throwaway world;
   MTS's code is never changed.
-- Check 13 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
+- Check 14 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
   same ports, after stopping `bnm-reg`.
 - Check 12 creates the landing pen with MTS's own `get_or_create_surface` (in MTS's
   state), as a player's first landing would, since `park` needs the pen.

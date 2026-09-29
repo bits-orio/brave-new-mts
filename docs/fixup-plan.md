@@ -240,7 +240,7 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | ID | Task | Status |
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
-| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player | done — `tools/rig/regress.py` + `tools/rig/lua/regress.lua`, 13/13 checks pass; see Results below |
+| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 14/14 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
@@ -274,11 +274,15 @@ construction-robotics grant; extra portal tags.
 
 ## Results
 
-`tools/rig/regress.py` (thirteen checks, about 2.5 minutes, driven by
-`tools/rig/lua/regress.lua` inside BNM's own state) passed 13/13 on the final
-code on `space-age-fixup` (run as `--rig bnm-f4 --ports 34341,27341`). Checks
-9 to 12 were added with B13, C11, B14 and C12; run against the code before
-those fixes, all four fail. See [`tools/rig/README.md`](https://github.com/bits-orio/brave-new-mts/blob/master/tools/rig/README.md#regresspy-the-regression-suite)
+`tools/rig/regress.py` (fourteen checks, about 2.5 minutes, driven by the
+`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 14/14 on
+the final code on `space-age-fixup` (run as `--rig bnm-reg2 --ports
+34343,27343`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
+against the code before those fixes, all four fail. Check 13 guards
+`place()`'s idempotence. Checks 9, 10, 11 and 13 were also run against a
+staged copy with one fault planted for each (no refund for what a team
+built, no home refusal, an unlock that frees tuned copies plus locked walls,
+no placed-flag guard): each fault failed the check meant for it. See [`tools/rig/README.md`](https://github.com/bits-orio/brave-new-mts/blob/master/tools/rig/README.md#regresspy-the-regression-suite)
 for what each check verifies and how the fixtures work.
 
 1. **Clean load:** 0 errors in the log. `bnm-planet-profiles` holds 105
@@ -286,24 +290,24 @@ for what each check verifies and how the fixtures work.
    Measured: Gleba panel 150 kW / accumulator 9.20 MJ, Aquilo panel 9000 kW /
    accumulator 22.07 MJ, Fulgora accumulator 10 MJ. `bnm-roboport`,
    `bnm-radar` and `bnm-inserter` need no heating.
-2. **Power** (sustained total, idle about 255.5 kW):
+2. **Power** (sustained total, idle about 255.8 kW):
 
    | Planet | Sustained | Next load fails at | Target | Result |
    |---|---|---|---|---|
-   | Nauvis | 848.3 kW | 859.0 kW | about 855 kW (+-2.5%) | PASS |
-   | Vulcanus | 3779.6 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
-   | Gleba | 1089.6 kW | 1097.3 kW | at least 1080 kW | PASS |
-   | Aquilo | 1309.5 kW | 1317.5 kW | at least 1300 kW | PASS |
-   | Fulgora | 2 bases x 20 days at 1090 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 48.2 MJ |
+   | Nauvis | 848.6 kW | 858.9 kW | about 855 kW (+-2.5%) | PASS |
+   | Vulcanus | 3779.8 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
+   | Gleba | 1089.8 kW | 1097.3 kW | at least 1080 kW | PASS |
+   | Aquilo | 1309.9 kW | 1317.3 kW | at least 1300 kW | PASS |
+   | Fulgora | 2 bases x 20 days at 1091 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 56.2 MJ |
 3. **Aquilo:** after 10 game minutes the roboport, `bnm-radar` and
    `bnm-inserter` are all unfrozen, and the roboport has a network with 50
-   bots. A transport-belt ghost 20 tiles out was built after 612 ticks.
+   bots. A transport-belt ghost 31 tiles out was built after 613 ticks.
 4. **Establish:** `mts-vulcanus-1` had no surface before. After
    `establish_for`, the surface exists (owner team-1) with 81 chunks
    generated and 0 out-of-map tiles. The uncommon clone was consumed, the
    outpost was recorded, and the pad sits at (16, 30), 3 tiles below the
    south wall and centred under the roboport.
-5. **Pad delivery:** the pad received 100 iron plate after 1214 ticks, and
+5. **Pad delivery:** the pad received 100 iron plate after 1215 ticks, and
    the hub was left with 0.
 6. **Outpost loss:** team-1's slot stayed occupied and its home was kept.
    The record and `bases_placed` were cleared, and all 47 core entities
@@ -313,7 +317,7 @@ for what each check verifies and how the fixtures work.
    iron-gear-wheel marker. The new core is locked.
 7. **Home loss:** MTS released team-1's slot, both of its surfaces were
    deleted, BNM forgot its bases, and BNM's `on_team_released` handler ran.
-8. **Save and reload:** the reload had 0 errors (tick 261340 before, 261467
+8. **Save and reload:** the reload had 0 errors (tick 255369 before, 255500
    after), and the Gleba outpost survived. After the reload, check 6 passed
    again for team-2 on Gleba (148 swept, pooled exactly), and check 7 also
    repeated: team-2 was disbanded.
@@ -325,26 +329,40 @@ for what each check verifies and how the fixtures work.
    site held exactly one fresh base with its whole Fulgora kit in the chests.
    The new base held 32,596 items and 5,036 lay beside it in 104 piles, all
    marked for deconstruction. That is exactly what the site held, plus the
-   fresh kit, plus one item for each extra except the stone wall. Run on the
+   fresh kit, plus one item for each extra except the stone wall, item by
+   item and in total (37,632 before and after); the extras came back as one
+   iron chest, fast belt, small pole and wooden chest. Run on the
    code before B13, the same check found none of the kit in the chests and
    18,402 of the expected items gone: the kit, 17,950 stone and coal that
    did not fit (only logged as "no room"), and the extras, which came back
    as nothing.
-10. **Forget a home:** with team-13's home and outpost roboports destroyed
-    without a death event, `/bnm-forget-base` over RCON refused the home
-    ("a home base cannot be re-founded ... /mts-disband team-13") and kept
-    its record, and still forgot the outpost.
+10. **Forget a home:** `/bnm-forget-base` over RCON refused team-13's home
+    ("a home base cannot be re-founded ... /mts-disband team-13") both with
+    its roboport standing and after `destroy()` removed it (no death event),
+    and refused the outpost while its roboport stood. None of those changed
+    a record, placed flag, entity count or core lock. With its roboport
+    gone, the outpost's record and flag were forgotten, nothing else, and
+    `place()` founded it again with a new roboport.
 11. **Unlock:** team-14 unlocked with Gleba and Fulgora outposts standing,
     then founded Aquilo. Gleba's 40, Fulgora's 16 and Aquilo's 42 tuned
     copies (Aquilo's include `bnm-radar` and `bnm-inserter`) stayed
-    non-minable; the vanilla core (7, 31 and 7 entities) became minable.
+    non-minable, as did every `bnm-*` entity, the roboport included; the
+    tuned copies are exactly the `bnm-*` entities but the roboport. The
+    vanilla core (7, 31 and 7 entities) became minable. The 84 walls of each
+    base were minable before and after.
 12. **Reconnect view** (a stand-in player table: a real player needs a
     client): leaving while looking at (60.5, -30.25) on `mts-gleba-14`
     stored that spot, the reconnect's `park` viewed it, and the next
     re-park centred on the roboport at (16, 16). Nothing was stored on
     team-15's surface or outside remote view, and a spot on another
     surface was dropped. The real view on a client is in E3.
-13. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
+13. **Placing twice:** team-16's Nauvis home (148 entities) and Vulcanus
+    outpost (149) were each followed, in the same tick, by `place()` with
+    the same options and with the other kind. Both repeats returned false,
+    and the entity count, unit-number sum, roboport, site contents and
+    record table were unchanged. A call 60 ticks later also returned false
+    and changed nothing, and each base was logged as placed once.
+14. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
    `provider` record ran `on_configuration_changed` with 0 errors. The
    record now has `home = true`, `outpost = false`, 4 valid providers and 4
    storage chests. The old key and the cached event ids are gone.
