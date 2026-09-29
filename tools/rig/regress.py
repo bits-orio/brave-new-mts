@@ -1160,7 +1160,7 @@ CHECKS = [
     (7, "home loss disbands the team", check_home_loss),
     (8, "save and reload, then outpost loss and home loss again", check_reload),
     (9, "re-found an outpost whose chests are full: kit whole, nothing lost", check_full_refound),
-    (10, "/bnm-forget-base refuses a home base, forgets a lost outpost", check_forget_home),
+    (10, "/bnm-forget-base refuses a home base, wipes a lost outpost", check_forget_home),
     (11, "unlocking keeps the planet-tuned copies locked, frees the vanilla core", check_unlock),
     (12, "a reconnect views the spot the player left (simulated player)", check_reconnect_view),
     (13, "placing twice on a surface builds once", check_idempotent),

@@ -178,7 +178,8 @@ Public functions `starter_base` exposes to events: `place`, `lose_outpost`,
 Every status below was re-checked against the code on `space-age-fixup` as of
 this pass (2026-09-29): README, `docs/portal.md`, `docs/HOSTING.md`,
 `changelog.txt`, `tools/portal_meta.json` and `locale/en/locale.cfg` all still
-match what the code does. A later review pass added B13, B14, C11 and C12.
+match what the code does. A later review pass added B13, B14, C11 and C12,
+and a second one B15 to B17, C13 to C15 and D7.
 
 ### Spikes (finished)
 
@@ -218,6 +219,9 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | B12 | medium | Migration for 0.1.x saves: mark home bases, provider lists | done |
 | B13 | high | Re-founding never loses the kit or salvage: pad and kit first, salvage into every storage and provider chest and the pad, spill the rest for the robots; player-built entities in the site come back as items (`scripts/item_delivery.lua`) | done |
 | B14 | medium | Planet-tuned copies stay locked after the unlock; the team tab, README, portal, locale and changelog say so | done |
+| B15 | medium | The re-found sweep keeps what items carry: what the team built is mined into a script-inventory pool (a vehicle comes back with its grid, a blueprint set up), the rest is emptied as whole stacks; spider legs skipped; nothing that cannot be destroyed yet (a rail under a train) touched, and retried once | done |
+| B16 | low | Refund what the team built past one base's worth of a base name, or at another quality (a per-name budget, not a name set) | done |
+| B17 | low | Salvage leaves buffer chests out, as it does requesters | done |
 
 ### C. Events and lifecycle
 
@@ -235,6 +239,9 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | C10 | medium | `control.lua` wiring; call `starter_base.migrate`; record current parked bodies so the first reconnect after the update does not empty them | done |
 | C11 | medium | `/bnm-forget-base` refuses a home base and points at `/mts-disband`; `docs/HOSTING.md` no longer says an arriving player re-founds a home | done |
 | C12 | low | `on_pre_player_left_game` stores the spot a remote-view player was looking at on their own ground; the reconnect's `park` views it once | done |
+| C13 | low | `/bnm-forget-base` wipes a dead outpost as its roboport's death does: the core becomes minable, the record is forgotten | done |
+| C14 | low | A base founded without `outpost` while the team has no home is its home (after a home surface is deleted outside a disband), not another outpost | done |
+| C15 | low | A clone shipped above a team's recreated home planet still founds an outpost there: give that base the home role when the team has none, or warn on the home surface's deletion and point at `/mts-disband` | ask |
 
 ### D. Docs and portal
 
@@ -246,6 +253,7 @@ match what the code does. A later review pass added B13, B14, C11 and C12.
 | D4 | doc | Changelog 0.2.0 | done |
 | D5 | doc | `docs/HOSTING.md`: passive radars, blueprint imports, Fulgora lightning and bots, clone flow, admin commands, manual test checklist | done |
 | D6 | doc | Stale comments (`permissions.lua` movement clamp, `blueprints.lua` header, `remote_player.lua` header) | done |
+| D7 | doc | README, HOSTING and changelog: Fulgora keeps its solar panels beside the collector, and only planets with weaker sun than Nauvis get tuned panels | done |
 
 ### E. Verification
 
@@ -288,13 +296,15 @@ construction-robotics grant; extra portal tags.
 
 `tools/rig/regress.py` (sixteen checks, about 2.5 minutes, driven by the
 `tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 16/16 on
-the final code on `space-age-fixup` (run as `--rig bnm-reg2 --ports
-34343,27343`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
+the final code on `space-age-fixup` (run as `--rig bnm-ap0 --ports
+34350,27350`). Checks 9 to 12 were added with B13, C11, B14 and C12; run
 against the code before those fixes, all four fail. Check 13 guards
 `place()`'s idempotence. Checks 9, 10, 11 and 13 were also run against a
 staged copy with one fault planted for each (no refund for what a team
 built, no home refusal, an unlock that frees tuned copies plus locked walls,
-no placed-flag guard): each fault failed the check meant for it. See [`tools/rig/README.md`](https://github.com/bits-orio/brave-new-mts/blob/master/tools/rig/README.md#regresspy-the-regression-suite)
+no placed-flag guard): each fault failed the check meant for it. The second
+review pass extended check 9 (B16) and check 10 (C13) and added checks 14
+(B15) and 15 (C14); each of those four fails on the code before its fix. See [`tools/rig/README.md`](https://github.com/bits-orio/brave-new-mts/blob/master/tools/rig/README.md#regresspy-the-regression-suite)
 for what each check verifies and how the fixtures work.
 
 1. **Clean load:** 0 errors in the log. `bnm-planet-profiles` holds 105
@@ -302,24 +312,24 @@ for what each check verifies and how the fixtures work.
    Measured: Gleba panel 150 kW / accumulator 9.20 MJ, Aquilo panel 9000 kW /
    accumulator 22.07 MJ, Fulgora accumulator 10 MJ. `bnm-roboport`,
    `bnm-radar` and `bnm-inserter` need no heating.
-2. **Power** (sustained total, idle about 255.8 kW):
+2. **Power** (sustained total, idle about 255.5 kW):
 
    | Planet | Sustained | Next load fails at | Target | Result |
    |---|---|---|---|---|
-   | Nauvis | 848.6 kW | 858.9 kW | about 855 kW (+-2.5%) | PASS |
-   | Vulcanus | 3779.8 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
-   | Gleba | 1089.8 kW | 1097.3 kW | at least 1080 kW | PASS |
-   | Aquilo | 1309.9 kW | 1317.3 kW | at least 1300 kW | PASS |
-   | Fulgora | 2 bases x 20 days at 1091 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 56.2 MJ |
+   | Nauvis | 848.8 kW | 858.8 kW | about 855 kW (+-2.5%) | PASS |
+   | Vulcanus | 3779.5 kW | 3826.3 kW | about 3807 kW (+-2.5%) | PASS |
+   | Gleba | 1089.2 kW | 1097.4 kW | at least 1080 kW | PASS |
+   | Aquilo | 1309.2 kW | 1317.3 kW | at least 1300 kW | PASS |
+   | Fulgora | 2 bases x 20 days at 1090 kW | -- | at least 1080 kW, no blackouts | PASS: 0/40 blackout nights, lowest reserve 31.5 MJ |
 3. **Aquilo:** after 10 game minutes the roboport, `bnm-radar` and
    `bnm-inserter` are all unfrozen, and the roboport has a network with 50
-   bots. A transport-belt ghost 31 tiles out was built after 613 ticks.
+   bots. A transport-belt ghost 23 tiles out was built after 611 ticks.
 4. **Establish:** `mts-vulcanus-1` had no surface before. After
    `establish_for`, the surface exists (owner team-1) with 81 chunks
    generated and 0 out-of-map tiles. The uncommon clone was consumed, the
    outpost was recorded, and the pad sits at (16, 30), 3 tiles below the
    south wall and centred under the roboport.
-5. **Pad delivery:** the pad received 100 iron plate after 1215 ticks, and
+5. **Pad delivery:** the pad received 100 iron plate after 1216 ticks, and
    the hub was left with 0.
 6. **Outpost loss:** team-1's slot stayed occupied and its home was kept.
    The record and `bases_placed` were cleared, and all 47 core entities
@@ -329,21 +339,24 @@ for what each check verifies and how the fixtures work.
    iron-gear-wheel marker. The new core is locked.
 7. **Home loss:** MTS released team-1's slot, both of its surfaces were
    deleted, BNM forgot its bases, and BNM's `on_team_released` handler ran.
-8. **Save and reload:** the reload had 0 errors (tick 255369 before, 255500
+8. **Save and reload:** the reload had 0 errors (tick 256990 before, 257123
    after), and the Gleba outpost survived. After the reload, check 6 passed
    again for team-2 on Gleba (148 swept, pooled exactly), and check 7 also
    repeated: team-2 was disbanded.
 9. **Re-found over full chests:** a team-3 Fulgora outpost had every chest
-   filled with stone and its pad with coal (37,150 items), plus five things
+   filled with stone and its pad with coal (37,150 items), plus six things
    built above the pad: an iron chest of 100 copper plate, a fast belt
-   carrying 2 iron plate, a small pole, a wooden chest of 30 wood and a
-   stone wall. After the roboport died and the outpost was re-founded, the
-   site held exactly one fresh base with its whole Fulgora kit in the chests.
-   The new base held 32,596 items and 5,036 lay beside it in 104 piles, all
-   marked for deconstruction. That is exactly what the site held, plus the
-   fresh kit, plus one item for each extra except the stone wall, item by
-   item and in total (37,632 before and after); the extras came back as one
-   iron chest, fast belt, small pole and wooden chest. Run on the
+   carrying 2 iron plate, a small pole, a wooden chest of 30 wood, and a
+   stone wall and an inserter, each one past the base's own count of its
+   name. After the roboport died and the outpost was re-founded, the site
+   held exactly one fresh base with its whole Fulgora kit in the chests.
+   The new base held 27,447 items and 10,187 lay beside it in 209 piles, all
+   marked for deconstruction (buffer chests no longer take salvage, so more
+   is spilled). That is exactly what the site held, plus the fresh kit, plus
+   one item for each extra, item by item and in total (37,634 before and
+   after); the extras came back as one iron chest, fast belt, small pole,
+   wooden chest, stone wall and inserter. On the name rule before B16 the
+   stone wall and inserter came back as nothing. Run on the
    code before B13, the same check found none of the kit in the chests and
    18,402 of the expected items gone: the kit, 17,950 stone and coal that
    did not fit (only logged as "no room"), and the extras, which came back
