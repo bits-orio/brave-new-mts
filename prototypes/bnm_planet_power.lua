@@ -14,8 +14,12 @@
 --     the day, when no lightning falls.
 --   * any other planet: panel output scaled by 100 / solar-power, accumulator
 --     buffer scaled by day length (never below vanilla), both times a margin:
---     1.5 at 5% sun or less, else 1.25. Gleba gets 150 kW panels and 8.93 MJ
---     accumulators; Aquilo 9 MW panels (90 kW in its 1% sun) and 21.4 MJ.
+--     1.5 at 5% sun or less, else 1.25. The buffer gets 3% more on top
+--     (BUFFER_MARGIN): these bases are storage-bound, and the lamps' night
+--     draw does not scale, so the margin alone lands about 10 kW short of the
+--     targets. Gleba gets 150 kW panels and 9.20 MJ accumulators (about
+--     1.09 MW sustained); Aquilo 9 MW panels (90 kW in its 1% sun) and
+--     22.07 MJ (about 1.31 MW).
 --
 -- Planets whose entities freeze (Aquilo) also get bnm-radar and bnm-inserter,
 -- which need no heating. The roboport never freezes anywhere (bnm_roboport.lua).
@@ -36,6 +40,13 @@ local ACC_BUFFER     = 5000000
 local ACC_FLOW       = 300000
 local NAUVIS_SOLAR   = 100
 local NAUVIS_DAY     = 25200
+
+-- Extra accumulator buffer on top of the margin. The sustained load of a
+-- storage-bound base scales with the margin, except the lamps' 15 kW at night,
+-- which comes straight out of the storage. 1.03 clears the power targets
+-- (Gleba 1.08 MW, Aquilo 1.30 MW) by about 10 kW; 1.02 would leave less than
+-- the rig's sweep can resolve.
+local BUFFER_MARGIN  = 1.03
 
 -- Fulgora's accumulator, measured on the rig (design D1: 1.08 MW sustained,
 -- no empty day in 1,080 base-days). 16 x 10 MJ covers the strike-free day,
@@ -111,7 +122,7 @@ local function solar_accumulator(base, solar, day)
     local m = margin(solar)
     local flow = watts(ACC_FLOW * m)
     return accumulator(base, "entity-description.bnm-accumulator",
-        joules(ACC_BUFFER * math.max(1, day / NAUVIS_DAY) * m), flow, flow)
+        joules(ACC_BUFFER * math.max(1, day / NAUVIS_DAY) * m * BUFFER_MARGIN), flow, flow)
 end
 
 --- Builds a base planet's prototypes and returns the profile fields every

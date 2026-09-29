@@ -38,9 +38,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PLANETS = {
     "nauvis":   {"model": 865,  "sweep": (300, 1000)},
     "vulcanus": {"model": 3821, "sweep": (2600, 4800)},
-    "gleba":    {"model": 504,  "sweep": (50, 600)},
+    "gleba":    {"model": 1092, "sweep": (600, 1000)},
     "fulgora":  {"model": 202,  "sweep": (25, 600)},
-    "aquilo":   {"model": 10,   "sweep": None},     # idle alone is ~25x the model
+    "aquilo":   {"model": 1313, "sweep": (800, 1200)},
 }
 SWEEP_SLOTS = list(range(2, 10))
 SAT_SLOT, BUSY_SLOT = 10, 11

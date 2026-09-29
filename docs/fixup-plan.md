@@ -77,10 +77,13 @@ in ticks, Nauvis `d0 = 25200`):
   Vanilla panels elsewhere.
 - Other `s < 100`: margin `m = 1.5` if `s <= 5`, else `1.25`.
   - `bnm-solar-panel-<base>`: output `60 kW * (100 / s) * m`.
-  - `bnm-accumulator-<base>`: buffer `5 MJ * max(1, d / d0) * m`, input and
-    output flow `300 kW * m`.
-  - Gleba: 150 kW panels, 8.93 MJ accumulators. Aquilo: 9 MW panels (90 kW in
-    Aquilo's 1% sun), 21.4 MJ accumulators.
+  - `bnm-accumulator-<base>`: buffer `5 MJ * max(1, d / d0) * m * 1.03`, input
+    and output flow `300 kW * m`. The extra 3% covers the lamps' night draw,
+    which does not scale with `m`: without it the model gives Gleba 1071 kW and
+    Aquilo 1288 kW, just short of the targets.
+  - Gleba: 150 kW panels, 9.20 MJ accumulators (model about 1092 kW). Aquilo:
+    9 MW panels (90 kW in Aquilo's 1% sun), 22.07 MJ accumulators (model about
+    1313 kW).
 - Freezing planets: `bnm-radar` and `bnm-inserter`, copies with
   `heating_energy = "0kW"`.
 - `bnm-roboport`: `heating_energy = "0kW"` on every planet.
