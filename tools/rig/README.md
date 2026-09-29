@@ -8,11 +8,13 @@ folder is ever written into the repo's mod code.
 
 | File | What it does |
 |---|---|
-| `stage.sh` | Builds a mods dir: MTS 0.6.6 zip, a copy of the BNM working tree, and a `mod-list.json` |
+| `stage.sh` | Builds a mods dir: MTS 0.6.6 zip, a copy of the BNM working tree (or of a commit), and a `mod-list.json` |
 | `hooks/bnm_rig_data.lua` | Test-only prototypes, injected into the staged copy by `stage.sh --hooks` |
 | `probe.py` | RCON helper (library and CLI) that runs Lua in the level, BNM or MTS state |
 | `lua/power_rig.lua` | In-game power sampler, loaded into the level state by `power_test.py` |
 | `power_test.py` | Measures the starter base's sustainable power on every planet |
+| `regress.py` | The regression suite: nine PASS/FAIL checks on a fresh server of its own |
+| `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state: place, establish, inspect a base |
 
 ## Quick start
 
@@ -31,7 +33,7 @@ tools/rig/probe.py --state bnm --json 'storage.bases_placed'
 # 4. Measure power on every planet (about 5 minutes of wall time)
 tools/rig/power_test.py --port 27311 --out /tmp/power_results.json
 #    Fulgora's lightning is random: judge it over many cycles, with its own sweep
-tools/rig/power_test.py --planets fulgora --sweep fulgora:0:350 --cycles 20 --rounds 0 --out /tmp/fulgora.json
+tools/rig/power_test.py --planets fulgora --sweep fulgora:700:1200 --cycles 20 --rounds 0 --out /tmp/fulgora.json
 #    Re-print the table from a saved file, using the current pass/fail rule
 tools/rig/power_test.py --summarize /tmp/power_results.json
 
@@ -41,8 +43,11 @@ tools/rig/power_test.py --summarize /tmp/power_results.json
 
 `stage.sh` copies the working tree, so uncommitted edits are tested. Re-run it
 and restart the server after every change to the mod. Other options:
-`--mts <zip-or-dir>` stages a different MTS (a source dir is symlinked), and
+`--mts <zip-or-dir>` stages a different MTS (a source dir is symlinked),
+`--rev <commit>` stages BNM as committed there (for a migration test), and
 `--no-space-age` disables space-age, quality and elevated-rails.
+
+To run the whole regression suite instead, see [regress.py](#regresspy-the-regression-suite).
 
 ## Calling BNM's internals from RCON
 
@@ -139,6 +144,58 @@ per-cycle consumption and production per entity name (kW), the start, end and
 minimum of accumulator and roboport energy, freeze times, damage and death
 counts, and the `failed to place` lines from the server log, attributed to their
 surface.
+
+## regress.py: the regression suite
+
+```sh
+tools/rig/regress.py                      # all nine checks, about 3 minutes
+tools/rig/regress.py --checks 4,6         # a subset (5 and 6 pull in 4)
+tools/rig/regress.py --out /tmp/reg.json  # also write every check's numbers as JSON
+```
+
+It stages the working tree (`stage.sh --hooks` into `~/factorio-dev/rig/mods-bnm-reg`),
+starts a fresh server named `bnm-reg` on game port 34332 and RCON 27332, runs the
+checks in order and stops the server. Each check prints PASS or FAIL with the
+numbers it judged, then a summary; the exit code is 0 only if all pass. A failing
+check does not stop the others. It refuses to start while anything listens on
+RCON 27332; `--keep` leaves the server running at the end, `--no-stage` reuses
+the staged mods dir.
+
+| # | Check | Passes when |
+|---|---|---|
+| 1 | Clean load | No error in the log; `bnm-planet-profiles` holds the contract's profile for every `mts-<planet>-1`; the tuned prototypes exist |
+| 2 | Power | Sustained total, idle included: Nauvis 855 kW and Vulcanus 3807 kW within 2.5%, Gleba >= 1080 kW, Aquilo >= 1300 kW; Fulgora: 2 bases x 20 days at >= 1080 kW with 0 blackout nights |
+| 3 | Aquilo | After 10 game minutes the roboport, radar and inserter are not frozen, the roboport has a network, and a ghost 20 to 40 tiles out gets built |
+| 4 | Establish | A script-made platform over `mts-vulcanus-1` (no surface yet) with an uncommon clone: `establish_for` creates the surface with at least 81 generated chunks, consumes the clone, founds an outpost, and its pad sits 3 tiles below the south wall, centred |
+| 5 | Pad delivery | 100 iron-plate in the hub and a request on the pad: a cargo pod lands them |
+| 6 | Outpost loss | `die()` on the outpost roboport: team-1 is not disbanded, the outpost is forgotten, its core became minable. A new clone re-founds it: the site holds exactly one fresh base, every leftover was swept, and the new storage chests hold exactly what the leftovers held |
+| 7 | Home loss | `die()` on the home roboport: MTS disbands the team, deletes its surfaces, BNM forgets its bases and its `on_team_released` handler ran |
+| 8 | Save and reload | Team-2 founds a Gleba outpost, the server restarts on its save with no error, then checks 6 and 7 again, which proves the handlers came back in `on_load` |
+| 9 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
+
+How it gets there:
+
+- Checks 3 to 8 use teams 1 to 3 (`mts-<planet>-1` .. `-3`); the power runs use slots
+  4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
+  (Nauvis as a home, everywhere else as an outpost). Slot 4 is the idle run; the
+  others carry test loads that bracket the target, 8 in parallel.
+- Establishing goes through the real core, `platform_hub.establish_for(force, hub)`,
+  with the planet unlocked the way play unlocks it (its discovery tech researched,
+  then MTS unlocks the team's copy). Roboports die by `die()` from the level
+  state, so BNM's handlers see an ordinary `on_entity_died`.
+- **Fixtures.** No slot is ever claimed on a server with no players, and MTS's
+  `disband_team` skips an unclaimed slot. So each team that gets a home here
+  (team-1 in checks 4 to 7, team-2 in check 8) has its slot set to `"occupied"` in
+  MTS's storage (a claimed team whose members are all offline), so "not
+  disbanded" means something and a disband is real. Checks 7 and 8 also
+  give the team an empty `storage.park_index` entry in BNM, which only BNM's
+  `on_team_released` handler clears. This is test state in a throwaway world;
+  MTS's code is never changed.
+- Check 9 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
+  same ports, after stopping `bnm-reg`.
+- Every check also scans the log lines written during it: an engine ` Error `
+  (other than "Got EOF on stdin") or a BNM warning about a base it could not build
+  fully (`failed to place`, `no room in the base's chests`, ...) fails the check.
 
 ## Gotchas
 
