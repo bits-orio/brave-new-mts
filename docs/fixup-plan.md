@@ -311,7 +311,13 @@ construction-robotics grant; extra portal tags.
 `tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 17/17 on
 `space-age-fixup` at 44e954c, which added the admin test commands (run as
 `--rig bnm-tcreg --ports 34371,27371`). Check 16 came with those commands,
-and migration moved to 17. Before that, the other sixteen passed 16/16 on the
+and migration moved to 17. A review of the test commands then brought five
+fixes (d96a5c7 to 6d1b673: a flown-away or deleted test platform, a free
+team slot, the view for another team, the silent failure branch, "on nil");
+check 16 grew to cover four of them, and the suite passed 17/17 again (run
+as `--rig bnm-tcfix --ports 34372,27372`). The grown check 16 failed on the
+old `test_commands.lua`, and on a copy with the free-slot and "on nil"
+faults planted back. Before that, the other sixteen passed 16/16 on the
 final fix-up code (run as `--rig bnm-fin --ports 34349,27349`, after B18,
 B19, C16, C17 and D8), and the numbers below for checks 1 to 15 and 17 are
 from that run. The 17/17 run repeated every entity and item count exactly;
@@ -440,12 +446,16 @@ for what each check verifies and how the fixtures work.
     technologies (`planet-discovery-gleba` and `bnm-character-clone` with
     their prerequisites), unlocked `mts-gleba-20` and parked "BNM test: gleba"
     above it with 1 clone, with no surface created yet. Run again, it left one
-    platform with 2 clones and researched nothing more. `establish_for` on
-    that hub founded an outpost; `/bnm-test-kill-roboport mts-gleba-20` killed
+    platform with 2 clones and researched nothing more. Flown to
+    `mts-nauvis-20` and run again, it was back above `mts-gleba-20` with 3
+    clones; deleted (`destroy(3600)`) and run again, a new platform had 1
+    clone. `establish_for` on that hub founded an outpost; `/bnm-test-kill-roboport mts-gleba-20` killed
     its roboport, the record and placed flag were cleared, and team-20 kept
     its slot and its home. On the wiped surface, and with no argument, the
     same command answered with usage and changed no record; so did
     `/bnm-test-orbit plutonium team-20` and a bare `/bnm-test-orbit`.
+    `/bnm-test-orbit gleba team-15` (a slot never claimed) was refused as
+    "not a claimed team" and changed nothing.
 17. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
    `provider` record ran `on_configuration_changed` with 0 errors. The
    record now has `home = true`, `outpost = false`, 4 valid providers and 4
