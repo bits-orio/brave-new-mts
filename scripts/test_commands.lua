@@ -148,8 +148,9 @@ local function orbit(cmd)
     local researched = unlock_route(force, base, planet)
     local platform = test_platform(force, planet, base)
     local hub = platform and platform.hub
-    if not (hub and hub.valid) then
-        return cmd_util.reply(cmd, PREFIX .. "could not create a platform above " .. planet.name .. ".")
+    if not (hub and hub.valid) then  -- the research and unlock stand, so announce them
+        return cmd_util.audit(cmd, "(test command) researched " .. researched .. " technologies for "
+            .. force.name .. " and unlocked " .. planet.name .. ", but could not create a platform above it.")
     end
     hub.get_inventory(defines.inventory.hub_main).insert{ name = CLONE, count = 1 }
     announce(cmd, force, platform, planet, researched)
