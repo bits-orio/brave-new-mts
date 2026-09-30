@@ -8,12 +8,17 @@ Three layers, back to front, inside the frame:
 
   - The Brave New Roboport seen up close: the vanilla roboport's sprite layers
     (base, patch, antenna, doors) put together as the game draws them, with
-    the mod's uranium-green tint and additive glow (prototypes/bnm_roboport.lua),
-    zoomed in so only its hatch and the machinery around it fill the card.
-    Darkened a little so the mark stays the brightest thing on it.
-  - The mark, BNM, in the colours the card has always had.
+    the mod's uranium-green tint and additive glow (prototypes/bnm_roboport.lua)
+    at full brightness, zoomed in so its hatch and the machinery around it
+    fill the card.
+  - The mark, BNM: blue and red as the card has always had them, and a yellow
+    N (Multi-Team Support's yellow), since a green N vanishes into the glow.
   - The subtitle, in its grey.
-Each text layer gets a soft drop shadow, so it reads over the busy metal.
+The text is separated from the glow the family way: a centred black halo
+behind it, no offset to one side (land-title-registry and multi-team-support
+explain why). Over a busy picture the halo alone isn't enough, so, exactly as
+on Research Cost Shaper's card, a thin dark outline hugs every glyph and a
+soft dark band sits behind the subtitle.
 
 Needs the Factorio install for the roboport sprites (FACTORIO_DATA below) and
 DejaVu Sans Bold.
@@ -37,17 +42,22 @@ FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 # The mark, where the card has always had it: each letter's inked box, left
 # edge and top, and the shared cap height, measured off the previous card.
-LETTERS = (("B", (66, 133, 244), 44), ("N", (52, 168, 83), 175), ("M", (234, 67, 53), 316))
+LETTERS = (("B", (66, 133, 244), 44), ("N", (245, 184, 46), 175), ("M", (234, 67, 53), 316))
 LETTER_TOP, LETTER_HEIGHT = 151, 139
 SUBTITLE = "BRAVE NEW MTS"
 SUBTITLE_FILL = (146, 146, 146)
 SUBTITLE_BOX = (77, 402, 436, 431)   # left, top, right, bottom of its ink
 
-# The drop shadow under both text layers: offset down-right, softened.
-SHADOW = (0, 0, 0)
-SHADOW_OFFSET = (4, 5)
-SHADOW_BLUR = 4
-SHADOW_STRENGTH = 2.4     # alpha gain after the blur, so the edge stays dark
+# Readability over the glow, as on Research Cost Shaper's card (the family's
+# card with a picture behind the text): a centred black halo, a thin dark
+# outline on every glyph, and a dark band fading in behind the subtitle.
+HALO = (0, 0, 0)
+HALO_RADIUS = 10
+HALO_STRENGTH = 2.0
+INK = (14, 16, 22)
+LETTER_OUTLINE = 4
+SUBTITLE_OUTLINE = 3
+SUBTITLE_BAND = (360, 490, 150)  # top, bottom (the frame), peak darkness (0-255)
 
 # The background roboport.
 FACTORIO_DATA = Path.home() / "factorio" / "data"
@@ -65,12 +75,12 @@ BNM_TINT = (0.15, 1.0, 0.15)      # prototypes/bnm_roboport.lua
 # The close-up: a square of the sprite, in sprite pixels around the entity's
 # centre, scaled up to fill the frame. Smaller = closer.
 ZOOM_CENTRE = (0, -30)
-ZOOM_SIZE = 110
-# Darker, a little less saturated and slightly soft, like a shallow depth of
-# field: the roboport reads, and the mark stays the sharpest, brightest thing.
-BACKGROUND_BRIGHTNESS = 0.42
-BACKGROUND_SATURATION = 0.7
-BACKGROUND_BLUR = 1.5
+ZOOM_SIZE = 139
+# The glow at full strength, only a touch soft so the mark stays the
+# sharpest thing on the card.
+BACKGROUND_BRIGHTNESS = 1.0
+BACKGROUND_SATURATION = 1.0
+BACKGROUND_BLUR = 0.4
 
 
 def roboport_sprite():
@@ -156,7 +166,8 @@ def text_layer():
     font = font_for_cap_height("BNM", LETTER_HEIGHT)
     for ch, color, left in LETTERS:
         x0, y0, _, _ = ink_box(ch, font)
-        d.text((left - x0, LETTER_TOP - y0), ch, font=font, fill=color)
+        d.text((left - x0, LETTER_TOP - y0), ch, font=font, fill=color,
+               stroke_width=LETTER_OUTLINE, stroke_fill=INK)
     left, top, right, bottom = SUBTITLE_BOX
     sub_font = font_for_cap_height(SUBTITLE, bottom - top)
     draw_tracked(d, SUBTITLE, sub_font, (left, top), right - left, SUBTITLE_FILL)
@@ -172,27 +183,39 @@ def draw_tracked(d, text, font, at, width, fill):
     gap = (width - (advances + last_right - first_left)) / (len(text) - 1)
     x, y = at[0] - first_left, at[1] - top
     for ch in text:
-        d.text((x, y), ch, font=font, fill=fill)
+        d.text((x, y), ch, font=font, fill=fill, stroke_width=SUBTITLE_OUTLINE, stroke_fill=INK)
         x += d.textlength(ch, font=font) + gap
 
 
-def drop_shadow(layer):
-    alpha = layer.getchannel("A").filter(ImageFilter.GaussianBlur(SHADOW_BLUR))
-    alpha = alpha.point(lambda v: min(255, int(v * SHADOW_STRENGTH)))
-    shadow = Image.new("RGBA", layer.size, SHADOW + (0,))
-    shadow.putalpha(alpha)
-    moved = Image.new("RGBA", layer.size, (0, 0, 0, 0))
-    moved.alpha_composite(shadow, SHADOW_OFFSET)
-    return moved
+def halo_for(layer):
+    """A centred black halo from the layer's own shape: blurred, no offset."""
+    alpha = layer.getchannel("A").filter(ImageFilter.GaussianBlur(HALO_RADIUS))
+    alpha = alpha.point(lambda v: min(255, int(v * HALO_STRENGTH)))
+    halo = Image.new("RGBA", layer.size, HALO + (0,))
+    halo.putalpha(alpha)
+    return halo
+
+
+def darken_subtitle_band(card):
+    """A dark band fading in behind the subtitle, inside the frame only."""
+    top, bottom, peak = SUBTITLE_BAND
+    lo, hi = FRAME_OUTER + FRAME_WIDTH, SIZE - FRAME_OUTER - FRAME_WIDTH
+    band = Image.new("L", card.size, 0)
+    d = ImageDraw.Draw(band)
+    for y in range(top, min(bottom, hi)):
+        t = (y - top) / (bottom - top)
+        d.line([(lo, y), (hi - 1, y)], fill=round(peak * min(1.0, t * 2.2)))
+    card.paste(Image.new("RGB", card.size, INK), (0, 0), band)
 
 
 def build():
     card = Image.new("RGB", (SIZE, SIZE), BG)
     paste_background(card)
+    darken_subtitle_band(card)
     draw_frame(card)
     text = text_layer()
     card = card.convert("RGBA")
-    card.alpha_composite(drop_shadow(text))
+    card.alpha_composite(halo_for(text))
     card.alpha_composite(text)
     return card.convert("RGB")
 
