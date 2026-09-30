@@ -162,9 +162,13 @@ local function kill_roboport(cmd)
     if not (cmd_util.authorised(cmd) and enabled(cmd)) then return end
     local player = cmd_util.caller(cmd)
     local name = cmd_util.trimmed(cmd.parameter) or (player and player.surface.name)
-    local base = name and starter_base.base_for(name)
+    if not name then
+        return cmd_util.reply(cmd, PREFIX .. "Usage: /bnm-test-kill-roboport <surface name>. "
+            .. "The console has no view to default to.")
+    end
+    local base = starter_base.base_for(name)
     if not (base and base.roboport and base.roboport.valid) then
-        return cmd_util.reply(cmd, PREFIX .. "no live base roboport on " .. tostring(name)
+        return cmd_util.reply(cmd, PREFIX .. "no live base roboport on " .. name
             .. ". Usage: /bnm-test-kill-roboport [surface name]")
     end
     cmd_util.audit(cmd, "(test command) destroyed the " .. (base.home and "home" or "outpost")

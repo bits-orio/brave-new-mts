@@ -1220,8 +1220,8 @@ def test_commands_on(ctx, c, force, planet, orbit, home):
         records = bnm(rig, "REG.records()")
         said = rig.cmd(cmd)
         c.note("%s (no base) -> %s" % (cmd, said))
-        c.expect("Usage: /bnm-test-kill-roboport" in said and bnm(rig, "REG.records()") == records,
-                 "%s answered with usage and changed no record" % cmd)
+        c.expect("Usage: /bnm-test-kill-roboport" in said and "on nil" not in said
+                 and bnm(rig, "REG.records()") == records, "%s answered with usage and changed no record" % cmd)
     state = orbit_state(rig, force, planet)
     for cmd in ("/bnm-test-orbit plutonium %s" % force, "/bnm-test-orbit"):
         said = rig.cmd(cmd)
