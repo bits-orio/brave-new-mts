@@ -47,8 +47,9 @@ check does not stop the suite. Every server it starts is stopped at the end.
  16  admin test commands, from the console: /bnm-test-orbit refuses while
      the setting is off; on, it researches the way to Gleba and the clone
      and parks a platform with a clone above team-20's copy (again: one more
-     clone), which founds an outpost; /bnm-test-kill-roboport wipes that
-     outpost and keeps the team; bad input answers with usage
+     clone; flown away, it is brought back; deleted, a new one is made),
+     which founds an outpost; /bnm-test-kill-roboport wipes that outpost and
+     keeps the team; bad input answers with usage
  17  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
@@ -1155,6 +1156,24 @@ def check_test_commands(ctx, c):
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
 
 
+def moved_and_deleted(ctx, c, force, planet, orbit, home):
+    """The test platform flown to the home planet comes back with one more
+    clone; one pending deletion is left to die and a new one is made."""
+    rig, one = ctx.rig, lambda n: [{"name": TC_PLATFORM, "at": planet, "clones": n}]
+    bnm(rig, 'REG.move_platform("%s", "%s", "%s")' % (force, TC_PLATFORM, home))
+    rig.cmd(orbit)
+    back = orbit_state(rig, force, planet)
+    c.note("flown to %s, then again: %s" % (home, orbit_line(back)))
+    c.expect(back["platforms"] == one(3), "a platform flown to %s is back above %s, now 3 clones (%s)" % (
+        home, planet, back["platforms"]))
+    bnm(rig, 'REG.delete_platform("%s", "%s")' % (force, TC_PLATFORM))
+    rig.cmd(orbit)
+    anew = orbit_state(rig, force, planet)
+    c.note("deleted, then again: %s" % orbit_line(anew))
+    c.expect(anew["platforms"] == one(1), "a platform pending deletion is not reused: a new one, 1 clone (%s)"
+             % anew["platforms"])
+
+
 def test_commands_on(ctx, c, force, planet, orbit, home):
     rig = ctx.rig
     said = rig.cmd(orbit)
@@ -1172,6 +1191,7 @@ def test_commands_on(ctx, c, force, planet, orbit, home):
     c.expect(again["platforms"] == [{"name": TC_PLATFORM, "at": planet, "clones": 2}]
              and again["researched"] == first["researched"],
              "again: still one platform, now 2 clones, nothing more researched (%s)" % again["platforms"])
+    moved_and_deleted(ctx, c, force, planet, orbit, home)
 
     res = bnm(rig, 'REG.establish("%s", "%s")' % (force, TC_PLATFORM))
     bases = bases_of(rig, force)

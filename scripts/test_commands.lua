@@ -76,15 +76,28 @@ local function target_force(cmd, team)
     return teams.is_team_force(team) and game.forces[team] or nil
 end
 
---- The team's test platform above `planet`, created with a starter pack the
---- first time. Returns the platform, or nil if the engine refused to make it.
+--- The force's platform called `name`, or nil. One pending deletion (Delete
+--- in the GUI) counts as gone: a clone put aboard would vanish with it.
+local function live_platform(force, name)
+    for _, p in pairs(force.platforms) do
+        if p.valid and p.name == name and p.scheduled_for_deletion == 0 then return p end
+    end
+end
+
+--- The team's test platform, parked above `planet`: created with a starter
+--- pack the first time, and brought back if it was flown elsewhere or is in
+--- transit, paused as a new one is, so its schedule does not fly it off again.
+--- Returns the platform, or nil if the engine refused to make it.
 local function test_platform(force, planet, base)
     local name = PLATFORM .. base
-    for _, p in pairs(force.platforms) do
-        if p.valid and p.name == name then return p end
+    local p = live_platform(force, name)
+        or force.create_space_platform{ name = name, planet = planet.name, starter_pack = STARTER_PACK }
+    if not p then return nil end
+    p.apply_starter_pack()  -- does nothing once applied
+    if not (p.space_location and p.space_location.name == planet.name) then
+        p.space_location = planet.prototype
+        p.paused = true
     end
-    local p = force.create_space_platform{ name = name, planet = planet.name, starter_pack = STARTER_PACK }
-    if p then p.apply_starter_pack() end
     return p
 end
 

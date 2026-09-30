@@ -9,10 +9,11 @@ local R = REG
 
 local CLONE = "bnm-character-clone"
 
---- A platform of `force_name` by name, or nil.
+--- A platform of `force_name` by name, or nil. One pending deletion counts
+--- as gone, as in platforms_of below and in /bnm-test-orbit.
 local function platform(force_name, name)
     for _, p in pairs(game.forces[force_name].platforms) do
-        if p.valid and p.name == name then return p end
+        if p.valid and p.name == name and p.scheduled_for_deletion == 0 then return p end
     end
     return nil
 end
@@ -81,6 +82,18 @@ function R.pad_count(surface_name, item)
 end
 
 -- ─── What /bnm-test-orbit leaves behind ──────────────────────────────
+
+--- Move the named platform to `planet_name` at once, as if it had flown there.
+function R.move_platform(force_name, name, planet_name)
+    platform(force_name, name).space_location = game.planets[planet_name].prototype
+    return true
+end
+
+--- Schedule the named platform for deletion, as Delete in the GUI does.
+function R.delete_platform(force_name, name)
+    platform(force_name, name).destroy(3600)
+    return true
+end
 
 --- A force's live platforms: name, where each is parked, clones aboard.
 local function platforms_of(force)
