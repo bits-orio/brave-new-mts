@@ -106,15 +106,20 @@ end
 --- Add what `entity` holds in its inventories to `into`, keyed "name" (or
 --- "name/quality").
 function R.add_contents(entity, into)
+    local function add(name, quality, count)
+        local key = quality == "normal" and name or (name .. "/" .. quality)
+        into[key] = (into[key] or 0) + count
+    end
     for i = 1, entity.get_max_inventory_index() do
         local inv = entity.get_inventory(i)
         if inv and inv.valid then
-            for _, c in pairs(inv.get_contents()) do
-                local key = c.quality == "normal" and c.name or (c.name .. "/" .. c.quality)
-                into[key] = (into[key] or 0) + c.count
-            end
+            for _, c in pairs(inv.get_contents()) do add(c.name, c.quality, c.count) end
         end
     end
+    -- The re-found sweep pools an inserter's hand too (scripts/item_delivery.lua),
+    -- so count it: the base's roboport feeder is often holding a robot.
+    local hand = entity.type == "inserter" and entity.held_stack
+    if hand and hand.valid_for_read then add(hand.name, hand.quality.name, hand.count) end
 end
 
 --- Items held by a list of entities.
