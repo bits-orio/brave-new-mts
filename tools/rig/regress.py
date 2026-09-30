@@ -49,7 +49,8 @@ check does not stop the suite. Every server it starts is stopped at the end.
      and parks a platform with a clone above team-20's copy (again: one more
      clone; flown away, it is brought back; deleted, a new one is made),
      which founds an outpost; /bnm-test-kill-roboport wipes that outpost and
-     keeps the team; bad input answers with usage
+     keeps the team; bad input answers with usage, and a free team slot
+     (team-15) is refused
  17  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
@@ -1110,6 +1111,7 @@ def check_home_refound_by_clone(ctx, c):
 # ─── 16. Admin test commands ───────────────────────────────────────────────
 
 TC_SLOT, TC_PLANET = 20, "gleba"            # team-20: no other check uses it
+TC_FREE_SLOT = 15                           # never claimed: check 12 only uses its ground
 TC_PLATFORM = "BNM test: " + TC_PLANET      # the name /bnm-test-orbit gives it
 TC_TECHS = ["planet-discovery-" + TC_PLANET, CLONE]
 TC_SETTING = 'settings.global["bnm-test-commands"]'
@@ -1224,6 +1226,26 @@ def test_commands_on(ctx, c, force, planet, orbit, home):
         c.note("%s -> %s" % (cmd, said))
         c.expect("usage: /bnm-test-orbit" in said, "%s answered with usage" % cmd)
     c.expect(orbit_state(rig, force, planet) == state, "the bad input changed nothing")
+    unclaimed_refused(ctx, c)
+
+
+def unclaimed_refused(ctx, c):
+    """A free MTS slot: refused, since MTS's claim keeps platforms and the
+    next team to claim it would inherit the clones."""
+    rig, force = ctx.rig, "team-%d" % TC_FREE_SLOT
+    planet = "mts-%s-%d" % (TC_PLANET, TC_FREE_SLOT)
+    c.expect(slot_state(rig, TC_FREE_SLOT) == "available", "precondition: %s's slot is free" % force)
+    before = orbit_state(rig, force, planet)
+    cmd = "/bnm-test-orbit %s %s" % (TC_PLANET, force)
+    said = rig.cmd(cmd)
+    after = orbit_state(rig, force, planet)
+    c.note("%s (free slot) -> %s" % (cmd, said))
+    c.expect("%s is not a claimed team" % force in said, "refused a free slot")
+    c.expect(after == before and not after["platforms"] and not after["unlocked"],
+             "the refusal changed nothing: %s" % orbit_line(after))
+    said = rig.cmd("/bnm-test-orbit %s" % TC_PLANET)
+    c.note("/bnm-test-orbit %s (console, no team) -> %s" % (TC_PLANET, said))
+    c.expect("no team to act for" in said, "the console with no team named has no team to act for")
 
 
 # ─── 17. Migration from 0.1.3 ──────────────────────────────────────────────

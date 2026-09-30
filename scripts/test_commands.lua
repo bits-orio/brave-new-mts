@@ -67,13 +67,17 @@ local function unlock_route(force, base, planet)
     return count
 end
 
---- The force a test command acts on: the named team, else the caller's own.
+--- The force a test command acts on: the named team, else the caller's own,
+--- and only while its MTS slot is claimed. MTS's claim resets a force but
+--- keeps its platforms, so a platform made for a free slot would pass, clones
+--- and all, to the next team that claims it.
 local function target_force(cmd, team)
     if not team then
         local player = cmd_util.caller(cmd)
         team = player and remote_player.effective_force(player)
     end
-    return teams.is_team_force(team) and game.forces[team] or nil
+    local info = teams.is_team_force(team) and teams.info(team)
+    return (info and info.is_occupied) and game.forces[team] or nil
 end
 
 --- The force's platform called `name`, or nil. One pending deletion (Delete
@@ -120,7 +124,8 @@ local function orbit(cmd)
     if not base then return orbit_usage(cmd) end
     local force = target_force(cmd, team ~= "" and team or nil)
     if not force then
-        return cmd_util.reply(cmd, PREFIX .. "no team to act for: join a team, or name one, "
+        local why = team ~= "" and (team .. " is not a claimed team") or "no team to act for"
+        return cmd_util.reply(cmd, PREFIX .. why .. ": join a team, or name a claimed one, "
             .. "for example /bnm-test-orbit " .. base .. " team-2")
     end
     local planet = game.planets["mts-" .. base .. "-" .. teams.slot_of(force.name)]
