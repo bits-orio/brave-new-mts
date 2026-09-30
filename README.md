@@ -67,4 +67,4 @@ Developed with AI coding assistants alongside human review and in-game testing. 
 
 ## 📄 License
 
-[GPL-3.0-or-later](LICENSE)
+[MIT](LICENSE)

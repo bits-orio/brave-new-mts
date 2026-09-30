@@ -16,6 +16,7 @@ Date: 2026-09-28
     - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
       credit for reaching a planet.
   Changes:
+    - Relicensed to MIT, the same license as Multi-Team Support.
     - Only a team's original (home) base can end the game. Losing an outpost's roboport now wipes
       just that outpost instead of disbanding the whole team; another Character Clone re-founds
       it. Re-founding sweeps the leftovers from the site: the new base gets its full kit first,

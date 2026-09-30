@@ -10,7 +10,7 @@
     "planets",
     "blueprints"
   ],
-  "license": "default_gnugplv3",
+  "license": "default_mit",
   "homepage": "https://discord.gg/tWz4FT74pH",
   "source_url": "https://github.com/bits-orio/brave-new-mts"
 }

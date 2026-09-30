@@ -52,4 +52,4 @@ Factorio 2.0. Space Age is optional and enables per-planet outposts. No roboport
 
 Developed with AI coding assistants alongside human review and in-game testing. Issues and pull requests are welcome on [GitHub](https://github.com/bits-orio/brave-new-mts).
 
-License: GPL-3.0-or-later (GNU GPL v3 or any later version)
+License: MIT

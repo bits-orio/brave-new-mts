@@ -259,7 +259,7 @@ scripts, with no behaviour change.
 
 | ID | Sev | Task | Status |
 |---|---|---|---|
-| D1 | doc | README: AI sentence to a bottom Development section with the standard wording; fix the minable, every-surface, settings-type, colour and Aquilo claims; describe clones and outposts; GPL-3.0-or-later | done |
+| D1 | doc | README: AI sentence to a bottom Development section with the standard wording; fix the minable, every-surface, settings-type, colour and Aquilo claims; describe clones and outposts; license line (MIT, per the author; LICENSE, control.lua header, README, portal page and portal metadata all say MIT) | done |
 | D2 | doc | `docs/portal.md`: same fixes, honest Status, clone in Features, MDW described as a separate game mode | done |
 | D3 | doc | `tools/portal_meta.json`: drop the `Character` tag, keep every summary token and add the missing search words, note why the category is Scenarios | done |
 | D4 | doc | Changelog 0.2.0 | done |
