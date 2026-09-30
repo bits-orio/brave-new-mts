@@ -13,7 +13,7 @@ Three layers, back to front, inside the frame:
     fill the card.
   - The mark, BNM: blue and red as the card has always had them, and a yellow
     N (Multi-Team Support's yellow), since a green N vanishes into the glow.
-  - The subtitle, in its grey.
+  - The subtitle, near-white like Research Cost Shaper's, so it reads over the glow.
 The text is separated from the glow the family way: a centred black halo
 behind it, no offset to one side (land-title-registry and multi-team-support
 explain why). Over a busy picture the halo alone isn't enough, so, exactly as
@@ -45,7 +45,7 @@ FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LETTERS = (("B", (66, 133, 244), 44), ("N", (245, 184, 46), 175), ("M", (234, 67, 53), 316))
 LETTER_TOP, LETTER_HEIGHT = 151, 139
 SUBTITLE = "BRAVE NEW MTS"
-SUBTITLE_FILL = (146, 146, 146)
+SUBTITLE_FILL = (222, 226, 232)   # Research Cost Shaper's subtitle: bright over a picture
 SUBTITLE_BOX = (77, 402, 436, 431)   # left, top, right, bottom of its ink
 
 # Readability over the glow, as on Research Cost Shaper's card (the family's
@@ -74,7 +74,7 @@ ROBOPORT_LAYERS = (
 BNM_TINT = (0.15, 1.0, 0.15)      # prototypes/bnm_roboport.lua
 # The close-up: a square of the sprite, in sprite pixels around the entity's
 # centre, scaled up to fill the frame. Smaller = closer.
-ZOOM_CENTRE = (0, -16)
+ZOOM_CENTRE = (0, -27)
 ZOOM_SIZE = 139
 # The glow at full strength, only a touch soft so the mark stays the
 # sharpest thing on the card.
