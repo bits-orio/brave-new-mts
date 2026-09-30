@@ -273,7 +273,7 @@ scripts, with no behaviour change.
 | ID | Task | Status |
 |---|---|---|
 | E1 | Commit the rig harness and Fulgora tooling | done |
-| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data; a home founded again after its surface was deleted is a home | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 16/16 checks pass; see Results below |
+| E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data; a home founded again after its surface was deleted is a home; the admin test commands | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 17/17 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
 ### Release
@@ -307,10 +307,19 @@ construction-robotics grant; extra portal tags.
 
 ## Results
 
-`tools/rig/regress.py` (sixteen checks, about 2.5 minutes, driven by the
-`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 16/16 on
-the final code on `space-age-fixup` (run as `--rig bnm-fin --ports
-34349,27349`, after B18, B19, C16, C17 and D8). Checks 9 to 12 were added
+`tools/rig/regress.py` (seventeen checks, about 3 minutes, driven by the
+`tools/rig/lua/regress*.lua` helpers inside BNM's own state) passed 17/17 on
+`space-age-fixup` at 44e954c, which added the admin test commands (run as
+`--rig bnm-tcreg --ports 34371,27371`). Check 16 came with those commands,
+and migration moved to 17. Before that, the other sixteen passed 16/16 on the
+final fix-up code (run as `--rig bnm-fin --ports 34349,27349`, after B18,
+B19, C16, C17 and D8), and the numbers below for checks 1 to 15 and 17 are
+from that run. The 17/17 run repeated every entity and item count exactly;
+only its power, reserve, tick and distance figures moved a little (Gleba
+1089.2 kW, Fulgora's lowest reserve 52.4 MJ, the ghost 23 tiles out, the pad
+delivery after 1215 ticks). Check 16 was also run against a staged copy with
+two faults planted (no setting gate, a new platform on every call): it
+failed on both. Checks 9 to 12 were added
 with B13, C11, B14 and C12; run against the code before those fixes, all four
 fail. Check 13 guards
 `place()`'s idempotence. Checks 9, 10, 11 and 13 were also run against a
@@ -424,7 +433,20 @@ for what each check verifies and how the fixtures work.
     recreated surface recorded a home, so the team again had one home and
     its outpost. On the code before this fix the same call recorded a second
     outpost, leaving a team that could never be eliminated.
-16. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
+16. **Test commands** (over RCON as the server console, team-20 with a home
+    and its slot occupied): with `bnm-test-commands` off (the default),
+    `/bnm-test-orbit gleba team-20` refused ("is off. Turn on the map setting")
+    and researched, unlocked and created nothing. Turned on, it researched 35
+    technologies (`planet-discovery-gleba` and `bnm-character-clone` with
+    their prerequisites), unlocked `mts-gleba-20` and parked "BNM test: gleba"
+    above it with 1 clone, with no surface created yet. Run again, it left one
+    platform with 2 clones and researched nothing more. `establish_for` on
+    that hub founded an outpost; `/bnm-test-kill-roboport mts-gleba-20` killed
+    its roboport, the record and placed flag were cleared, and team-20 kept
+    its slot and its home. On the wiped surface, and with no argument, the
+    same command answered with usage and changed no record; so did
+    `/bnm-test-orbit plutonium team-20` and a bare `/bnm-test-orbit`.
+17. **Migration:** a 0.1.3 world (commit 0ad9363) with the old single
    `provider` record ran `on_configuration_changed` with 0 errors. The
    record now has `home = true`, `outpost = false`, 4 valid providers and 4
    storage chests. The old key and the cached event ids are gone.

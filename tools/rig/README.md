@@ -13,9 +13,9 @@ folder is ever written into the repo's mod code.
 | `probe.py` | RCON helper (library and CLI) that runs Lua in the level, BNM or MTS state |
 | `lua/power_rig.lua` | In-game power sampler, loaded into the level state by `power_test.py` |
 | `power_test.py` | Measures the starter base's sustainable power on every planet |
-| `regress.py` | The regression suite: sixteen PASS/FAIL checks on a fresh server of its own |
+| `regress.py` | The regression suite: seventeen PASS/FAIL checks on a fresh server of its own |
 | `lua/regress.lua` | `regress.py`'s helpers, loaded into BNM's state (this core first): place a base and read it back |
-| `lua/regress_platform.lua` | Platforms made by script, the Establish core, pad deliveries |
+| `lua/regress_platform.lua` | Platforms made by script, the Establish core, pad deliveries, what `/bnm-test-orbit` leaves a team |
 | `lua/regress_site.lua` | What the checks do in a site: a ghost, full chests, what a team built, the ground, the locks |
 | `lua/regress_salvage.lua` | Vehicles, a train and items that carry data in and around a site, and where they are after a re-found |
 | `lua/regress_records.lua` | BNM's base records as plain values, and placing a base twice |
@@ -153,7 +153,7 @@ surface.
 ## regress.py: the regression suite
 
 ```sh
-tools/rig/regress.py                      # all sixteen checks, about 3 minutes
+tools/rig/regress.py                      # all seventeen checks, about 3 minutes
 tools/rig/regress.py --checks 4,6         # a subset (5 and 6 pull in 4)
 tools/rig/regress.py --out /tmp/reg.json  # also write every check's numbers as JSON
 tools/rig/regress.py --rig bnm-f4 --ports 34341,27341   # a second suite beside the first
@@ -185,12 +185,13 @@ the staged mods dir.
 | 13 | Placing twice | Team-16 gets a home on Nauvis and an outpost on Vulcanus from `place()`, each followed in the same tick by `place()` again with the same options and with the other kind. The repeats return false, and the entity count, the sum of unit numbers (never reused), the roboport, the site's contents and the record table are unchanged. A third call 60 ticks later also returns false and changes nothing, and each base is logged as placed once |
 | 14 | Salvage keeps data | Team-17 founds a Gleba outpost; an equipped spidertron and tank stand beside the pad, six rails with a fuelled locomotive cross the gap above it, an iron chest holds a spidertron item with equipment, an equipped modular armor and a set-up blueprint, one of the base's own storage chests holds another equipped spidertron item, and a spidertron is parked just outside the site with legs reaching in. After the roboport dies and the outpost is re-founded: both vehicles are back as items with all their equipment, the chests' items keep their grids and blueprint, the parked spider is untouched, no rail or locomotive stands in the site, every leftover was swept, and the new base plus the ground hold what the site held plus the kit plus exactly one placing item per thing built (6 rails) |
 | 15 | Home founded again | Team-18 has a home and an outpost. `game.delete_surface` removes the home surface outside a disband: BNM forgets the home record and keeps the outpost. `place()` with no options (a member arriving) on the recreated surface records a home, so the team again has one home and its outpost |
-| 16 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
+| 16 | Test commands | Over RCON as the console, on team-20 (a home, slot occupied): `/bnm-test-orbit gleba team-20` refuses while `bnm-test-commands` is off and changes nothing. With it on, it researches `planet-discovery-gleba` and `bnm-character-clone`, unlocks `mts-gleba-20` and parks "BNM test: gleba" above it with 1 clone, the surface not yet created; again, still one platform, with 2 clones and nothing more researched. `establish_for` on that hub founds an outpost; `/bnm-test-kill-roboport mts-gleba-20` wipes it and the team keeps its slot and home. The same command on a surface with no base (and with no argument) answers with usage and changes no record; so does `/bnm-test-orbit` with an unknown planet or no argument, changing nothing |
+| 17 | Migration | A world made by 0.1.3 (commit 0ad9363, staged with `--rev`) with a home base, loaded by this code in the same write-data: `on_configuration_changed` runs with no error, the record gets `home`, a providers list and storage chests, and the old keys are dropped |
 
 How it gets there:
 
 - Checks 3 to 9 use teams 1 to 3 (`mts-<planet>-1` .. `-3`), checks 10 to 15 teams 13
-  to 18; the power runs use slots 4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
+  to 19, check 16 team-20; the power runs use slots 4 to 12, one base per slot on each planet, placed by `power_test.setup_run`
   (Nauvis as a home, everywhere else as an outpost). Slot 4 is the idle run; the
   others carry test loads that bracket the target, 8 in parallel.
 - Establishing goes through the real core, `platform_hub.establish_for(force, hub)`,
@@ -199,13 +200,13 @@ How it gets there:
   state, so BNM's handlers see an ordinary `on_entity_died`.
 - **Fixtures.** No slot is ever claimed on a server with no players, and MTS's
   `disband_team` skips an unclaimed slot. So each team that gets a home here
-  (team-1 in checks 4 to 7, team-2 in check 8) has its slot set to `"occupied"` in
+  (team-1 in checks 4 to 7, team-2 in check 8, team-20 in check 16) has its slot set to `"occupied"` in
   MTS's storage (a claimed team whose members are all offline), so "not
   disbanded" means something and a disband is real. Checks 7 and 8 also
   give the team an empty `storage.park_index` entry in BNM, which only BNM's
   `on_team_released` handler clears. This is test state in a throwaway world;
   MTS's code is never changed.
-- Check 16 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
+- Check 17 runs in its own world, `bnm-reg-mig` (mods in `mods-bnm-reg-mig`), on the
   same ports, after stopping `bnm-reg`.
 - Check 12 creates the landing pen with MTS's own `get_or_create_surface` (in MTS's
   state), as a player's first landing would, since `park` needs the pen.

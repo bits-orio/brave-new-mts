@@ -44,19 +44,25 @@ check does not stop the suite. Every server it starts is stopped at the end.
  15  a team whose home surface is deleted outside a disband keeps its
      outpost, and the base founded on the recreated surface (place() with no
      opts, as a member arriving) is its home again, not an outpost
- 16  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
+ 16  admin test commands, from the console: /bnm-test-orbit refuses while
+     the setting is off; on, it researches the way to Gleba and the clone
+     and parks a platform with a clone above team-20's copy (again: one more
+     clone), which founds an outpost; /bnm-test-kill-roboport wipes that
+     outpost and keeps the team; bad input answers with usage
+ 17  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
 Checks 5 and 6 build on 4, which is added when either is asked for.
 
 Fixtures. Headless, no team slot is ever claimed, and MTS's disband_team skips
 an unclaimed slot. So each team that gets a home here (team-1 in checks 4 to 7,
-team-2 in check 8) has its slot marked "occupied" in MTS's own storage, the
-state of a claimed team whose members are all offline. That makes check 6's
-"not disbanded" meaningful and lets check 7 see a real disband. It is test
-state in a throwaway world; MTS's code is never changed. Checks 7 and 8 also
-give the team an (empty) parked-slot table in BNM's storage: only BNM's
-on_team_released handler clears it, which proves that handler ran.
+team-2 in check 8, team-20 in check 16) has its slot marked "occupied" in MTS's
+own storage, the state of a claimed team whose members are all offline. That
+makes "not disbanded" in checks 6 and 16 meaningful and lets check 7 see a real
+disband. It is test state in a throwaway world; MTS's code is never changed.
+Checks 7 and 8 also give the team an (empty) parked-slot table in BNM's
+storage: only BNM's on_team_released handler clears it, which proves that
+handler ran.
 
 usage: regress.py [--checks 1,4,6] [--no-stage] [--keep] [--out results.json]
                   [--rig bnm-reg] [--ports 34332,27332]
@@ -661,7 +667,7 @@ def home_loss(ctx, c, slot):
     left = bnm(rig, 'return {bases = REG.bases_of("%s"), park = storage.park_index["%s"] ~= nil}' % (force, force))
     left["bases"] = as_dict(left.get("bases"))
     platforms = rig.eval('local n = 0 for _, p in pairs(game.forces["%s"].platforms) do '
-                         'if not p.scheduled_for_deletion then n = n + 1 end end return n' % force)
+                         'if p.scheduled_for_deletion == 0 then n = n + 1 end end return n' % force)
     lines = ctx.main.take_log()
     released = logged(lines, "released team slot: %s" % force)
     c.note("%s home roboport died: %s; slot now %s, MTS log 'released team slot': %s" % (
@@ -1100,7 +1106,107 @@ def check_home_refound_by_clone(ctx, c):
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
 
 
-# ─── 16. Migration from 0.1.3 ──────────────────────────────────────────────
+# ─── 16. Admin test commands ───────────────────────────────────────────────
+
+TC_SLOT, TC_PLANET = 20, "gleba"            # team-20: no other check uses it
+TC_PLATFORM = "BNM test: " + TC_PLANET      # the name /bnm-test-orbit gives it
+TC_TECHS = ["planet-discovery-" + TC_PLANET, CLONE]
+TC_SETTING = 'settings.global["bnm-test-commands"]'
+
+
+def orbit_state(rig, force, planet):
+    """REG.orbit_state: research, the planet's unlock and surface, platforms."""
+    s = bnm(rig, 'REG.orbit_state("%s", "%s", %s)' % (force, planet, lua(TC_TECHS)))
+    s["platforms"] = s["platforms"] if isinstance(s["platforms"], list) else []
+    return s
+
+
+def orbit_line(s):
+    return "%d researched (%s), unlocked %s, surface %s, platforms %s" % (
+        s["researched"], ", ".join("%s %s" % kv for kv in sorted(s["techs"].items())), s["unlocked"],
+        s["surface"], s["platforms"] or "none")
+
+
+def check_test_commands(ctx, c):
+    """/bnm-test-orbit and /bnm-test-kill-roboport from the server console, off
+    and then on. Team-20 gets a home and an occupied slot (the fixture), so
+    'team kept' after the outpost's roboport dies means something."""
+    rig, force = ctx.rig, "team-%d" % TC_SLOT
+    planet = "mts-%s-%d" % (TC_PLANET, TC_SLOT)
+    orbit = "/bnm-test-orbit %s %s" % (TC_PLANET, force)
+    home = team_home(ctx, c, TC_SLOT)
+    ctx.main.take_log()
+    # Off, the default: refused, nothing researched or created.
+    c.expect(bnm(rig, TC_SETTING + ".value") is False, "precondition: bnm-test-commands is off by default")
+    before = orbit_state(rig, force, planet)
+    said = rig.cmd(orbit)
+    after = orbit_state(rig, force, planet)
+    c.note("setting off: %s -> %s" % (orbit, said))
+    c.expect("/bnm-test-orbit is off" in said, "refused while the setting is off")
+    c.expect(after == before and not after["platforms"] and not any(after["techs"].values())
+             and not after["unlocked"], "the refusal changed nothing: %s" % orbit_line(after))
+    rig.sc(TC_SETTING + " = {value = true}", state="bnm")
+    try:
+        test_commands_on(ctx, c, force, planet, orbit, home)
+    finally:
+        rig.sc(TC_SETTING + " = {value = false}", state="bnm")
+    lines = ctx.main.take_log()
+    c.expect(logged(lines, "lost its outpost on %s" % planet), "the outpost's loss was logged")
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+
+
+def test_commands_on(ctx, c, force, planet, orbit, home):
+    rig = ctx.rig
+    said = rig.cmd(orbit)
+    first = orbit_state(rig, force, planet)
+    c.note("setting on: %s -> %s" % (orbit, said))
+    c.note("then: %s" % orbit_line(first))
+    c.expect(all(first["techs"].values()), "researched %s" % first["techs"])
+    c.expect(first["unlocked"], "%s unlocked for %s" % (planet, force))
+    c.expect(first["platforms"] == [{"name": TC_PLATFORM, "at": planet, "clones": 1}],
+             "\"%s\" parked above %s with 1 clone (%s)" % (TC_PLATFORM, planet, first["platforms"]))
+    c.expect(not first["surface"], "%s has no surface yet" % planet)
+    said = rig.cmd(orbit)
+    again = orbit_state(rig, force, planet)
+    c.note("again: %s" % orbit_line(again))
+    c.expect(again["platforms"] == [{"name": TC_PLATFORM, "at": planet, "clones": 2}]
+             and again["researched"] == first["researched"],
+             "again: still one platform, now 2 clones, nothing more researched (%s)" % again["platforms"])
+
+    res = bnm(rig, 'REG.establish("%s", "%s")' % (force, TC_PLATFORM))
+    bases = bases_of(rig, force)
+    c.note("establish_for on its hub: %s; %s bases %s" % (res, force, bases))
+    c.expect(res.get("ok") and not res.get("home") and bases.get(planet) == "outpost",
+             "establish_for on the test platform's hub founded an outpost on %s" % planet)
+
+    said = rig.cmd("/bnm-test-kill-roboport %s" % planet)
+    after = bnm(rig, 'REG.base("%s", "%s")' % (planet, force))
+    pool, bases = slot_state(rig, TC_SLOT), bases_of(rig, force)
+    c.note("/bnm-test-kill-roboport %s -> %s" % (planet, said))
+    c.note("then: roboport %s, recorded %s, placed %s; slot %s, bases %s" % (
+        after.get("roboport"), after.get("recorded"), after.get("placed"), pool, bases))
+    c.expect("destroyed the outpost roboport on %s" % planet in said, "announced the outpost roboport's death")
+    c.expect(not after.get("roboport") and not after.get("recorded") and not after.get("placed"),
+             "the outpost is wiped: its roboport is dead, its record and placed flag cleared")
+    c.expect(pool == "occupied" and bases == {home: "home"}, "%s kept, with its home (slot %s, bases %s)" % (
+        force, pool, bases))
+
+    # No base there: usage, and nothing changes. The console has no surface of its own.
+    for cmd in ("/bnm-test-kill-roboport %s" % planet, "/bnm-test-kill-roboport"):
+        records = bnm(rig, "REG.records()")
+        said = rig.cmd(cmd)
+        c.note("%s (no base) -> %s" % (cmd, said))
+        c.expect("Usage: /bnm-test-kill-roboport" in said and bnm(rig, "REG.records()") == records,
+                 "%s answered with usage and changed no record" % cmd)
+    state = orbit_state(rig, force, planet)
+    for cmd in ("/bnm-test-orbit plutonium %s" % force, "/bnm-test-orbit"):
+        said = rig.cmd(cmd)
+        c.note("%s -> %s" % (cmd, said))
+        c.expect("usage: /bnm-test-orbit" in said, "%s answered with usage" % cmd)
+    c.expect(orbit_state(rig, force, planet) == state, "the bad input changed nothing")
+
+
+# ─── 17. Migration from 0.1.3 ──────────────────────────────────────────────
 
 OLD_PLACE_LUA = """
 local sb = package.loaded["__brave-new-mts__/scripts/starter_base.lua"]
@@ -1190,10 +1296,11 @@ CHECKS = [
     (13, "placing twice on a surface builds once", check_idempotent),
     (14, "a re-found keeps vehicles' equipment and items' data", check_salvage_data),
     (15, "a home founded again after its surface was deleted is a home", check_home_refound),
-    (16, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
+    (16, "admin test commands: /bnm-test-orbit, /bnm-test-kill-roboport", check_test_commands),
+    (17, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
 ]
 NEEDS = {5: [4], 6: [4]}
-MIGRATION_CHECK = 16   # runs in its own world, after the main server stops
+MIGRATION_CHECK = 17   # runs in its own world, after the main server stops; stays last
 
 
 def set_rig(name, ports):

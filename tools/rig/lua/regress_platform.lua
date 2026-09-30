@@ -1,7 +1,8 @@
 -- tools/rig/lua/regress_platform.lua
 -- regress.py's platform helpers, loaded into BNM's own state after
 -- regress.lua: a platform made by script in orbit, its hub's inventory, the
--- Establish-base core as the hub button calls it, and a pad's deliveries.
+-- Establish-base core as the hub button calls it, a pad's deliveries, and
+-- what the /bnm-test-orbit command leaves a force.
 
 REG = REG or {}
 local R = REG
@@ -77,6 +78,35 @@ function R.pad_count(surface_name, item)
     local net = rec and rec.roboport and rec.roboport.valid and rec.roboport.logistic_network
     return { pad = (pad and pad.valid) and pad.get_item_count(item) or 0,
              network = net and net.get_item_count(item) or 0 }
+end
+
+-- ─── What /bnm-test-orbit leaves behind ──────────────────────────────
+
+--- A force's live platforms: name, where each is parked, clones aboard.
+local function platforms_of(force)
+    local out = {}
+    for _, p in pairs(force.platforms) do
+        if p.valid and p.scheduled_for_deletion == 0 then
+            local hub = p.hub and p.hub.valid and p.hub
+            out[#out + 1] = { name = p.name, at = p.space_location and p.space_location.name or false,
+                              clones = hub and hub_inventory(hub).get_item_count_filtered{ name = CLONE } or 0 }
+        end
+    end
+    return out
+end
+
+--- What the test command may change for a force: how many technologies it
+--- has researched, whether each of `techs` is, whether `planet_name` is
+--- unlocked and has a surface, and its platforms.
+function R.orbit_state(force_name, planet_name, techs)
+    local force = game.forces[force_name]
+    local out = { researched = 0, techs = {}, unlocked = force.is_space_location_unlocked(planet_name),
+                  surface = game.planets[planet_name].surface ~= nil, platforms = platforms_of(force) }
+    for _, t in pairs(force.technologies) do
+        if t.researched then out.researched = out.researched + 1 end
+    end
+    for _, name in pairs(techs) do out.techs[name] = force.technologies[name].researched end
+    return out
 end
 
 return true
