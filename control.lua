@@ -17,13 +17,16 @@
 --      roboport loses only that outpost (events/roboport_loss.lua).
 --   3. Block hand-craft / mining / item transfer via permissions
 --      (scripts/permissions.lua).
---   4. Admin recovery commands (scripts/admin_commands.lua).
+--   4. Admin recovery commands (scripts/admin_commands.lua), and test shortcuts
+--      behind a map setting (scripts/test_commands.lua) with a loud warning
+--      while it is on (scripts/test_mode.lua).
 
 local permissions    = require("scripts.permissions")
 local starter_base   = require("scripts.starter_base")
 local remote_player  = require("scripts.remote_player")
 local admin_commands = require("scripts.admin_commands")
 local test_commands  = require("scripts.test_commands")
+local test_mode      = require("scripts.test_mode")
 
 local ev_player_lifecycle = require("events.player_lifecycle")
 local ev_player_surface   = require("events.player_surface")
@@ -51,11 +54,13 @@ local function init_events()
     ev_team_cleanup.register()
     ev_team_rename.register()
     ev_surface_deleted.register()
+    test_mode.register()
     -- Single on_gui_click handler (Factorio allows only one) dispatched to every
     -- module that needs clicks -- registering it per module would clobber.
     script.on_event(defines.events.on_gui_click, function(event)
         ev_team_tab.on_gui_click(event)
         ev_platform_hub.on_gui_click(event)
+        test_mode.on_gui_click(event)
     end)
 end
 
@@ -96,6 +101,7 @@ script.on_init(function()
     permissions.apply()
     init_events()
     setup_mts_extensions()
+    test_mode.refresh_all()  -- a new game started with test commands on
 end)
 
 script.on_load(function()
@@ -117,4 +123,5 @@ script.on_configuration_changed(function()
     -- not empty them. Both are idempotent.
     starter_base.migrate()
     remote_player.migrate()
+    test_mode.refresh_all()
 end)

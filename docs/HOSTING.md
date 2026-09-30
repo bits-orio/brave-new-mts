@@ -109,6 +109,14 @@ Both refuse while the setting is off, and every use is announced to everyone.
 They grant research and create items, so a save they were used on is a test
 save.
 
+So nobody plays a real game with the setting on by accident, it is loud
+while it is on: every player who enters the game gets a big red "TEST
+COMMANDS ARE ON" window (closed with "I understand", back on their next
+join), a red "TEST COMMANDS ON" badge stays at the top of the screen, big red
+text sits on the landing pen floor, and chat says when an admin turns the
+setting on or off. If you see any of that on a server meant for real play,
+turn the setting off.
+
 ## Manual client test checklist
 
 The following need a real game client, not the headless rig, and are worth running

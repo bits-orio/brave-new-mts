@@ -16,7 +16,9 @@ Date: 2026-09-28
     - Test shortcuts for admins, off unless the map setting "Enable test commands" is on:
       /bnm-test-orbit <planet> researches the way to a planet and parks a platform above the
       team's copy of it with a Character Clone aboard; /bnm-test-kill-roboport kills a base's
-      roboport to test outpost and home loss.
+      roboport to test outpost and home loss. While the setting is on, every player who enters
+      the game sees a big red warning, a red badge stays on screen and big red text marks the
+      landing pen, so a real game is never started with it on by accident.
     - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
       credit for reaching a planet.
   Changes:

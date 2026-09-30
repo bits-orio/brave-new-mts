@@ -1115,6 +1115,17 @@ TC_FREE_SLOT = 15                           # never claimed: check 12 only uses 
 TC_PLATFORM = "BNM test: " + TC_PLANET      # the name /bnm-test-orbit gives it
 TC_TECHS = ["planet-discovery-" + TC_PLANET, CLONE]
 TC_SETTING = 'settings.global["bnm-test-commands"]'
+# A script write to a map setting raises no on_runtime_mod_setting_changed (only
+# the Mod settings GUI does), so the check calls BNM's handler as the GUI would.
+TC_CHANGED = ('script.get_event_handler(defines.events.on_runtime_mod_setting_changed)({setting = '
+              '"bnm-test-commands", setting_type = "runtime-global", '
+              'name = defines.events.on_runtime_mod_setting_changed, tick = game.tick})')
+PEN_TEXT = "(storage.bnm_test_pen_text ~= nil and storage.bnm_test_pen_text.valid)"
+
+
+def set_test_commands(rig, on):
+    """Switch the test-commands setting the way the Mod settings GUI does."""
+    rig.sc("%s = {value = %s} %s" % (TC_SETTING, "true" if on else "false", TC_CHANGED), state="bnm")
 
 
 def orbit_state(rig, force, planet):
@@ -1148,11 +1159,15 @@ def check_test_commands(ctx, c):
     c.expect("/bnm-test-orbit is off" in said, "refused while the setting is off")
     c.expect(after == before and not after["platforms"] and not any(after["techs"].values())
              and not after["unlocked"], "the refusal changed nothing: %s" % orbit_line(after))
-    rig.sc(TC_SETTING + " = {value = true}", state="bnm")
+    # The warning's pen text needs the landing pen, which MTS creates lazily.
+    rig.sc('if not game.surfaces["landing-pen"] then game.create_surface("landing-pen") end')
+    set_test_commands(rig, True)
+    c.expect(bnm(rig, PEN_TEXT) is True, "switching the setting on drew the warning on the landing pen")
     try:
         test_commands_on(ctx, c, force, planet, orbit, home)
     finally:
-        rig.sc(TC_SETTING + " = {value = false}", state="bnm")
+        set_test_commands(rig, False)
+    c.expect(bnm(rig, PEN_TEXT) is False, "switching the setting off removed the pen warning")
     lines = ctx.main.take_log()
     c.expect(logged(lines, "lost its outpost on %s" % planet), "the outpost's loss was logged")
     c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])

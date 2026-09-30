@@ -21,19 +21,18 @@ local cmd_util      = require("scripts.command_util")
 local remote_player = require("scripts.remote_player")
 local starter_base  = require("scripts.starter_base")
 local teams         = require("scripts.teams")
+local test_mode     = require("scripts.test_mode")
 
 local M = {}
 
 local PREFIX       = cmd_util.PREFIX
-local SETTING      = "bnm-test-commands"
 local CLONE        = "bnm-character-clone"
 local STARTER_PACK = "space-platform-starter-pack"
 local PLATFORM     = "BNM test: "
 
 --- True when test commands are switched on; tells the caller how otherwise.
 local function enabled(cmd)
-    local setting = settings.global[SETTING]
-    if setting and setting.value then return true end
+    if test_mode.is_on() then return true end
     cmd_util.reply(cmd, PREFIX .. "/" .. cmd.name .. " is off. Turn on the map setting "
         .. "\"Enable test commands\" (Settings > Mod settings > Map) first.")
     return false

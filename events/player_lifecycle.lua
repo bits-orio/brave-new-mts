@@ -15,8 +15,12 @@
 -- write to the queue goes through set_repark, which re-runs attach_tick, so the
 -- server's handlers always match what register() derives from storage in a
 -- joining client's on_load.
+--
+-- A player entering the game (created or joined) also gets the test-commands
+-- warning when that setting is on (scripts/test_mode.lua).
 
 local remote_player = require("scripts.remote_player")
+local test_mode     = require("scripts.test_mode")
 
 local M = {}
 
@@ -76,9 +80,13 @@ function M.register()
     local function reassert(event)
         remote_player.park(game.get_player(event.player_index))
     end
+    local function entered(event)
+        reassert(event)
+        test_mode.refresh_player(game.get_player(event.player_index))
+    end
 
-    script.on_event(defines.events.on_player_created,     reassert)
-    script.on_event(defines.events.on_player_joined_game, reassert)
+    script.on_event(defines.events.on_player_created,     entered)
+    script.on_event(defines.events.on_player_joined_game, entered)
     script.on_event(defines.events.on_player_respawned,   reassert)
     script.on_event(defines.events.on_player_changed_force, on_force_changed)
     script.on_event(defines.events.on_pre_player_left_game, function(event)

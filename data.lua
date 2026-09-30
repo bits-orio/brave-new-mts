@@ -4,3 +4,4 @@
 require("prototypes.bnm_roboport")
 require("prototypes.bnm_clone")
 require("prototypes.tech_tweaks")
+require("prototypes.fonts")
