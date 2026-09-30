@@ -1187,6 +1187,8 @@ def test_commands_on(ctx, c, force, planet, orbit, home):
     c.expect(first["platforms"] == [{"name": TC_PLATFORM, "at": planet, "clones": 1}],
              "\"%s\" parked above %s with 1 clone (%s)" % (TC_PLATFORM, planet, first["platforms"]))
     c.expect(not first["surface"], "%s has no surface yet" % planet)
+    c.expect("A member of %s can now open its hub" % force in said,
+             "the console is told a member of %s presses Establish base" % force)
     said = rig.cmd(orbit)
     again = orbit_state(rig, force, planet)
     c.note("again: %s" % orbit_line(again))

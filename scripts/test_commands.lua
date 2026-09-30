@@ -7,7 +7,9 @@
 --
 --   /bnm-test-orbit <planet> [team-N]   research the way to <planet> and the
 --        Character Clone, park a platform above the team's copy of <planet>
---        with one clone aboard (again: one more clone), and view its hub
+--        with one clone aboard (again: one more clone), and, for your own
+--        team, view its hub (Establish base acts for the pressing player's
+--        force, so a member of another team presses it)
 --   /bnm-test-kill-roboport [surface]   kill a base's roboport as an enemy
 --        would, to test outpost loss and home loss (default: the surface
 --        you are viewing)
@@ -105,12 +107,25 @@ local function test_platform(force, planet, base)
     return p
 end
 
---- Move the caller's remote view onto the hub and open it, if a player called.
-local function view_hub(cmd, hub)
-    local player = cmd_util.caller(cmd)
-    if not (player and hub and hub.valid) then return end
+--- Move the player's remote view onto the hub and open it.
+local function view_hub(player, hub)
     player.set_controller{ type = defines.controllers.remote, surface = hub.surface, position = hub.position }
     pcall(function() player.opened = hub end)  -- if it will not open remotely, one click does
+end
+
+--- Announce the parked platform, and take the caller to its hub only if it is
+--- their own team's. Establish base acts for the pressing player's force, so
+--- on another team's hub it is refused, and MTS may make the caller a
+--- spectator of that team on the way there: a member of that team presses it.
+local function announce(cmd, force, platform, planet, researched)
+    local caller = cmd_util.caller(cmd)
+    local own = caller ~= nil and remote_player.effective_force(caller) == force.name
+    cmd_util.audit(cmd, "(test command) parked " .. force.name .. "'s platform \"" .. platform.name
+        .. "\" above " .. planet.name .. " with a Character Clone aboard; researched "
+        .. researched .. " technologies. "
+        .. (own and "Open the hub and press Establish base."
+                or ("A member of " .. force.name .. " can now open its hub and press Establish base.")))
+    if own then view_hub(caller, platform.hub) end
 end
 
 local function orbit_usage(cmd)
@@ -126,7 +141,7 @@ local function orbit(cmd)
     if not force then
         local why = team ~= "" and (team .. " is not a claimed team") or "no team to act for"
         return cmd_util.reply(cmd, PREFIX .. why .. ": join a team, or name a claimed one, "
-            .. "for example /bnm-test-orbit " .. base .. " team-2")
+            .. "for example /bnm-test-orbit " .. base .. " team-2; a member of that team presses Establish base.")
     end
     local planet = game.planets["mts-" .. base .. "-" .. teams.slot_of(force.name)]
     if not planet then return orbit_usage(cmd) end
@@ -137,10 +152,7 @@ local function orbit(cmd)
         return cmd_util.reply(cmd, PREFIX .. "could not create a platform above " .. planet.name .. ".")
     end
     hub.get_inventory(defines.inventory.hub_main).insert{ name = CLONE, count = 1 }
-    cmd_util.audit(cmd, "(test command) parked " .. force.name .. "'s platform \"" .. platform.name
-        .. "\" above " .. planet.name .. " with a Character Clone aboard; researched "
-        .. researched .. " technologies. Open the hub and press Establish base.")
-    view_hub(cmd, hub)
+    announce(cmd, force, platform, planet, researched)
 end
 
 -- ─── /bnm-test-kill-roboport ───────────────────────────────────────────
