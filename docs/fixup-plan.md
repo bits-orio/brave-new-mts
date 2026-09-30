@@ -280,8 +280,8 @@ scripts, with no behaviour change.
 
 | ID | Task | Status |
 |---|---|---|
-| R1 | Bump to 0.2.0 and release to the portal | ask |
-| R2 | Sync the portal description and metadata | ask |
+| R1 | Bump to 0.2.0 and release to the portal | done: v0.2.0 released 2026-09-30 01:19 UTC by tools/release.sh (GitHub release, portal upload, Discord post) |
+| R2 | Sync the portal description and metadata | done: synced by the release workflow; tools/portal_check.py reports the live page matches |
 
 ### Proposals for MTS (not made; for the author)
 
@@ -476,3 +476,30 @@ to MTS's or BNM's own code:
 One caveat the suite reports but does not fail on: after a disband, the
 engine only schedules the team's platforms for deletion, about 17,500 ticks
 later.
+
+### Portal search after 0.2.0
+
+Measured about ten minutes after the release synced the new summary (the
+portal re-indexes within about 90 seconds). This is BNM's baseline for the
+next summary or title change.
+
+| Query | Rank |
+|---|---|
+| no character | #1 |
+| bots only | #1 |
+| starter base | #1 |
+| team surface | #1 |
+| remote only | #1 |
+| character clone | #1 |
+| space age outposts | #2 |
+| brave new world | #3 |
+| brave new | #4 |
+| brave new oarc | #4 |
+| remote view | #19 |
+| bnm | absent |
+| multiplayer | absent |
+
+"bnm" is the card's own mark but appears in neither the title nor the
+summary, so the portal cannot find the mod by it; adding "(BNM)" to the
+title would fix that (the author's call). "multiplayer" is a generic token
+that only wins from a title.
