@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.0
-Date: 2026-09-28
+Date: 2026-09-29
   Features:
     - Space Age outposts: a base founded with a Character Clone is now an outpost, with its own
       cargo landing pad below the south wall, so a platform overhead can drop supplies to it,
@@ -23,6 +23,7 @@ Date: 2026-09-28
       credit for reaching a planet.
   Changes:
     - Relicensed to MIT, the same license as Multi-Team Support.
+    - New thumbnail: the Brave New Roboport's uranium glow behind the BNM mark.
     - Only a team's original (home) base can end the game. Losing an outpost's roboport now wipes
       just that outpost instead of disbanding the whole team; another Character Clone re-founds
       it. Re-founding sweeps the leftovers from the site: the new base gets its full kit first,
