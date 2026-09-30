@@ -92,6 +92,23 @@ editor does.
 server, so a public server keeps an audit trail. `/bnm-status` answers only the
 admin who ran it.
 
+## Test shortcuts (off on a real server)
+
+Reaching a planet the normal way means a rocket, a whole platform with
+thrusters and defence, and the research to get there. To test outposts
+without all that, turn on the map setting **Enable test commands** (Settings >
+Mod settings > Map; it is off by default and should stay off on a public
+server). Then, as an admin:
+
+| Command | What it does |
+|---|---|
+| `/bnm-test-orbit <planet> [team-N]` | Researches the planet's discovery technology with everything it depends on, plus the Character Clone, and unlocks the team's copy of the planet. Parks a platform called "BNM test: <planet>" above it with one Character Clone in the hub, and moves your view to the hub. Open the hub and press Establish base, exactly as a player would. Run it again for one more clone (to test re-founding). `<planet>` is `vulcanus`, `fulgora`, `gleba` or `aquilo`; the team defaults to your own. |
+| `/bnm-test-kill-roboport [surface]` | Kills a base's roboport as an enemy would, so BNM handles it as a real loss: an outpost is wiped, a home base eliminates the team. Defaults to the surface you are viewing, for example `mts-vulcanus-1`. |
+
+Both refuse while the setting is off, and every use is announced to everyone.
+They grant research and create items, so a save they were used on is a test
+save.
+
 ## Manual client test checklist
 
 The following need a real game client, not the headless rig, and are worth running

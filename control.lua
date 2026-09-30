@@ -23,6 +23,7 @@ local permissions    = require("scripts.permissions")
 local starter_base   = require("scripts.starter_base")
 local remote_player  = require("scripts.remote_player")
 local admin_commands = require("scripts.admin_commands")
+local test_commands  = require("scripts.test_commands")
 
 local ev_player_lifecycle = require("events.player_lifecycle")
 local ev_player_surface   = require("events.player_surface")
@@ -38,6 +39,7 @@ local ev_surface_deleted  = require("events.surface_deleted")
 -- runs in on_load AND on_configuration_changed, and a second add_command for
 -- the same name is an error.
 admin_commands.register()
+test_commands.register()
 
 local function init_events()
     ev_player_lifecycle.register()

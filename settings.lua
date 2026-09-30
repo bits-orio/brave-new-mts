@@ -20,4 +20,12 @@ data:extend({
         minimum_value = 0,
         order         = "b",
     },
+    -- Admin test shortcuts (scripts/test_commands.lua). Off on a real server.
+    {
+        type          = "bool-setting",
+        name          = "bnm-test-commands",
+        setting_type  = "runtime-global",
+        default_value = false,
+        order         = "z",
+    },
 })

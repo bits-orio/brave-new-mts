@@ -13,6 +13,10 @@ Date: 2026-09-28
       /bnm-repark to put a stuck player back into remote view, and /bnm-forget-base to wipe a
       broken outpost, as its roboport's death would, so it can be re-founded. It refuses a home base, which can
       never be re-founded; /mts-disband ends that team instead.
+    - Test shortcuts for admins, off unless the map setting "Enable test commands" is on:
+      /bnm-test-orbit <planet> researches the way to a planet and parks a platform above the
+      team's copy of it with a Character Clone aboard; /bnm-test-kill-roboport kills a base's
+      roboport to test outpost and home loss.
     - Founding an outpost is now reported to Multi-Team Support as a milestone, so a team gets
       credit for reaching a planet.
   Changes:

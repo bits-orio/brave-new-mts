@@ -15,45 +15,15 @@
 local remote_player = require("scripts.remote_player")
 local starter_base  = require("scripts.starter_base")
 local teams         = require("scripts.teams")
-local chat          = require("scripts.chat")
+local cmd_util      = require("scripts.command_util")
 
 local M = {}
 
-local PREFIX = chat.PREFIX
-
--- ─── Caller, replies and audit ─────────────────────────────────────────
-
---- The calling player, or nil for the server console / RCON.
-local function caller(cmd)
-    return cmd.player_index and game.get_player(cmd.player_index)
-end
-
-local function reply(cmd, text)
-    local player = caller(cmd)
-    if player then player.print(text) else rcon.print(text); log(text) end
-end
-
---- True for an admin or the server console; tells anyone else no.
-local function authorised(cmd)
-    local player = caller(cmd)
-    if not player or player.admin then return true end
-    player.print(PREFIX .. "/" .. cmd.name .. " is for admins only.")
-    return false
-end
-
---- Announce an admin action to everyone and log it.
-local function audit(cmd, text)
-    local player = caller(cmd)
-    local line = PREFIX .. (player and player.name or "server") .. " " .. text
-    game.print(line)
-    log(line)
-    if not player then rcon.print(line) end
-end
-
-local function trimmed(parameter)
-    local s = parameter and parameter:match("^%s*(.-)%s*$")
-    return (s ~= "" and s) or nil
-end
+local PREFIX     = cmd_util.PREFIX
+local reply      = cmd_util.reply
+local authorised = cmd_util.authorised
+local audit      = cmd_util.audit
+local trimmed    = cmd_util.trimmed
 
 -- ─── /bnm-status ───────────────────────────────────────────────────────
 
