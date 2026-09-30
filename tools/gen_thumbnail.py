@@ -74,7 +74,7 @@ ROBOPORT_LAYERS = (
 BNM_TINT = (0.15, 1.0, 0.15)      # prototypes/bnm_roboport.lua
 # The close-up: a square of the sprite, in sprite pixels around the entity's
 # centre, scaled up to fill the frame. Smaller = closer.
-ZOOM_CENTRE = (0, -30)
+ZOOM_CENTRE = (0, -16)
 ZOOM_SIZE = 139
 # The glow at full strength, only a touch soft so the mark stays the
 # sharpest thing on the card.
