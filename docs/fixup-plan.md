@@ -302,7 +302,7 @@ scripts, with no behaviour change.
 | F10 | medium | Author's first client look (2026-10-09): the sections did not read as separate, and planet deletion looked like it used a rescue. Each section is now a panel with a title bar; rescues are drawn as cards (`scripts/team_tab/rescue_cards.lua`: a green roboport "Ready", or a grey cross "Used" with the planet and who spent it, kept in `storage.bnm_rescues_spent`); "No base needs a rescue" when none is dark; the delete text says it uses no rescue and has no limit; the confirm question sits above its buttons; the setting is capped at 10 so the cards fit in three rows | done |
 | F6 | doc | README, `docs/HOSTING.md` (admin section, `/bnm-rescue`, three client checks), `tools/rig/README.md`, changelog 0.2.1 | done |
 | F7 | verify | Rig checks 17 to 19 (migration moved to 20); the tab's click paths smoke-tested under Lua 5.2 stubs | done: the full suite passed 20/20 on `roboport-rescues` (power totals unchanged within tolerance: Nauvis 849, Vulcanus 3780, Gleba 1089, Aquilo 1310 kW, Fulgora 0/40 blackout nights) |
-| F8 | manual | Client: the last three checks in `docs/HOSTING.md` (the tab as leader and member, a roboport out of power then a rescue, deleting a planet a teammate is viewing) | manual |
+| F8 | manual | Client: the last three checks in `docs/HOSTING.md` (the tab as leader and member, a roboport out of power then a rescue, deleting a planet a teammate is viewing) | done by the author, 2026-10-09 |
 | F9 | doc | `docs/portal.md`: the robot-count bullet folded into the starter-base one, freeing the tenth slot for rescues and planet deletion. Not synced: the release workflow syncs it | done |
 
 ### Release
@@ -311,7 +311,7 @@ scripts, with no behaviour change.
 |---|---|---|
 | R1 | Bump to 0.2.0 and release to the portal | done: v0.2.0 released 2026-09-30 01:19 UTC by tools/release.sh (GitHub release, portal upload, Discord post) |
 | R2 | Sync the portal description and metadata | done: synced by the release workflow; tools/portal_check.py reports the live page matches |
-| R3 | 0.2.1 (fed-first roboport, rescues, planet deletion): bumped on `roboport-rescues`; merge, push and `tools/release.sh` after the author's client check (F8). Releasing syncs `docs/portal.md` to the portal page | todo |
+| R3 | 0.2.1 (fed-first roboport, rescues, planet deletion, the YouTube video on the README and portal page) | done: the author checked it in game (F8); the full rig suite passed 20/20 against MTS 0.6.7; `roboport-rescues` fast-forwarded into master and v0.2.1 released 2026-10-09 18:37 UTC by tools/release.sh (GitHub release, portal upload, portal page sync, Discord posts); tools/portal_check.py reports the live page matches |
 
 ### Proposals for MTS (not made; for the author)
 
