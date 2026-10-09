@@ -25,6 +25,9 @@ a real game client), `ask` (author decides before it ships).
 | Landing pad spot | Below the south wall, centred under the roboport, with a 3-tile gap between wall and pad. |
 | Blueprints | No change. MTS blocks blueprint imports by default, but players create blueprints in game, which is enough. |
 | MTS interface | Any change is proposed to the author first, never made unasked. |
+| Roboport power (2026-10-08) | The `bnm-roboport` is fed first (`primary-input`), so a factory sharing a base's power cannot starve it into a blackout it never leaves. |
+| Rescues (2026-10-08) | Each team gets 3 (runtime map setting `bnm-rescues-per-team`), spent by the team leader from the team tab on a base whose roboport is dark: it refills the roboport. Admins refill one without spending any (`/bnm-rescue`). |
+| Deleting a planet (2026-10-08) | The team leader can delete any of the team's planets but the home one, from the team tab. The surface is deleted outright (not wiped like an outpost loss, so nothing is salvaged); a clone founds a fresh outpost there. |
 
 ## Measured facts (headless rig, Factorio 2.0.77, MTS 0.6.6)
 
@@ -39,8 +42,19 @@ a real game client), `ask` (author decides before it ships).
 - On Aquilo the roboport, radar and inserter freeze on the tick they are
   placed. A frozen roboport has no logistic network, so nothing can ever be
   built there.
-- Busy robots add roughly 170 to 830 kW of recharge load on top of idle. The
-  roboport shares power with every other consumer on the network.
+- Busy robots add roughly 170 to 830 kW of recharge load on top of idle.
+- A roboport whose buffer empties shuts its network down (no construction,
+  robots stay docked) until the buffer is back at `recharge_minimum` (160 MJ),
+  and it pays its 200 kW idle draw before refilling. Consumers of one priority
+  share power in proportion to what they ask for. When the roboport was
+  `secondary-input`, at Nauvis noon, 30 empty player-built roboports, 300
+  beacons, or 80 beacons with 80 assembler 3s and 80 electric furnaces left it
+  under 200 kW, dark for good. Marking real machines for deconstruction does
+  not stop their draw; the rig's `bnm-rig-load` (an energy interface) does
+  stop, so it misleads on that. Fed first (`primary-input`), each of those
+  bases kept or got back its network, and a 1 GW load no longer drains it.
+- An idle, emptied roboport can keep its network for about 300 ticks before
+  the engine shuts it down. A refilled one has it back within 60 ticks.
 - Fulgora lightning strikes only between dusk and dawn. Robots outside
   attractor cover get struck (about 33 per game hour of nonstop flying).
 - A platform that flies to a planet creates the planet surface with no
@@ -276,12 +290,27 @@ scripts, with no behaviour change.
 | E2 | Rig regression: power per planet against targets, Aquilo roboport not frozen and a ghost gets built, establish on a surface that does not exist yet, pad delivery, outpost loss and re-found, home loss eliminates, save and reload with no errors; then (B13, C11, B14, C12) re-found over full chests, forget-base on a home, unlock keeps tuned copies locked, reconnect view with a simulated player; placing twice builds once; a re-found keeps vehicles' equipment and items' data; a home founded again after its surface was deleted is a home; the admin test commands | done — `tools/rig/regress.py` + `tools/rig/lua/regress*.lua`, 17/17 checks pass; see Results below |
 | E3 | Client checklist for the author: reconnect keeps inventory blueprints, spectate a rival and come back, establish from the hub GUI, remote view of a new outpost, a reconnect returns the view to the spot the player was looking at (not the roboport), a member kicked (or whose team ended) while offline reconnects outside the team's cell | manual |
 
+### F. A roboport out of power (2026-10-08)
+
+| ID | Sev | Task | Status |
+|---|---|---|---|
+| F1 | high | `bnm-roboport` fed first (`usage_priority = "primary-input"`) | done |
+| F2 | medium | Rescues: `scripts/rescue.lua`, the `bnm-rescues-per-team` map setting, the team tab's rescue section, a chat notice when a roboport goes dark (`events/roboport_outage.lua`, a 600-tick scan: the engine has no event for it), spent rescues forgotten when a slot is released | done |
+| F3 | medium | Delete a planet: `scripts/planet_delete.lua` (`game.delete_surface`, not MTS's `retire_team_surface`, which would leave the planet ownerless), the team tab's delete section with a second confirmation click; players viewing it re-parked first | done |
+| F4 | low | `/bnm-rescue <surface>`; `/bnm-status` shows rescues left and roboports out of power (moved to `scripts/admin_status.lua`) | done |
+| F5 | low | Team tab split into `scripts/team_tab/` sections (unlock, rescue, delete) behind one click dispatcher | done |
+| F6 | doc | README, `docs/HOSTING.md` (admin section, `/bnm-rescue`, three client checks), `tools/rig/README.md`, changelog 0.2.1 | done |
+| F7 | verify | Rig checks 17 to 19 (migration moved to 20); the tab's click paths smoke-tested under Lua 5.2 stubs | done: the full suite passed 20/20 on `roboport-rescues` (power totals unchanged within tolerance: Nauvis 849, Vulcanus 3780, Gleba 1089, Aquilo 1310 kW, Fulgora 0/40 blackout nights) |
+| F8 | manual | Client: the last three checks in `docs/HOSTING.md` (the tab as leader and member, a roboport out of power then a rescue, deleting a planet a teammate is viewing) | manual |
+| F9 | doc | `docs/portal.md`: the robot-count bullet folded into the starter-base one, freeing the tenth slot for rescues and planet deletion. Not synced: the release workflow syncs it | done |
+
 ### Release
 
 | ID | Task | Status |
 |---|---|---|
 | R1 | Bump to 0.2.0 and release to the portal | done: v0.2.0 released 2026-09-30 01:19 UTC by tools/release.sh (GitHub release, portal upload, Discord post) |
 | R2 | Sync the portal description and metadata | done: synced by the release workflow; tools/portal_check.py reports the live page matches |
+| R3 | 0.2.1 (fed-first roboport, rescues, planet deletion): bumped on `roboport-rescues`; merge, push and `tools/release.sh` after the author's client check (F8). Releasing syncs `docs/portal.md` to the portal page | todo |
 
 ### Proposals for MTS (not made; for the author)
 
