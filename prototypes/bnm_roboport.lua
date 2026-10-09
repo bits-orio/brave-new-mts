@@ -19,6 +19,15 @@
 --
 -- It leaves no ghost when it dies: a lost outpost is founded again with a
 -- character clone, not rebuilt from a ghost that no item can fill.
+--
+-- It is fed before anything else on its network (primary-input). When a
+-- roboport's buffer empties, the engine shuts its network down until the
+-- buffer climbs back to recharge_minimum, and a roboport sharing power with
+-- machines gets only its share: measured on the rig at Nauvis noon, 30 empty
+-- roboports, or 300 beacons, left it less than its 200 kW idle draw, so it
+-- never restarted and a character-free team had no way to fix the base. Fed
+-- first, it restarts on the base's own power, and a full one takes only that
+-- idle draw plus robot charging away from the factory.
 
 local NAME = "bnm-roboport"
 
@@ -40,6 +49,7 @@ rb.charging_energy       = "1MW"
 rb.energy_usage          = "200kW"   -- 4x vanilla 50kW
 rb.energy_source.buffer_capacity  = "400MJ"  -- 4x vanilla 100MJ
 rb.energy_source.input_flow_limit = "20MW"   -- 4x vanilla 5MW
+rb.energy_source.usage_priority   = "primary-input"  -- fed first (see the header)
 
 -- 16 charging docks on a 4x4 grid (vanilla has 4).
 rb.charging_offsets = {
