@@ -51,7 +51,18 @@ check does not stop the suite. Every server it starts is stopped at the end.
      which founds an outpost; /bnm-test-kill-roboport wipes that outpost and
      keeps the team; bad input answers with usage, and a free team slot
      (team-15) is refused
- 17  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
+ 17  the roboport is fed first: at noon, emptied, with a 1 GW load on its
+     network, it keeps its network and recharges; with no power at all it
+     goes dark, and the team is told once
+ 18  rescues: a team spends one on a dark base (refused on a live one, on
+     another team's, and once none are left), the roboport is full and its
+     robots build a ghost at midnight; /bnm-rescue refills it without
+     spending one; /bnm-status shows what is left
+ 19  deleting a planet: the team may delete its Vulcanus outpost but not its
+     home, nor another team its planet; the surface, the base record and
+     every player's reference to it go, and a clone founds a fresh outpost
+     on the planet made again
+ 20  migration: a 0.1.3 save (commit 0ad9363) loads into this code with its
      base records upgraded (separate world, rig name <rig>-mig)
 
 Checks 5 and 6 build on 4, which is added when either is asked for.
@@ -92,7 +103,7 @@ CLONE = "bnm-character-clone"
 GAME_MINUTE = 3600    # ticks
 # Loaded into BNM's state on every server start, the shared core first.
 LUA_HELPERS = ("regress.lua", "regress_platform.lua", "regress_site.lua", "regress_salvage.lua",
-               "regress_records.lua", "regress_player.lua")
+               "regress_records.lua", "regress_player.lua", "regress_rescue.lua")
 
 # ── Check 2: power targets (sustained total, idle included, kW) ─────────────
 # "about": the highest passing total is within POWER_TOL of the target (the
@@ -1265,7 +1276,215 @@ def unclaimed_refused(ctx, c):
     c.expect("no team to act for" in said, "the console with no team named has no team to act for")
 
 
-# ─── 17. Migration from 0.1.3 ──────────────────────────────────────────────
+# ─── 17-19. A roboport out of power, rescues, deleting a planet ────────────
+
+# team-16: check 13 leaves it a home and a Vulcanus outpost, and nothing else
+# uses it after that (MTS has no 21st slot with Space Age). fed_bases places
+# both again when check 13 did not run.
+FED_FORCE, FED_HOME, FED_OUTPOST = "team-16", "mts-nauvis-16", "mts-vulcanus-16"
+NOON, MIDNIGHT = 0.0, 0.5
+GW = 1000000   # kW: the load that kept the roboport dark before it was fed first
+OUTAGE_LOG = "[brave-new-mts] %s's roboport on %s is out of power" % (FED_FORCE, FED_HOME)
+DELETE_LOG = "[brave-new-mts] %s deleted its planet %s" % (FED_FORCE, FED_OUTPOST)
+
+
+def fed_bases(ctx, c):
+    rig = ctx.rig
+    bnm(rig, 'REG.place("%s", "%s")' % (FED_FORCE, FED_HOME))
+    bnm(rig, 'REG.place("%s", "%s", true)' % (FED_FORCE, FED_OUTPOST))
+    bases = bases_of(rig, FED_FORCE)
+    return c.expect(bases == {FED_HOME: "home", FED_OUTPOST: "outpost"},
+                    "%s has a home and a Vulcanus outpost (%s)" % (FED_FORCE, bases))
+
+
+def robo(rig, surface=FED_HOME):
+    return bnm(rig, 'REG.robo_state("%s")' % surface)
+
+
+def robo_line(s):
+    return "%.1f of %.0f MJ, transmitting %s, network %s, dark %s" % (
+        s["energy_mj"], s["buffer_mj"], s["transmitting"], s["network"], s["dark"])
+
+
+def starve(rig, daytime, load_kw=0):
+    """Empty the home's roboport and accumulators with the sun frozen at
+    `daytime`. Returns the roboport's state 120 ticks later."""
+    bnm(rig, 'REG.starve("%s", "%s", %g, %d)' % (FED_HOME, FED_FORCE, daytime, load_kw))
+    run_ticks(rig, 120, 1)
+    return robo(rig)
+
+
+def darken(rig):
+    """Starve the home at midnight and wait for its network to shut down. An
+    idle roboport can run on empty for a while before the engine shuts its
+    network down (measured: over 120 ticks). Returns the state and the ticks
+    waited after the starve."""
+    bnm(rig, 'REG.starve("%s", "%s", %g, 0)' % (FED_HOME, FED_FORCE, MIDNIGHT))
+    _, waited = wait_for(rig, lambda: robo(rig)["dark"], 2 * GAME_MINUTE, 10)
+    return robo(rig), waited
+
+
+def is_full(s):
+    return s["energy_mj"] > s["buffer_mj"] - 1   # a tick's idle draw may pass before the read
+
+
+def unstarve(rig):
+    bnm(rig, 'REG.unstarve("%s", "%s")' % (FED_HOME, FED_FORCE))
+
+
+def check_fed_first(ctx, c):
+    rig = ctx.rig
+    if not fed_bases(ctx, c):
+        return
+    starve(rig, NOON, GW)
+    run_ticks(rig, 600, 10)
+    s = robo(rig)
+    c.note("noon, a 1 GW load on the network, roboport emptied: after 12 s %s" % robo_line(s))
+    c.note("(measured before the fix, 2026-10-08: the same load kept it at 0 MJ with no network all day)")
+    c.expect(s["transmitting"] and s["network"] and s["energy_mj"] > 5,
+             "fed first, the roboport keeps its network and recharges under the load (%s)" % robo_line(s))
+    ctx.main.take_log()
+    s, waited = darken(rig)
+    c.note("midnight, no sun, accumulators and roboport emptied: after %d ticks %s" % (waited, robo_line(s)))
+    c.expect(s["dark"] and not s["transmitting"] and not s["network"],
+             "with no power at all it goes dark: no network (%s)" % robo_line(s))
+    run_ticks(rig, 700, 10)   # the outage scan runs every 600 ticks
+    lines = ctx.main.take_log()
+    told = [ln for ln in lines if logged([ln], OUTAGE_LOG)]
+    c.note("outage announcements logged in the next 700 ticks: %d" % len(told))
+    c.expect(len(told) == 1, "the outage is announced once (%d times)" % len(told))
+    unstarve(rig)
+
+
+def spend(rig, force, surface):
+    return bnm(rig, 'REG.rescue_spend("%s", "%s")' % (force, surface))
+
+
+def expect_spend_refused(c, r, said, left):
+    c.expect(not r["ok"] and said in (r["reason"] or "") and r["left"] == left,
+             "refused, saying \"%s\", %d left (%s)" % (said, left, r))
+
+
+def ghost_built(ctx, c, surface):
+    rig = ctx.rig
+    pos = bnm(rig, 'REG.place_ghost("%s", "%s", "transport-belt")' % (surface, FED_FORCE))
+    built, waited = wait_for(rig, lambda: bnm(rig, 'REG.ghost_state("%s", "transport-belt", %s)' % (
+        surface, lua(pos)))["built"], GAME_MINUTE, 10)
+    c.note("a belt ghost %.0f tiles out after the rescue, at midnight: built %s after %d ticks" % (
+        pos["distance"], built, waited))
+    c.expect(built, "the rescued roboport's robots build a ghost with no sun")
+
+
+def spend_rest(ctx, c, allowance):
+    """Darken the home and spend each rescue left; the last one finds none."""
+    rig = ctx.rig
+    for n in range(2, allowance + 1):
+        darken(rig)
+        r = spend(rig, FED_FORCE, FED_HOME)
+        c.expect(r["ok"] and r["left"] == allowance - n, "rescue %d spent, %d left (%s)" % (n, allowance - n, r))
+    s, _ = darken(rig)
+    expect_spend_refused(c, spend(rig, FED_FORCE, FED_HOME), "no rescues left", 0)
+    c.expect(s["dark"], "a refused rescue leaves the base dark (%s)" % robo_line(s))
+
+
+def admin_rescue(ctx, c, allowance):
+    rig = ctx.rig
+    said = rig.cmd("/bnm-rescue %s" % FED_HOME)
+    s = robo(rig)
+    c.note("/bnm-rescue %s: %s; then %s" % (FED_HOME, said, robo_line(s)))
+    c.expect("refilled %s's home roboport on %s (it was out of power)" % (FED_FORCE, FED_HOME) in said
+             and is_full(s) and not s["dark"], "the admin's rescue refills it")
+    c.expect(bnm(rig, 'REG.module("scripts/rescue").left("%s")' % FED_FORCE) == 0,
+             "the admin's rescue spends none of the team's")
+    bad = rig.cmd("/bnm-rescue mts-nowhere-1")
+    c.expect("usage: /bnm-rescue" in bad, "an unknown surface answers with usage (%s)" % bad)
+    status = rig.cmd("/bnm-status %s" % FED_FORCE)
+    c.expect("rescues left 0 of %d" % allowance in status, "/bnm-status shows the rescues left (%s)" % (
+        status.splitlines()[1:2]))
+
+
+def check_rescues(ctx, c):
+    rig = ctx.rig
+    if not fed_bases(ctx, c):
+        return
+    allowance = bnm(rig, "REG.rescue_reset('%s')" % FED_FORCE)
+    c.expect(allowance == 3, "a team starts with the default 3 rescues (%s)" % allowance)
+    expect_spend_refused(c, spend(rig, FED_FORCE, FED_OUTPOST), "already has power", allowance)
+    s, waited = darken(rig)
+    c.note("the home starved at midnight: dark after %d ticks" % waited)
+    c.expect(s["dark"], "precondition: the home is dark (%s)" % robo_line(s))
+    expect_spend_refused(c, spend(rig, "team-13", FED_HOME), "no base there", allowance)
+    r, s = spend(rig, FED_FORCE, FED_HOME), robo(rig)
+    c.note("rescue 1 on the dark home: %s; then %s" % (r, robo_line(s)))
+    c.expect(r["ok"] and r["left"] == allowance - 1, "rescue 1 spent (%s)" % r)
+    c.expect(is_full(s) and not s["dark"], "the roboport is full, and not dark at once (%s)" % robo_line(s))
+    run_ticks(rig, 60, 1)
+    s = robo(rig)
+    c.expect(s["transmitting"] and s["network"], "its network is back within a second (%s)" % robo_line(s))
+    ghost_built(ctx, c, FED_HOME)
+    spend_rest(ctx, c, allowance)
+    admin_rescue(ctx, c, allowance)
+    c.expect(bnm(rig, "REG.rescue_reset('%s')" % FED_FORCE) == allowance,
+             "a released slot starts again with every rescue")
+    unstarve(rig)
+
+
+def delete_refused(ctx, c, force, surface, said):
+    rig = ctx.rig
+    before = as_dict(bnm(rig, "REG.records()"))
+    r = bnm(rig, 'REG.delete_planet("%s", "%s")' % (force, surface))
+    run_ticks(rig, 10, 1)
+    c.note("%s deletes %s: %s" % (force, surface, r))
+    c.expect(not r["ok"] and said in (r["reason"] or ""), "refused, saying \"%s\" (%s)" % (said, r))
+    c.expect(rig.eval('game.surfaces["%s"] ~= nil' % surface) and as_dict(bnm(rig, "REG.records()")) == before,
+             "%s and every base record are untouched" % surface)
+
+
+def deleted(ctx, c):
+    rig = ctx.rig
+    bnm(rig, 'REG.fake_viewer("%s")' % FED_OUTPOST)
+    ctx.main.take_log()
+    r = bnm(rig, 'REG.delete_planet("%s", "%s")' % (FED_FORCE, FED_OUTPOST))
+    run_ticks(rig, 10, 1)   # the engine deletes a surface at the end of the tick
+    exists = rig.eval('game.surfaces["%s"] ~= nil' % FED_OUTPOST)
+    bases, viewer = bases_of(rig, FED_FORCE), bnm(rig, "REG.fake_viewer_left()")
+    lines = ctx.main.take_log()
+    c.note("%s deletes %s: %s; surface still there %s; bases %s; viewer's references %s" % (
+        FED_FORCE, FED_OUTPOST, r, exists, bases, viewer))
+    c.expect(r["ok"] and not exists, "the planet's surface is deleted")
+    c.expect(bases == {FED_HOME: "home"}, "its base record is forgotten, the home kept (%s)" % bases)
+    c.expect(not bnm(rig, 'storage.bases_placed["%s"] == true' % FED_OUTPOST), "its placed flag is cleared")
+    c.expect(viewer == {"last_view": False, "home_surface": False, "spot": False},
+             "no player still refers to it (%s)" % viewer)
+    c.expect(sum(logged([ln], DELETE_LOG) for ln in lines) == 1, "the delete is logged once")
+    c.expect(not log_trouble(lines), "no trouble in the log: %s" % log_trouble(lines)[:5])
+
+
+def check_delete_planet(ctx, c):
+    rig = ctx.rig
+    if not fed_bases(ctx, c):
+        return
+    listed = bnm(rig, 'REG.deletable("%s")' % FED_FORCE)
+    c.note("planets %s may delete: %s" % (FED_FORCE, listed))
+    c.expect(listed == [FED_OUTPOST], "only the outpost planet is listed, not the home (%s)" % listed)
+    delete_refused(ctx, c, FED_FORCE, FED_HOME, "home planet can't be deleted")
+    delete_refused(ctx, c, "team-13", FED_OUTPOST, "isn't your team's")
+    deleted(ctx, c)
+    base, existed = establish(ctx, c, FED_FORCE, "vulcanus", 16, "reg-delete-16", "normal")
+    if not base:
+        return
+    owner = rig.eval('remote.call("mts-v1", "get_surface_owner", "%s")' % FED_OUTPOST)
+    rp = base.get("roboport") or {}
+    c.note("a clone above the deleted planet: surface existed before %s, owner %s, outpost %s, network %s" % (
+        existed, owner, base.get("outpost"), rp.get("network")))
+    c.expect(not existed and owner == FED_FORCE, "Establish base made the planet again, owned by %s" % FED_FORCE)
+    c.expect(base.get("outpost") and rp.get("network") and rp.get("is_record"),
+             "a fresh outpost stands there with a network")
+    c.expect(bases_of(rig, FED_FORCE) == {FED_HOME: "home", FED_OUTPOST: "outpost"}, "the team has its home and "
+             "the new outpost")
+
+
+# ─── 20. Migration from 0.1.3 ──────────────────────────────────────────────
 
 OLD_PLACE_LUA = """
 local sb = package.loaded["__brave-new-mts__/scripts/starter_base.lua"]
@@ -1356,10 +1575,13 @@ CHECKS = [
     (14, "a re-found keeps vehicles' equipment and items' data", check_salvage_data),
     (15, "a home founded again after its surface was deleted is a home", check_home_refound),
     (16, "admin test commands: /bnm-test-orbit, /bnm-test-kill-roboport", check_test_commands),
-    (17, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
+    (17, "the roboport is fed first: a starved base keeps its network", check_fed_first),
+    (18, "rescues: the team restarts a dark roboport, an admin too", check_rescues),
+    (19, "deleting an outpost planet, then founding it again", check_delete_planet),
+    (20, "migration from 0.1.3 (%s)" % OLD_REV, check_migration),
 ]
 NEEDS = {5: [4], 6: [4]}
-MIGRATION_CHECK = 17   # runs in its own world, after the main server stops; stays last
+MIGRATION_CHECK = 20   # runs in its own world, after the main server stops; stays last
 
 
 def set_rig(name, ports):
