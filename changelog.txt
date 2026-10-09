@@ -1,16 +1,19 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.1
-Date: 2026-10-08
+Date: 2026-10-09
   Features:
     - Rescues: if a base's roboport runs out of power, its network shuts down and its robots stop
       until the base's power recharges it. The team leader can now restart it at once by spending
-      a rescue in Team Settings > Brave New MTS. Each team gets 3 (map setting "Rescues per team"),
+      a rescue in Team Settings > Brave New MTS, which shows the team's rescues as cards: ready,
+      or used and on which planet. Each team gets 3 (map setting "Rescues per team", up to 10),
       and the team is told in chat when one of its roboports goes dark.
     - The team leader can delete the team's copy of any planet but the home one, from the same
       tab, to start over there. Everything on it is lost; a Character Clone shipped to a platform
-      above it founds a fresh outpost.
+      above it founds a fresh outpost. Deleting uses no rescue and has no limit.
     - Admin command /bnm-rescue <surface> refills a base's roboport without spending the team's
       rescues. /bnm-status now shows each team's rescues left and any roboport out of power.
+  Changes:
+    - The Brave New MTS tab is split into three panels: Power core, Rescues and Delete a planet.
   Bugfixes:
     - The central roboport now takes power before anything else on its network. A factory sharing
       a base's power could starve it below its own idle draw, and once its buffer ran dry it never
