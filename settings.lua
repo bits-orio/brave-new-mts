@@ -20,6 +20,17 @@ data:extend({
         minimum_value = 0,
         order         = "b",
     },
+    -- Rescues each team may spend on a base whose roboport ran out of power
+    -- (scripts/rescue.lua). Raising it gives every team more at once.
+    {
+        type          = "int-setting",
+        name          = "bnm-rescues-per-team",
+        setting_type  = "runtime-global",
+        default_value = 3,
+        minimum_value = 0,
+        maximum_value = 100,
+        order         = "c",
+    },
     -- Admin test shortcuts (scripts/test_commands.lua). Off on a real server.
     {
         type          = "bool-setting",

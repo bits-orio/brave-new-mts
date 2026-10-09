@@ -73,6 +73,21 @@ function M.remember_view(player)
     return surface
 end
 
+--- Drop every player's reference to a surface that is about to be deleted,
+--- so a re-park made before the deletion lands never picks it.
+function M.forget_surface(surface_name)
+    for _, key in ipairs({ "last_view", "home_surface" }) do
+        local names = storage[key] or {}
+        for index, name in pairs(names) do
+            if name == surface_name then names[index] = nil end
+        end
+    end
+    local spots = storage.last_view_pos or {}
+    for index, spot in pairs(spots) do
+        if spot.surface == surface_name then spots[index] = nil end
+    end
+end
+
 --- A player is leaving: if they are in remote view of their own team's ground
 --- (not from the map editor), remember the surface and the spot, so their
 --- reconnect's park() puts the view back there.

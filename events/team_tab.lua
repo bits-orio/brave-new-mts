@@ -1,106 +1,64 @@
 -- events/team_tab.lua
 -- Registers a "Brave New MTS" tab in MTS's Team Settings panel (via the
--- mts-v1 register_team_tab API) and fills it with a soft-lock warning plus a
--- one-time, leader-only "I know what I am doing" button that makes the locked
--- power core of every base minable (except the permanent roboports and the
--- planet-tuned copies, which no item can place again).
+-- mts-v1 register_team_tab API) and fills it, one section per concern in
+-- scripts/team_tab/:
+--   unlock_section.lua   the soft-lock warning and the one-time power-core unlock
+--   rescue_section.lua   rescues for a base whose roboport ran out of power
+--   delete_section.lua   deleting one of the team's planets, to found it again
+-- Every button acts for the team leader only; other members see the state and
+-- a note saying so.
+--
+-- A section has build(player, parent, opts) and on_click(player, element),
+-- which returns nil for an element that is not its own, false when it changed
+-- the tab in place, or true plus build options to rebuild the tab.
 
-local starter_base = require("scripts.starter_base")
-local mts_events   = require("scripts.mts_events")
-local teams        = require("scripts.teams")
-local chat         = require("scripts.chat")
+local mts_events = require("scripts.mts_events")
+local widgets    = require("scripts.team_tab.widgets")
+
+local SECTIONS = {
+    require("scripts.team_tab.unlock_section"),
+    require("scripts.team_tab.rescue_section"),
+    require("scripts.team_tab.delete_section"),
+}
 
 local M = {}
 
-local TAB_NAME      = "brave-new-mts"
-local UNLOCK_BUTTON = "bnm_unlock_minable"
-
--- Mirrors the power core (scripts/base/power_core.lua): solar panels,
--- accumulators, substations, lamps, lightning collectors (Fulgora) and the
--- display panel, plus the planet-tuned copies (is_tuned), which stay locked
--- even after the unlock. The sign is part of the core, so every string says
--- so the same way (CORE). STAYS_LOCKED is what the unlock never frees: the
--- roboport (scripts/base/builder.lua) and the tuned copies. README.md ("The
--- base is permanent") and docs/portal.md (Features) repeat these rules and
--- cannot be built from here: change them together.
-local CORE         = "power core (warning sign included)"
-local STAYS_LOCKED = "The central roboports and the green-tinted, planet-tuned "
-    .. "buildings stay locked, because nothing can place one again."
-
-local WARNING =
-    "You can already mine and redesign most of your bases. The power core "
-    .. "stays locked: solar panels, accumulators, substations, lamps, lightning "
-    .. "collectors and the power warning sign, so you can't accidentally kill "
-    .. "your own power and strand your team.\n\n"
-    .. "Unlocking lets you mine / deconstruct that power core too, on every base "
-    .. "your team has or founds later, to rebuild it your way. " .. STAYS_LOCKED
-    .. " The tuned buildings are the panels, accumulators, radar and inserter "
-    .. "made for their planet.\n\n"
-    .. "[color=1,0.5,0.2]Warning:[/color] if you remove your power before "
-    .. "replacements are running, your team can be soft-locked with no way to "
-    .. "recover. This is one-way."
-
-local UNLOCKED_NOTE = "[color=0,1,0]Your " .. CORE .. " is now mineable on every "
-    .. "base. " .. STAYS_LOCKED .. "[/color]"
-
-local UNLOCKED_PRINT = chat.PREFIX .. "Power core unlocked on every base: it can "
-    .. "now be mined / deconstructed. " .. STAYS_LOCKED
-    .. " Be careful not to soft-lock the team."
-
-local LEADER_ONLY_NOTE = "[color=1,0.65,0]Only your team leader can change this.[/color]"
-
-local UNLOCK_TOOLTIP = "Make the locked " .. CORE .. " mineable on every base. "
-    .. STAYS_LOCKED .. " One-way."
-
-local LABEL_WIDTH = 360
-
-local function is_leader(player)
-    local info = teams.info(player.force.name)
-    return info ~= nil and info.leader_player_index == player.index
-end
-
---- A label that wraps at the tab's width.
-local function wrapped_label(parent, caption)
-    local label = parent.add{ type = "label", caption = caption }
-    label.style.single_line   = false
-    label.style.maximal_width = LABEL_WIDTH
-    return label
-end
-
---- The unlock button for the leader, a note for anyone else. The button must
---- stay a DIRECT child of `element`: on_gui_click rebuilds through el.parent.
-local function build_unlock_control(player, element)
-    element.add{ type = "line" }
-    if not is_leader(player) then
-        wrapped_label(element, LEADER_ONLY_NOTE)
-        return
-    end
-    element.add{ type = "button", name = UNLOCK_BUTTON,
-        caption = "I know what I am doing", tooltip = UNLOCK_TOOLTIP }
-end
+local TAB_NAME = "brave-new-mts"
+local ROOT     = widgets.PREFIX .. "root"
 
 --- Fill the tab content frame for `player`.
-local function build_tab(player, element)
+local function build_tab(player, element, opts)
     if not (player and player.valid and element and element.valid) then return end
     element.clear()
-    local warn = wrapped_label(element, WARNING)
-    warn.style.bottom_margin = 8  -- space before the note or the line below
-    if starter_base.is_unlocked(player.force.name) then
-        wrapped_label(element, UNLOCKED_NOTE)
-        return
+    local root = element.add{ type = "flow", name = ROOT, direction = "vertical" }
+    for _, section in ipairs(SECTIONS) do section.build(player, root, opts or {}) end
+    if not widgets.is_leader(player) then
+        root.add{ type = "line" }
+        widgets.label(root, widgets.LEADER_ONLY_NOTE)
     end
-    build_unlock_control(player, element)
 end
 
+--- The tab's root flow holding `el`, or nil for an element outside the tab.
+local function root_of(el)
+    while el and el.name ~= ROOT do el = el.parent end
+    return el
+end
+
+--- Called from control.lua's single on_gui_click dispatcher.
 function M.on_gui_click(event)
     local el = event.element
-    if not (el and el.valid and el.name == UNLOCK_BUTTON) then return end
+    if not (el and el.valid and el.name:sub(1, #widgets.PREFIX) == widgets.PREFIX) then return end
+    local root = root_of(el)
     local player = game.get_player(event.player_index)
-    if not (player and player.valid) or not is_leader(player) then return end
-
-    starter_base.unlock_minable(player.force.name)
-    player.force.print(UNLOCKED_PRINT)
-    build_tab(player, el.parent)  -- el.parent is the tab content frame
+    if not (root and player and player.valid) then return end
+    local frame = root.parent  -- the tab content frame MTS gave us
+    for _, section in ipairs(SECTIONS) do
+        local rebuild, opts = section.on_click(player, el)
+        if rebuild ~= nil then
+            if rebuild then build_tab(player, frame, opts) end
+            return
+        end
+    end
 end
 
 local function on_tab_built(e)

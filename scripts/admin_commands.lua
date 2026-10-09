@@ -4,17 +4,21 @@
 -- admin or from the server console / RCON only. Every action is logged and
 -- printed to everyone, so a public server keeps an audit trail.
 --
---   /bnm-status [team-N]         bases, roboports and parked players (read-only)
+--   /bnm-status [team-N]         bases, roboports, rescues and parked players
+--                                (read-only, scripts/admin_status.lua)
 --   /bnm-repark <player>         put a player back in remote view of their team
 --   /bnm-forget-base <surface>   wipe a dead outpost so it can be founded again
+--   /bnm-rescue <surface>        refill a base's roboport, spending none of the
+--                                team's rescues (scripts/rescue.lua)
 --
 -- M.register() adds the commands. It must run ONCE per Lua state, from
 -- control.lua's main chunk: init_events runs in on_load and again in
 -- on_configuration_changed, and adding a command twice is an error.
 
+local admin_status  = require("scripts.admin_status")
 local remote_player = require("scripts.remote_player")
+local rescue        = require("scripts.rescue")
 local starter_base  = require("scripts.starter_base")
-local teams         = require("scripts.teams")
 local cmd_util      = require("scripts.command_util")
 
 local M = {}
@@ -24,79 +28,6 @@ local reply      = cmd_util.reply
 local authorised = cmd_util.authorised
 local audit      = cmd_util.audit
 local trimmed    = cmd_util.trimmed
-
--- ─── /bnm-status ───────────────────────────────────────────────────────
-
---- The keys of `t`, sorted by `order` (a table.sort comparator), else by name.
-local function sorted_keys(t, order)
-    local keys = {}
-    for k in pairs(t) do keys[#keys + 1] = k end
-    table.sort(keys, order)
-    return keys
-end
-
-local function base_line(surface_name, base)
-    local kind  = base.home and "home" or base.outpost and "outpost" or "base"
-    local robo  = (base.roboport and base.roboport.valid) and "roboport alive" or "roboport MISSING"
-    local lock  = base.unlocked and "unlocked" or "locked"
-    return "  " .. surface_name .. ": " .. kind .. ", " .. robo .. ", " .. lock
-end
-
-local function player_line(player)
-    local function get(t) return (storage[t] and storage[t][player.index]) or "-" end
-    local view = player.connected and player.surface.name or "offline"
-    return "  " .. player.name .. ": viewing " .. view .. ", last view "
-        .. get("last_view") .. ", home " .. get("home_surface")
-end
-
---- Status lines for one team force. "?" in place of the team's name says
---- MTS does not know the force, which teams.display_name would hide.
-local function team_lines(force_name)
-    local info  = teams.info(force_name)
-    local lines = { force_name .. " (" .. ((info and info.display_name) or "?") .. ")" }
-    local bases = storage.bnm_base or {}
-    for _, name in ipairs(sorted_keys(bases)) do
-        if bases[name].force == force_name then lines[#lines + 1] = base_line(name, bases[name]) end
-    end
-    if #lines == 1 then lines[#lines + 1] = "  no bases" end
-    for _, player in pairs(game.players) do
-        if remote_player.effective_force(player) == force_name then
-            lines[#lines + 1] = player_line(player)
-        end
-    end
-    return lines
-end
-
---- Every team with a base record or a member, in slot order.
-local function teams_to_show()
-    local seen = {}
-    for _, base in pairs(storage.bnm_base or {}) do
-        if base.force then seen[base.force] = true end
-    end
-    for _, player in pairs(game.players) do
-        local fn = remote_player.effective_force(player)
-        if teams.is_team_force(fn) then seen[fn] = true end
-    end
-    return sorted_keys(seen, teams.by_slot)
-end
-
-local function status(cmd)
-    if not authorised(cmd) then return end
-    local team  = trimmed(cmd.parameter)
-    local shown = team and { team } or teams_to_show()
-    local lines = {}
-    for _, fn in ipairs(shown) do
-        for _, line in ipairs(team_lines(fn)) do lines[#lines + 1] = line end
-    end
-    -- A "placed" flag without a base record would block a planet for good.
-    for _, name in ipairs(sorted_keys(storage.bases_placed or {})) do
-        if not (storage.bnm_base and storage.bnm_base[name]) then
-            lines[#lines + 1] = "stale placed flag (no base record): " .. name
-        end
-    end
-    if #lines == 0 then lines[1] = "no bases and no team players" end
-    reply(cmd, PREFIX .. "status\n" .. table.concat(lines, "\n"))
-end
 
 -- ─── /bnm-repark ───────────────────────────────────────────────────────
 
@@ -163,15 +94,35 @@ local function forget_base(cmd)
         .. (wiped and "; its power core can now be mined" or "") .. "; it can be founded again.")
 end
 
+-- ─── /bnm-rescue ───────────────────────────────────────────────────────
+
+local function rescue_base(cmd)
+    if not authorised(cmd) then return end
+    local name = trimmed(cmd.parameter)
+    local base = name and starter_base.base_for(name)
+    if not (base and base.roboport and base.roboport.valid) then
+        reply(cmd, PREFIX .. (name and ("no base with a standing roboport on " .. name .. ". ") or "")
+            .. "usage: /bnm-rescue <surface name>, for example /bnm-rescue mts-gleba-3 (see /bnm-status)")
+        return
+    end
+    local was_dark = rescue.refill(base)
+    audit(cmd, "refilled " .. base.force .. "'s " .. (base.home and "home" or "outpost")
+        .. " roboport on " .. name .. " (" .. (was_dark and "it was out of power" or "it still had power")
+        .. "); the team's rescues are untouched.")
+end
+
 -- ─── Registration ──────────────────────────────────────────────────────
 
 function M.register()
     commands.add_command("bnm-status",
-        "[team-N] - Brave New MTS bases, roboports and parked players (admin).", status)
+        "[team-N] - Brave New MTS bases, roboports, rescues and parked players (admin).",
+        admin_status.status)
     commands.add_command("bnm-repark",
         "<player> - put a player back in remote view of their team (admin).", repark)
     commands.add_command("bnm-forget-base",
         "<surface> - wipe a dead outpost so it can be founded again (admin).", forget_base)
+    commands.add_command("bnm-rescue",
+        "<surface> - refill a base's roboport that ran out of power (admin).", rescue_base)
 end
 
 return M

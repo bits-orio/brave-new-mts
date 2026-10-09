@@ -15,11 +15,17 @@
 --      wherever the team ships a Character Clone (events/platform_hub.lua).
 --      Losing the home roboport eliminates the team; losing an outpost's
 --      roboport loses only that outpost (events/roboport_loss.lua).
---   3. Block hand-craft / mining / item transfer via permissions
+--   3. Get a team out of trouble on its own: a few rescues for a base whose
+--      roboport ran out of power (scripts/rescue.lua, announced by
+--      events/roboport_outage.lua), and deleting an outpost planet to found
+--      it again (scripts/planet_delete.lua), both from the team tab
+--      (events/team_tab.lua).
+--   4. Block hand-craft / mining / item transfer via permissions
 --      (scripts/permissions.lua).
---   4. Admin recovery commands (scripts/admin_commands.lua), and test shortcuts
---      behind a map setting (scripts/test_commands.lua) with a loud warning
---      while it is on (scripts/test_mode.lua).
+--   5. Admin recovery commands (scripts/admin_commands.lua, with /bnm-status in
+--      scripts/admin_status.lua), and test shortcuts behind a map setting
+--      (scripts/test_commands.lua) with a loud warning while it is on
+--      (scripts/test_mode.lua).
 
 local permissions    = require("scripts.permissions")
 local starter_base   = require("scripts.starter_base")
@@ -32,6 +38,7 @@ local ev_player_lifecycle = require("events.player_lifecycle")
 local ev_player_surface   = require("events.player_surface")
 local ev_team_tab         = require("events.team_tab")
 local ev_roboport_loss    = require("events.roboport_loss")
+local ev_roboport_outage  = require("events.roboport_outage")
 local ev_platform_hub     = require("events.platform_hub")
 local ev_starter_items    = require("events.starter_items")
 local ev_team_cleanup     = require("events.team_cleanup")
@@ -49,6 +56,7 @@ local function init_events()
     ev_player_surface.register()
     ev_team_tab.register()
     ev_roboport_loss.register()
+    ev_roboport_outage.register()
     ev_platform_hub.register()
     ev_starter_items.register()
     ev_team_cleanup.register()
@@ -78,6 +86,7 @@ local function init_storage()
     storage.last_view     = storage.last_view     or {}  -- player_index -> own-team surface last viewed
     storage.last_view_pos = storage.last_view_pos or {}  -- player_index -> { surface, x, y } viewed on leaving
     storage.emptied_body  = storage.emptied_body  or {}  -- character unit_number -> player_index (emptied once)
+    storage.bnm_rescues_used = storage.bnm_rescues_used or {}  -- force -> rescues spent (scripts/rescue.lua)
     -- storage.bnm_repark: player_index -> tick, re-parks pending after a spectate
     -- (nil when empty; see events/player_lifecycle.lua).
     -- mts-v1 event ids are never stored: they shift with the mod set
