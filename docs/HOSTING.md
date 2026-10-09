@@ -187,9 +187,10 @@ that touches parking, remote view or the platform hub:
   clipping, and that Rescues shows one card per rescue: a green roboport marked
   Ready for each unused one. The member sees no buttons, and the note that only the
   leader can change this sits at the top.
-- **A roboport out of power, then a rescue.** As an admin, starve a base: freeze the
-  night and empty its accumulators and roboport, for example
-  `/c local s = game.player.surface s.daytime = 0.5 s.freeze_daytime = true for _, a in pairs(s.find_entities_filtered{type = "accumulator"}) do a.energy = 0 end s.find_entities_filtered{name = "bnm-roboport"}[1].energy = 0`
+- **A roboport out of power, then a rescue.** As an admin, while looking at a base
+  (not its platform or the pen: in remote view `game.player.surface` is the one you
+  look at), starve it: freeze the night and empty its accumulators and roboport with
+  `/c local s = game.player.surface local rp = s.find_entities_filtered{name = "bnm-roboport"}[1] if rp then s.daytime = 0.5 s.freeze_daytime = true for _, a in pairs(s.find_entities_filtered{type = "accumulator"}) do a.energy = 0 end rp.energy = 0 game.player.print("Starved " .. s.name) else game.player.print(s.name .. " has no base roboport: look at a base first") end`
   (this flags the save, so use a test save). Within about 15 seconds the team gets a
   chat line saying the roboport is out of power. As leader, the base shows up under
   Rescues with a warning icon; press Spend a rescue. Confirm the chat line, the
