@@ -8,7 +8,7 @@ folder is ever written into the repo's mod code.
 
 | File | What it does |
 |---|---|
-| `stage.sh` | Builds a mods dir: MTS 0.6.6 zip, a copy of the BNM working tree (or of a commit), and a `mod-list.json` |
+| `stage.sh` | Builds a mods dir: the newest MTS zip in `~/.factorio/mods`, a copy of the BNM working tree (or of a commit), and a `mod-list.json` |
 | `hooks/bnm_rig_data.lua` | Test-only prototypes, injected into the staged copy by `stage.sh --hooks` |
 | `probe.py` | RCON helper (library and CLI) that runs Lua in the level, BNM or MTS state |
 | `lua/power_rig.lua` | In-game power sampler, loaded into the level state by `power_test.py` |

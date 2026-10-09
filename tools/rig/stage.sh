@@ -5,7 +5,8 @@
 #
 #   <mods-dir>      created if missing. Old brave-new-mts_* / multi-team-support*
 #                   entries in it are replaced; anything else there is left alone.
-#   --mts PATH      MTS to stage instead of ~/.factorio/mods/multi-team-support_0.6.6.zip
+#   --mts PATH      MTS to stage instead of the newest multi-team-support_*.zip in
+#                   ~/.factorio/mods (the one the game itself runs).
 #                   (a zip is copied, a directory is symlinked as multi-team-support).
 #   --rev COMMIT    stage BNM as committed at COMMIT (git archive) instead of
 #                   the working tree, e.g. an older release for a migration test.
@@ -26,7 +27,7 @@ usage() { sed -n '2,22p' "$0" >&2; exit 1; }
 [ $# -ge 1 ] || usage
 
 MODS=$1; shift
-MTS=$HOME/.factorio/mods/multi-team-support_0.6.6.zip
+MTS=$(ls "$HOME"/.factorio/mods/multi-team-support_*.zip 2>/dev/null | sort -V | tail -1)
 HOOKS=
 REV=
 SPACE_AGE=true
