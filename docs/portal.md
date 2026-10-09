@@ -6,6 +6,10 @@
 
 Brave New MTS requires [Multi-Team Support](https://mods.factorio.com/mod/multi-team-support) and turns it into a remote-only, character-free game. Your character is parked in a walled cell in the landing pen and never sets foot on the team surface. You play entirely through remote view. Each team's spawn is seeded with a self-running starter base built around a large roboport, and every entity after that arrives by blueprint, placed by construction robots.
 
+[![Factorio multiplayer where your robots are your only hands](https://img.youtube.com/vi/9CjGeF6vIX8/maxresdefault.jpg)](https://www.youtube.com/watch?v=9CjGeF6vIX8)
+
+Watch on YouTube: [Factorio multiplayer where your robots are your only hands](https://www.youtube.com/watch?v=9CjGeF6vIX8)
+
 ## Status
 
 Playable and in active development, running on public multiplayer servers. With Space Age a team can found an outpost on any planet it reaches: research the Character Clone, ship one to a planet on a space platform, and press Establish base in the platform hub to found a starter base tuned for that planet. Space Age support is newer than the Nauvis-only base, so expect more rough edges there than at home. Only a team's original base can end the game; losing an outpost's roboport only wipes that outpost, and another clone re-founds it. Report anything odd on [Discord](https://discord.gg/tWz4FT74pH) or in the [issue tracker](https://github.com/bits-orio/brave-new-mts/issues).
