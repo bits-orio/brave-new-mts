@@ -110,8 +110,9 @@ it. The team is told in chat, and the server log gets a line
 
 - **Rescues.** The team leader can spend a rescue in Team Settings > Brave New MTS,
   which refills the roboport at once. Each team gets 3, from the runtime map setting
-  **Rescues per team** (`bnm-rescues-per-team`). A change applies to every team at
-  once and counts what each has already spent, so raising it hands everyone more. A
+  **Rescues per team** (`bnm-rescues-per-team`, at most 10). A change applies to
+  every team at once and counts what each has already spent, so raising it hands
+  everyone more. A
   released team slot starts again with the full number. `/bnm-rescue <surface>` does
   the same for an admin without spending any.
 - **Deleting a planet.** The team leader can delete the team's copy of any planet
@@ -181,22 +182,27 @@ that touches parking, remote view or the platform hub:
   destroyed). The headless rig cannot tell whether a reconnect keeps remote view,
   which decides this.
 - **The Brave New MTS tab, as leader and as member.** Open Team Settings > Brave New
-  MTS as the team leader and as another member. Confirm the warning, Rescues and
-  Delete a planet sections fit the panel without clipping. The member sees no
-  buttons, just the note that only the leader can change this.
+  MTS as the team leader and as another member. Confirm the three panels (Power
+  core, Rescues, Delete a planet) each have their own title bar and fit without
+  clipping, and that Rescues shows one card per rescue: a green roboport marked
+  Ready for each unused one. The member sees no buttons, and the note that only the
+  leader can change this sits at the top.
 - **A roboport out of power, then a rescue.** As an admin, starve a base: freeze the
   night and empty its accumulators and roboport, for example
   `/c local s = game.player.surface s.daytime = 0.5 s.freeze_daytime = true for _, a in pairs(s.find_entities_filtered{type = "accumulator"}) do a.energy = 0 end s.find_entities_filtered{name = "bnm-roboport"}[1].energy = 0`
   (this flags the save, so use a test save). Within about 15 seconds the team gets a
   chat line saying the roboport is out of power. As leader, the base shows up under
-  Rescues; press Rescue. Confirm the chat line, the count going down by one, the
-  row going away, and robots flying again. Afterwards, unfreeze the day with
+  Rescues with a warning icon; press Spend a rescue. Confirm the chat line, the
+  title's count going down by one, one card turning grey and marked Used with that
+  planet's name (its tooltip names who spent it), the line "No base needs a
+  rescue" replacing the row, and robots flying again. Afterwards, unfreeze the day with
   `/c game.player.surface.freeze_daytime = false`.
 - **Delete a planet.** With an outpost founded, press Delete... on its planet, then
   Cancel: nothing happens. Press Delete... again, then the red confirm button, while
   a second member is viewing that planet. Confirm the planet leaves the list, that
   member's view moves back to the home base, the team gets the chat line, and a
-  Character Clone on a platform above the planet founds a fresh outpost there. The
+  Character Clone on a platform above the planet founds a fresh outpost there, and
+  that no rescue card changed. The
   rig checks all of this except the GUI and the real player's view (regress.py
   checks 17 to 19).
 

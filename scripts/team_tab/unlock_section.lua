@@ -47,15 +47,15 @@ local UNLOCKED_PRINT = chat.PREFIX .. "Power core unlocked on every base: it can
 local UNLOCK_TOOLTIP = "Make the locked " .. CORE .. " mineable on every base. "
     .. STAYS_LOCKED .. " One-way."
 
---- The warning, then the unlocked note, or the button for the leader.
+--- The Power core panel: the warning, then the unlocked note, or the button
+--- for the leader.
 function M.build(player, parent)
-    local warn = widgets.label(parent, WARNING)
-    warn.style.bottom_margin = 8  -- space before the note or the line below
+    local body = widgets.section(parent, "Power core")
+    widgets.label(body, WARNING)
     if starter_base.is_unlocked(player.force.name) then
-        widgets.label(parent, UNLOCKED_NOTE)
+        widgets.label(body, UNLOCKED_NOTE)
     elseif widgets.is_leader(player) then
-        parent.add{ type = "line" }
-        parent.add{ type = "button", name = UNLOCK_BUTTON,
+        body.add{ type = "button", name = UNLOCK_BUTTON,
             caption = "I know what I am doing", tooltip = UNLOCK_TOOLTIP }
     end
 end

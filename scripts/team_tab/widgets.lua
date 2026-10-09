@@ -1,8 +1,8 @@
 -- scripts/team_tab/widgets.lua
--- What the team tab's sections share: the leader rule, a planet's name, wrapped
--- text, a section heading, a row, and the name prefix every element they click
--- on carries, so the click dispatcher (events/team_tab.lua) passes over other
--- GUIs' clicks with one string test.
+-- What the team tab's sections share: the leader rule, a planet's name, a
+-- section panel, wrapped text, a row, and the name prefix every element they
+-- click on carries, so the click dispatcher (events/team_tab.lua) passes over
+-- other GUIs' clicks with one string test.
 
 local teams = require("scripts.teams")
 local chat  = require("scripts.chat")
@@ -10,9 +10,11 @@ local chat  = require("scripts.chat")
 local M = {}
 
 M.PREFIX = "bnm_tab_"
-M.LABEL_WIDTH = 360
-M.ROW_LABEL_WIDTH = 220  -- a label beside a button
+M.LABEL_WIDTH = 336      -- inside a section panel's padding
+M.ROW_LABEL_WIDTH = 200  -- a label beside a button
 M.LEADER_ONLY_NOTE = "[color=1,0.65,0]Only your team leader can change this.[/color]"
+
+local PANEL_PADDING = 8
 
 --- True if the player leads their team, which every button in the tab needs.
 function M.is_leader(player)
@@ -27,18 +29,26 @@ function M.planet_label(surface_name)
     return surface and chat.planet_label(surface) or surface_name
 end
 
---- A label that wraps at `width` (the tab's width by default).
+--- A section of the tab: a panel with a title bar, as the game's own windows
+--- set theirs apart. Returns the flow its contents go into.
+function M.section(parent, title)
+    local panel = parent.add{ type = "frame", direction = "vertical", style = "inside_shallow_frame" }
+    panel.style.horizontally_stretchable = true
+    local head = panel.add{ type = "frame", style = "subheader_frame" }
+    head.style.horizontally_stretchable = true
+    head.add{ type = "label", caption = title, style = "subheader_caption_label" }
+    local body = panel.add{ type = "flow", direction = "vertical" }
+    body.style.padding = PANEL_PADDING
+    body.style.vertical_spacing = 6
+    return body
+end
+
+--- A label that wraps at `width` (the panel's width by default).
 function M.label(parent, caption, width)
     local label = parent.add{ type = "label", caption = caption }
     label.style.single_line   = false
     label.style.maximal_width = width or M.LABEL_WIDTH
     return label
-end
-
---- A line, then a section's bold heading.
-function M.heading(parent, caption)
-    parent.add{ type = "line" }
-    return parent.add{ type = "label", caption = caption, style = "caption_label" }
 end
 
 --- A horizontal row: a label and its buttons.

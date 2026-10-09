@@ -14,8 +14,10 @@
 -- removed after the unlock, its panels destroyed, a night with empty
 -- accumulators.
 --
--- storage.bnm_rescues_used: force name -> rescues spent. A released team slot
--- starts again from none (M.cleanup_force).
+-- storage.bnm_rescues_spent: force name -> the rescues it spent, oldest first,
+-- each { surface = surface name, by = player name or nil }, so the team tab can
+-- show what each card went on. A released team slot starts again from none
+-- (M.cleanup_force).
 
 local starter_base = require("scripts.starter_base")
 
@@ -28,13 +30,14 @@ function M.allowance()
     return settings.global[SETTING].value
 end
 
-local function used(force_name)
-    return (storage.bnm_rescues_used or {})[force_name] or 0
+--- The rescues the team spent, oldest first: { surface, by }.
+function M.spent(force_name)
+    return (storage.bnm_rescues_spent or {})[force_name] or {}
 end
 
 --- Rescues the team has left.
 function M.left(force_name)
-    return math.max(0, M.allowance() - used(force_name))
+    return math.max(0, M.allowance() - #M.spent(force_name))
 end
 
 --- True if the base's roboport stands but its network is shut down. A full
@@ -75,21 +78,24 @@ local function refusal(force_name, base)
 end
 
 --- Spend one of the team's rescues on its base on `surface_name`, which must
---- be dark. Returns ok, and the reason when not.
-function M.spend(force_name, surface_name)
+--- be dark; `by` names who spent it (optional). Returns ok, and the reason
+--- when not.
+function M.spend(force_name, surface_name, by)
     local base = starter_base.base_for(surface_name)
     local why = refusal(force_name, base)
     if why then return false, why end
     M.refill(base)
-    storage.bnm_rescues_used = storage.bnm_rescues_used or {}
-    storage.bnm_rescues_used[force_name] = used(force_name) + 1
+    storage.bnm_rescues_spent = storage.bnm_rescues_spent or {}
+    local spent = storage.bnm_rescues_spent[force_name] or {}
+    spent[#spent + 1] = { surface = surface_name, by = by }
+    storage.bnm_rescues_spent[force_name] = spent
     return true
 end
 
 --- Forget a released team's spent rescues, so the next team in its slot
 --- starts with the full allowance.
 function M.cleanup_force(force_name)
-    if storage.bnm_rescues_used then storage.bnm_rescues_used[force_name] = nil end
+    if storage.bnm_rescues_spent then storage.bnm_rescues_spent[force_name] = nil end
 end
 
 return M

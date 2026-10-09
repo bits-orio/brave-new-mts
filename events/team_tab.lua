@@ -2,11 +2,13 @@
 -- Registers a "Brave New MTS" tab in MTS's Team Settings panel (via the
 -- mts-v1 register_team_tab API) and fills it, one section per concern in
 -- scripts/team_tab/:
---   unlock_section.lua   the soft-lock warning and the one-time power-core unlock
---   rescue_section.lua   rescues for a base whose roboport ran out of power
---   delete_section.lua   deleting one of the team's planets, to found it again
--- Every button acts for the team leader only; other members see the state and
--- a note saying so.
+--   unlock_section.lua   Power core: the soft-lock warning and the one-time unlock
+--   rescue_section.lua   Rescues: the team's cards, and each base whose roboport
+--                        ran out of power
+--   delete_section.lua   Delete a planet: one of the team's planets, to found it again
+-- Each section is a panel with its own title bar (widgets.section). Every
+-- button acts for the team leader only; other members see the state and a
+-- note saying so.
 --
 -- A section has build(player, parent, opts) and on_click(player, element),
 -- which returns nil for an element that is not its own, false when it changed
@@ -31,11 +33,9 @@ local function build_tab(player, element, opts)
     if not (player and player.valid and element and element.valid) then return end
     element.clear()
     local root = element.add{ type = "flow", name = ROOT, direction = "vertical" }
+    root.style.vertical_spacing = 12
+    if not widgets.is_leader(player) then widgets.label(root, widgets.LEADER_ONLY_NOTE) end
     for _, section in ipairs(SECTIONS) do section.build(player, root, opts or {}) end
-    if not widgets.is_leader(player) then
-        root.add{ type = "line" }
-        widgets.label(root, widgets.LEADER_ONLY_NOTE)
-    end
 end
 
 --- The tab's root flow holding `el`, or nil for an element outside the tab.

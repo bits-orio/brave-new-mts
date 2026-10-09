@@ -13,7 +13,8 @@ local DELETE, CONFIRM, CANCEL = "delete", "delete_confirm", "delete_cancel"
 
 local ABOUT = "Deleting a planet removes your team's copy of it and everything on it: "
     .. "buildings, items and robots. To build there again, ship a Character Clone to a "
-    .. "platform above it and press Establish base. Your home planet can't be deleted."
+    .. "platform above it and press Establish base. Your home planet can't be deleted. "
+    .. "Deleting doesn't use a rescue, and there is no limit."
 
 local function planet_row(parent, surface_name, leader)
     local row = widgets.row(parent)
@@ -24,29 +25,31 @@ local function planet_row(parent, surface_name, leader)
     end
 end
 
---- The heading, then each planet the team may delete. opts.skip names one
---- deleted this tick, which still exists until the tick ends.
+--- The Delete a planet panel: each planet the team may delete. opts.skip
+--- names one deleted this tick, which still exists until the tick ends.
 function M.build(player, parent, opts)
-    widgets.heading(parent, "Delete a planet")
-    widgets.label(parent, ABOUT)
+    local body = widgets.section(parent, "Delete a planet")
+    widgets.label(body, ABOUT)
     local leader, shown = widgets.is_leader(player), 0
     for _, surface_name in ipairs(planet_delete.deletable(player.force.name)) do
         if surface_name ~= opts.skip then
-            planet_row(parent, surface_name, leader)
+            planet_row(body, surface_name, leader)
             shown = shown + 1
         end
     end
-    if shown == 0 then widgets.label(parent, "Your team has no other planets.") end
+    if shown == 0 then widgets.label(body, "Your team has no other planets.") end
 end
 
---- Turn a planet's row into the question, with Delete and Cancel.
+--- Turn a planet's row into the question, with Delete and Cancel below it
+--- (beside it, they would widen the window).
 local function ask(row, surface_name)
     row.clear()
+    local box = row.add{ type = "flow", direction = "vertical" }
     local label = widgets.planet_label(surface_name)
-    widgets.label(row, { "", "Delete ", label, " and everything on it? This can't be undone." },
-        widgets.ROW_LABEL_WIDTH)
-    widgets.surface_button(row, CONFIRM, surface_name, { "", "Delete ", label }, "red_button")
-    widgets.surface_button(row, CANCEL, surface_name, "Cancel")
+    widgets.label(box, { "", "Delete ", label, " and everything on it? This can't be undone." })
+    local buttons = widgets.row(box)
+    widgets.surface_button(buttons, CONFIRM, surface_name, { "", "Delete ", label }, "red_button")
+    widgets.surface_button(buttons, CANCEL, surface_name, "Cancel")
 end
 
 local function announce(player, surface_name)

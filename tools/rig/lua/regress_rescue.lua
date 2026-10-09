@@ -68,6 +68,11 @@ function R.rescue_spend(force_name, surface_name)
     return { ok = ok, reason = why or false, left = rescue().left(force_name) }
 end
 
+--- The rescues the team spent, oldest first: { surface, by }.
+function R.rescues_spent(force_name)
+    return rescue().spent(force_name)
+end
+
 --- The team's rescues left, after forgetting what it spent (a released slot).
 function R.rescue_reset(force_name)
     rescue().cleanup_force(force_name)

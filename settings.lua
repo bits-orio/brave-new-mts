@@ -21,14 +21,15 @@ data:extend({
         order         = "b",
     },
     -- Rescues each team may spend on a base whose roboport ran out of power
-    -- (scripts/rescue.lua). Raising it gives every team more at once.
+    -- (scripts/rescue.lua). Raising it gives every team more at once. At most
+    -- 10, so the team tab's cards fit in three rows.
     {
         type          = "int-setting",
         name          = "bnm-rescues-per-team",
         setting_type  = "runtime-global",
         default_value = 3,
         minimum_value = 0,
-        maximum_value = 100,
+        maximum_value = 10,
         order         = "c",
     },
     -- Admin test shortcuts (scripts/test_commands.lua). Off on a real server.

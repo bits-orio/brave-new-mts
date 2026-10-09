@@ -86,7 +86,7 @@ local function init_storage()
     storage.last_view     = storage.last_view     or {}  -- player_index -> own-team surface last viewed
     storage.last_view_pos = storage.last_view_pos or {}  -- player_index -> { surface, x, y } viewed on leaving
     storage.emptied_body  = storage.emptied_body  or {}  -- character unit_number -> player_index (emptied once)
-    storage.bnm_rescues_used = storage.bnm_rescues_used or {}  -- force -> rescues spent (scripts/rescue.lua)
+    storage.bnm_rescues_spent = storage.bnm_rescues_spent or {}  -- force -> rescues spent (scripts/rescue.lua)
     -- storage.bnm_repark: player_index -> tick, re-parks pending after a spectate
     -- (nil when empty; see events/player_lifecycle.lua).
     -- mts-v1 event ids are never stored: they shift with the mod set

@@ -1417,6 +1417,9 @@ def check_rescues(ctx, c):
     r, s = spend(rig, FED_FORCE, FED_HOME), robo(rig)
     c.note("rescue 1 on the dark home: %s; then %s" % (r, robo_line(s)))
     c.expect(r["ok"] and r["left"] == allowance - 1, "rescue 1 spent (%s)" % r)
+    spent = bnm(rig, "REG.rescues_spent('%s')" % FED_FORCE)
+    c.expect(isinstance(spent, list) and len(spent) == 1 and spent[0].get("surface") == FED_HOME,
+             "the spent rescue records the base it went on, for the team tab's card (%s)" % spent)
     c.expect(is_full(s) and not s["dark"], "the roboport is full, and not dark at once (%s)" % robo_line(s))
     run_ticks(rig, 60, 1)
     s = robo(rig)
