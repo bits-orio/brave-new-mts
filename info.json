@@ -5,9 +5,9 @@
   "author": "bits-orio",
   "description": "A remote-only, character-free layer for Multi-Team Support. Your character never leaves its cell -- you build entirely through a construction-robot network seeded at each team's spawn around a large roboport. Place blueprints; the bots do the rest.",
   "homepage": "https://github.com/bits-orio/brave-new-mts",
-  "factorio_version": "2.0",
+  "factorio_version": "2.1",
   "dependencies": [
-    "base >= 2.0",
+    "base >= 2.1",
     "multi-team-support >= 0.6.6",
     "? space-age"
   ]
