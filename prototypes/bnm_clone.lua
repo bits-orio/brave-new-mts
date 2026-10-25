@@ -19,7 +19,10 @@ local CLONE      = "bnm-character-clone"
 local CLONE_TINT = { r = 0.4, g = 1.0, b = 0.4, a = 1.0 }
 
 -- One clone fills a whole rocket payload (weight == the rocket's lift capacity).
-local rocket_lift = (data.raw["utility-constants"]["default"] or {}).rocket_lift_weight or 1000000
+-- Factorio 2.1 renamed the utility constant to default_rocket_lift_weight (a
+-- silo may now carry its own lift_weight); 2.0 calls it rocket_lift_weight.
+local constants = data.raw["utility-constants"]["default"] or {}
+local rocket_lift = constants.default_rocket_lift_weight or constants.rocket_lift_weight or 1000000
 
 data:extend({
     {
@@ -72,7 +75,10 @@ data:extend({
         name            = CLONE,
         enabled         = false,          -- unlocked by the bnm-character-clone technology
         energy_required = 30,
-        category        = "crafting",     -- assembler-craftable; not hand-craftable
+        -- No category field: the default, "crafting", is the one wanted
+        -- (assembler-craftable; handcrafting is blocked for overseers), and
+        -- the field is named differently per engine: 2.0 takes category, 2.1
+        -- takes categories and refuses the old name at load.
         ingredients     = {
             { type = "item", name = "processing-unit",       amount = 20 },
             { type = "item", name = "low-density-structure", amount = 20 },
