@@ -78,7 +78,7 @@ storage: only BNM's on_team_released handler clears it, which proves that
 handler ran.
 
 usage: regress.py [--checks 1,4,6] [--no-stage] [--keep] [--out results.json]
-                  [--rig bnm-reg] [--ports 34332,27332]
+                  [--rig bnm-reg] [--ports 34332,27332] [--factorio 2.1 --mts <dir>]
 """
 import argparse
 import json
@@ -96,6 +96,11 @@ from power_test import evaluate, linspace, setup_run, wait_all  # noqa: E402
 RIG_HOME = os.path.expanduser("~/factorio-dev/rig")
 # Defaults; --rig and --ports override them, so two suites can run side by side.
 GAME_PORT, RCON_PORT = 34332, 27332
+# The engine line start-server.sh runs (--factorio), and the MTS stage.sh
+# stages (--mts; empty means stage.sh's default, the newest MTS zip the game
+# itself has). A 2.1 run needs an MTS of the 2.1 line, so it names one.
+FACTORIO = "2.0"
+MTS_ARGS = []
 MAIN, MIGRATION = "bnm-reg", "bnm-reg-mig"
 OLD_REV = "0ad9363"   # 0.1.3, the last release before the fix-up
 
@@ -167,7 +172,7 @@ class Server:
             env["RIG_FRESH"] = "1"
         log("starting %s (%s)" % (self.name, "fresh map" if fresh else "saved world"))
         self.started = True
-        r = subprocess.run([os.path.join(RIG_HOME, "start-server.sh"), "2.0", self.name,
+        r = subprocess.run([os.path.join(RIG_HOME, "start-server.sh"), FACTORIO, self.name,
                             str(GAME_PORT), str(RCON_PORT), self.mods],
                            env=env, capture_output=True, text=True)
         self.mark = 0
@@ -1511,7 +1516,7 @@ return { recorded = true, home = rec.home, outpost = rec.outpost, provider = rec
 
 
 def stage(mods, *args):
-    r = subprocess.run([os.path.join(HERE, "stage.sh"), mods] + list(args), capture_output=True, text=True)
+    r = subprocess.run([os.path.join(HERE, "stage.sh"), mods] + list(args) + MTS_ARGS, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError("stage.sh failed: %s%s" % (r.stdout, r.stderr))
     log(" ".join(r.stdout.split()))
@@ -1593,6 +1598,12 @@ def set_rig(name, ports):
     GAME_PORT, RCON_PORT = (int(p) for p in ports.split(","))
 
 
+def set_engine(factorio, mts):
+    global FACTORIO, MTS_ARGS
+    FACTORIO = factorio
+    MTS_ARGS = ["--mts", mts] if mts else []
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--checks", default=",".join(str(n) for n, _, _ in CHECKS), help="comma-separated check numbers")
@@ -1603,11 +1614,21 @@ def main():
                     "migration world <rig>-mig (default %(default)s)")
     ap.add_argument("--ports", default="%d,%d" % (GAME_PORT, RCON_PORT), help="game port,RCON port "
                     "(default %(default)s)")
+    ap.add_argument("--factorio", default=FACTORIO, choices=("2.0", "2.1"),
+                    help="engine line for start-server.sh (default %(default)s); 2.1 needs --mts")
+    ap.add_argument("--mts", help="MTS zip or source dir for stage.sh (default: its newest zip in "
+                    "~/.factorio/mods)")
     a = ap.parse_args()
     set_rig(a.rig, a.ports)
+    set_engine(a.factorio, a.mts)
     wanted = {int(n) for n in a.checks.split(",") if n}
     for n in list(wanted):
         wanted.update(NEEDS.get(n, []))
+    if FACTORIO != "2.0" and MIGRATION_CHECK in wanted:
+        # The migration world is made by OLD_REV, a 2.0-only release, which a
+        # 2.1 server refuses to load.
+        wanted.discard(MIGRATION_CHECK)
+        log("check %d skipped: %s declares Factorio 2.0" % (MIGRATION_CHECK, OLD_REV))
 
     ctx = Ctx(stage=not a.no_stage)
     results = []
