@@ -37,7 +37,7 @@ Playable and in active development, running on public multiplayer servers. With 
 
 ## Compatibility
 
-Factorio 2.0. Space Age is optional and enables per-planet outposts. No roboport mod is needed, since the starter roboport is provided by this mod. Built purely against Multi-Team Support's public `mts-v1` remote interface, so it never patches or forks MTS. MTS blocks the blueprint library and pasted blueprint strings by default; that's fine here, since every blueprint you need can be made in game by copying part of your own base.
+Factorio 2.1. On Factorio 2.0, use 0.2.1. Space Age is optional and enables per-planet outposts. No roboport mod is needed, since the starter roboport is provided by this mod. Built purely against Multi-Team Support's public `mts-v1` remote interface, so it never patches or forks MTS. MTS blocks the blueprint library and pasted blueprint strings by default; that's fine here, since every blueprint you need can be made in game by copying part of your own base.
 
 ## Works with
 

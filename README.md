@@ -4,7 +4,7 @@
 
 > **You never touch the world. The robots do.**
 
-A Factorio 2.0 mod that turns [Multi-Team Support](https://github.com/bits-orio/multi-team-support) into a remote-only, character-free overseer game. Your character is parked in a cell and never sets foot on the team surface. You build an entire factory through a construction-robot network, one blueprint at a time.
+A Factorio 2.1 mod that turns [Multi-Team Support](https://github.com/bits-orio/multi-team-support) into a remote-only, character-free overseer game. Your character is parked in a cell and never sets foot on the team surface. You build an entire factory through a construction-robot network, one blueprint at a time.
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=9CjGeF6vIX8"><img src="https://img.youtube.com/vi/9CjGeF6vIX8/maxresdefault.jpg" alt="Factorio multiplayer where your robots are your only hands" width="640"></a>
