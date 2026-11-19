@@ -2,3 +2,6 @@ build/
 *.zip
 __pycache__/
 *.code-workspace
+
+# Local test runs (dev/run-*.sh)
+/.run/
